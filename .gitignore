@@ -1,0 +1,8 @@
+node_modules/
+vendor/
+.angular/
+dist/
+.env
+*.log
+.idea/
+.vscode/

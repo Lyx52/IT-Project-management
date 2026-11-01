@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: itpm-db
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-app}
+      POSTGRES_USER: ${DB_USERNAME:-app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      TZ: Europe/Riga
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./docker/backend
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: itpm-backend
+    working_dir: /var/www/backend
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      APP_URL: http://localhost:${BACKEND_PORT:-8001}
+      DB_DATABASE: ${DB_DATABASE:-app}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "${BACKEND_PORT:-8001}:8000"
+    volumes:
+      - ./project/backend:/var/www/backend
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./docker/frontend
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: itpm-frontend
+    working_dir: /var/www/frontend
+    ports:
+      - "${FRONTEND_PORT:-4200}:4200"
+    volumes:
+      - ./project/frontend:/var/www/frontend
+
+volumes:
+  db-data:
