@@ -1,0 +1,186 @@
+@startuml lost_and_found_db
+' Lost & Found — PostgreSQL schema for a Laravel API (Sanctum), GDPR-aware
+' * = NOT NULL   (enc) = Laravel 'encrypted' cast, stored encrypted at rest
+
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName "Helvetica"
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam note {
+  BackgroundColor #FFF9DB
+  BorderColor #C9B458
+}
+
+entity users {
+  * id : bigint <<PK>>
+  --
+  * username : varchar(50) <<unique>>
+  * email : varchar(255) <<unique>>
+  email_verified_at : timestamp
+  * password : varchar(255)  -- bcrypt (Hash::make)
+  * role : varchar(10) = 'user'
+  banned_at : timestamp
+  * terms_accepted_at : timestamp  -- consent record
+  * privacy_policy_version : varchar(10)
+  avatar_path : varchar(255)
+  created_at : timestamp
+  updated_at : timestamp
+  deleted_at : timestamp  -- SoftDeletes, purged after 30 days
+  ..
+  CHECK role IN ('user','admin')
+}
+
+entity personal_access_tokens {
+  * id : bigint <<PK>>
+  --
+  * tokenable_type : varchar(255)
+  * tokenable_id : bigint  -- users.id
+  * name : varchar(255)
+  * token : varchar(64) <<unique>>  -- SHA-256 hash
+  abilities : text
+  last_used_at : timestamp
+  expires_at : timestamp
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity password_reset_tokens {
+  * email : varchar(255) <<PK>>
+  --
+  * token : varchar(255)  -- hashed
+  created_at : timestamp  -- expires after 60 min
+}
+
+entity categories {
+  * id : bigint <<PK>>
+  --
+  * name : varchar(50) <<unique>>
+}
+
+entity posts {
+  * id : bigint <<PK>>
+  --
+  * user_id : bigint <<FK>>  -- cascadeOnDelete
+  * category_id : bigint <<FK>>  -- restrictOnDelete
+  * type : varchar(5)
+  * title : varchar(100)
+  * description : text
+  * latitude : decimal(8,5)
+  * longitude : decimal(8,5)
+  location_name : varchar(150)
+  * event_date : date
+  * status : varchar(10) = 'pending'
+  resolved_at : timestamp
+  created_at : timestamp
+  updated_at : timestamp
+  ..
+  CHECK type IN ('lost','found')
+  CHECK status IN ('pending','approved','rejected','resolved')
+  CHECK latitude BETWEEN -90 AND 90
+  CHECK longitude BETWEEN -180 AND 180
+}
+
+entity post_images {
+  * id : bigint <<PK>>
+  --
+  * post_id : bigint <<FK>>  -- cascadeOnDelete
+  * path : varchar(255)  -- random name, EXIF stripped
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity messages {
+  * id : bigint <<PK>>
+  --
+  * sender_id : bigint <<FK>>  -- cascadeOnDelete
+  * receiver_id : bigint <<FK>>  -- cascadeOnDelete
+  post_id : bigint <<FK>>  -- nullOnDelete
+  body : text  (enc)
+  file_path : varchar(255)  -- private disk
+  media_type : varchar(5)
+  read_at : timestamp
+  created_at : timestamp
+  updated_at : timestamp
+  ..
+  CHECK sender_id <> receiver_id
+  CHECK media_type IN ('image','video')
+  CHECK body IS NOT NULL OR file_path IS NOT NULL
+}
+
+entity notifications {
+  * id : uuid <<PK>>
+  --
+  * type : varchar(255)  -- notification class
+  * notifiable_type : varchar(255)
+  * notifiable_id : bigint  -- users.id
+  * data : text  -- JSON payload, no PII
+  read_at : timestamp
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity reports {
+  * id : bigint <<PK>>
+  --
+  * post_id : bigint <<FK>>  -- cascadeOnDelete
+  reporter_id : bigint <<FK>>  -- nullOnDelete
+  * reason : varchar(500)
+  * status : varchar(10) = 'open'
+  reviewed_by : bigint <<FK>>  -- nullOnDelete
+  created_at : timestamp
+  updated_at : timestamp
+  ..
+  UNIQUE (post_id, reporter_id)
+  CHECK status IN ('open','closed')
+}
+
+users ||--o{ personal_access_tokens : "tokenable (morph)"
+users ||--o{ notifications : "notifiable (morph)"
+users ||..o| password_reset_tokens : "by email"
+users ||--o{ posts : creates
+categories ||--o{ posts
+posts ||--o{ post_images
+users ||--o{ messages : sends
+users ||--o{ messages : receives
+posts |o--o{ messages
+posts ||--o{ reports
+users |o--o{ reports : reports
+users |o--o{ reports : reviews
+
+note as gdpr
+  **GDPR**
+  • Consent: terms_accepted_at + privacy_policy_version
+    saved at registration
+  • Right of access / portability: GET /api/me/export
+    returns all of the user's data as JSON
+  • Right to erasure: DELETE /api/me → soft delete,
+    tokens revoked, then hard delete after 30 days
+    (Prunable); cascades remove posts, images,
+    messages; reports keep no reporter
+  • Retention (Prunable, daily schedule):
+    resolved posts 6 months, read notifications 90 days
+  • Minimisation: no phone, no IP, no exact address;
+    coordinates 5 decimals, rounded to ~100 m in public API
+  • Message body encrypted at rest (encrypted cast)
+  • Uploads on private disk, EXIF/GPS stripped,
+    served via temporaryUrl() only to the owner / chat pair
+end note
+
+note as security
+  **Security**
+  • Auth: Sanctum tokens (only SHA-256 hash stored), expiry set
+  • Login throttle: RateLimiter 5 attempts / min
+  • Email verification: signed URLs (no table needed)
+  • Authorization: Policies (owner or admin only)
+  • Validation: FormRequests + mimes/max size on uploads
+  • Eloquent / query builder only, no raw SQL strings
+  • HTTPS only, DB user without superuser rights
+end note
+
+@enduml
