@@ -56,16 +56,17 @@ The Lost & Found schema is built with Laravel migrations in `project/backend/dat
 | `categories` | Item categories, 10 defaults inserted by the migration |
 | `posts` | Lost/found posts: `type` (`lost`/`found`), `status` (`pending`/`approved`/`rejected`/`resolved`), coordinates, `event_date` |
 | `post_images` | Images attached to a post |
-| `messages` | Direct messages between users, optionally about a post. Text and/or one image/video |
+| `messages` | Direct messages between users, optionally about a post. Text and/or attachments |
+| `message_attachments` | Files attached to a message (any number): `path`, `mime_type` (`image/*` or `video/*`), `size` in bytes |
 | `notifications` | Laravel database notifications |
 | `reports` | Users reporting posts. One report per user per post, `status` `open`/`closed` |
 
 Rules the database enforces (inserts that break them fail):
 - Permanently deleting a user (not soft delete) deletes their posts, images and messages. Reports they made or reviewed are kept, with the user set to `NULL`.
 - A category that is still used by posts can't be deleted.
-- `type`, `status`, `role` and `media_type` only accept the values listed above.
+- `type`, `status`, `role` and `mime_type` only accept the values listed above.
 - Coordinates must be valid lat/lng.
-- A message needs a body or a file, and can't be sent to yourself.
+- A message can't be sent to yourself. Deleting a message deletes its attachments.
 
 ### After pulling these changes
 
@@ -84,4 +85,7 @@ The seeder creates `testuser` / `test@example.com` (password `password`). `User:
 - `App\Models\User` still lists `name` as fillable. It needs to be updated to `username`, `role`, `terms_accepted_at` and `privacy_policy_version`. There is no `name` or `remember_token` column any more.
 - When installing Sanctum (`php artisan install:api`), delete the `personal_access_tokens` migration it publishes. The table already exists here.
 - Encrypt `messages.body` with the `encrypted` cast in the model.
+- The database can't check "a message needs a body or at least one attachment" (it spans two tables), so the message FormRequest must. Create the message and its attachments in one transaction.
+- Set `message_attachments.mime_type` from the stored file (`$file->getMimeType()`, which reads the content), not from the client's `Content-Type` header.
+- Deleting a message row doesn't remove its files from disk. Delete them in the model's `deleting` event or in the prune job.
 - Schema changes go through new migrations.

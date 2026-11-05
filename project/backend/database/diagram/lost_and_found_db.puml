@@ -101,16 +101,26 @@ entity messages {
   * sender_id : bigint <<FK>>  -- cascadeOnDelete
   * receiver_id : bigint <<FK>>  -- cascadeOnDelete
   post_id : bigint <<FK>>  -- nullOnDelete
-  body : text  (enc)
-  file_path : varchar(255)  -- private disk
-  media_type : varchar(5)
+  body : text  (enc)  -- app: body or ≥1 attachment
   read_at : timestamp
   created_at : timestamp
   updated_at : timestamp
   ..
   CHECK sender_id <> receiver_id
-  CHECK media_type IN ('image','video')
-  CHECK body IS NOT NULL OR file_path IS NOT NULL
+}
+
+entity message_attachments {
+  * id : bigint <<PK>>
+  --
+  * message_id : bigint <<FK>>  -- cascadeOnDelete
+  * path : varchar(255)  -- private disk, random name, EXIF stripped
+  * mime_type : varchar(255)  -- detected server-side
+  * size : integer  -- bytes
+  created_at : timestamp
+  updated_at : timestamp
+  ..
+  CHECK mime_type LIKE 'image/%' OR mime_type LIKE 'video/%'
+  CHECK size > 0
 }
 
 entity notifications {
@@ -149,6 +159,7 @@ posts ||--o{ post_images
 users ||--o{ messages : sends
 users ||--o{ messages : receives
 posts |o--o{ messages
+messages ||--o{ message_attachments
 posts ||--o{ reports
 users |o--o{ reports : reports
 users |o--o{ reports : reviews
