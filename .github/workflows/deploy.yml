@@ -36,5 +36,5 @@ jobs:
           echo "Using key: $(ssh-keygen -lf ~/.ssh/id_deploy)"
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           ssh -i ~/.ssh/id_deploy -o BatchMode=yes -o IdentitiesOnly=yes \
-            "$USER@$HOST" '~/IT-Project-management/deploy/deploy.sh'
+            "$USER@$HOST" /opt/IT-Project-management/deploy/deploy.sh
 

@@ -100,7 +100,7 @@ The seeder creates `testuser` / `test@example.com` (password `password`). `User:
 | `backend` | Laravel on FrankenPHP, plain HTTP on port 8080, reachable only from the proxy |
 | `db` | Postgres on an internal Docker network with no published port and no internet access |
 
-On the server (repo cloned to `~/IT-Project-management`):
+On the server (repo cloned to `/opt/IT-Project-management`):
 
 ```bash
 deploy/init-env.sh <hostname> <email>   # once: writes .env.production with random secrets

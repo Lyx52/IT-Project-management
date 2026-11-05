@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Pulls the latest main, rebuilds, runs migrations and restarts production.
-# Run on the server from anywhere: ~/IT-Project-management/deploy/deploy.sh
+# Run on the server from anywhere: /opt/IT-Project-management/deploy/deploy.sh
 
 # Wrapped in a function so bash reads the whole script before git pull
 # replaces this file
