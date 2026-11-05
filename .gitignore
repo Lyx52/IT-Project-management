@@ -6,3 +6,8 @@ dist/
 *.log
 .idea/
 .vscode/
+.vs/
+**/bin/
+**/obj/
+**/TestResults/
+*.trx
