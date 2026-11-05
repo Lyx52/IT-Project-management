@@ -1,0 +1,25 @@
+# Applies to the production builds (context = repo root).
+# Dev builds use docker/backend and docker/frontend as context and ignore this.
+.git
+.github
+**/.env
+**/.env.*
+**/.DS_Store
+
+project/backend/vendor
+project/backend/node_modules
+project/backend/public/storage
+project/backend/public/hot
+project/backend/bootstrap/cache/*.php
+project/backend/database/*.sqlite*
+project/backend/storage/app/public/*
+project/backend/storage/app/private/*
+project/backend/storage/framework/cache/data/*
+project/backend/storage/framework/sessions/*
+project/backend/storage/framework/testing/*
+project/backend/storage/framework/views/*
+project/backend/storage/logs/*
+
+project/frontend/node_modules
+project/frontend/.angular
+project/frontend/dist
