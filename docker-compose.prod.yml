@@ -1,0 +1,95 @@
+# Production stack for the Azure VM. Run it through deploy/deploy.sh, which
+# passes --env-file .env.production (created by deploy/init-env.sh).
+#
+# Only the proxy publishes ports. The database sits on an internal network
+# with no published port, so nothing outside Docker can reach it.
+
+name: itpm
+
+services:
+  proxy:
+    build:
+      context: .
+      dockerfile: docker/prod/proxy/Dockerfile
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env.production}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env.production}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      # Certificates, kept across rebuilds so Let's Encrypt isn't asked again
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [web]
+    depends_on: [backend]
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/prod/backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_NAME: ${APP_NAME:-Lost and Found}
+      APP_ENV: production
+      APP_KEY: ${APP_KEY:?set APP_KEY in .env.production}
+      APP_DEBUG: "false"
+      APP_URL: https://${SITE_ADDRESS}
+      FRONTEND_URL: https://${SITE_ADDRESS}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: info
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-app}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env.production}
+      SESSION_DRIVER: database
+      SESSION_SECURE_COOKIE: "true"
+      SANCTUM_STATEFUL_DOMAINS: ${SITE_ADDRESS}
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+    volumes:
+      # Uploads (avatars, post images, message attachments) survive rebuilds
+      - app-storage:/app/storage
+    networks: [web, internal]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env.production}
+      APP_DB_NAME: ${DB_DATABASE:-app}
+      APP_DB_USER: ${DB_USERNAME:-app}
+      APP_DB_PASSWORD: ${DB_PASSWORD}
+      TZ: UTC
+      PGTZ: UTC
+    # No "ports:" on purpose. Do not add one, Docker-published ports bypass ufw.
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./docker/db/initdb:/docker-entrypoint-initdb.d:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${APP_DB_USER} -d $${APP_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+networks:
+  web: {}
+  # No route in or out, only containers attached to it can talk to each other
+  internal:
+    internal: true
+
+volumes:
+  db-data:
+  app-storage:
+  caddy-data:
+  caddy-config:

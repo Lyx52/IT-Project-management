@@ -89,3 +89,35 @@ The seeder creates `testuser` / `test@example.com` (password `password`). `User:
 - Set `message_attachments.mime_type` from the stored file (`$file->getMimeType()`, which reads the content), not from the client's `Content-Type` header.
 - Deleting a message row doesn't remove its files from disk. Delete them in the model's `deleting` event or in the prune job.
 - Schema changes go through new migrations.
+
+## Production (Azure VM)
+
+`docker-compose.prod.yml` runs the live site. It's separate from the dev setup above, which stays unchanged.
+
+| Container | Role |
+|-----------|------|
+| `proxy` | Caddy. The only container with public ports (80, 443). Gets and renews the Let's Encrypt certificate, redirects HTTP to HTTPS, serves the built Angular app and forwards `/api`, `/sanctum`, `/storage` and `/up` to the backend |
+| `backend` | Laravel on FrankenPHP, plain HTTP on port 8080, reachable only from the proxy |
+| `db` | Postgres on an internal Docker network with no published port and no internet access |
+
+On the server (repo cloned to `~/IT-Project-management`):
+
+```bash
+deploy/init-env.sh <hostname> <email>   # once: writes .env.production with random secrets
+deploy/deploy.sh                        # every deploy: pull, build, migrate, restart
+```
+
+`deploy.sh` runs `php artisan migrate --force` before switching to the new containers. If a migration fails, the deploy stops and the old version keeps running. Pushes to `main` deploy automatically through `.github/workflows/deploy.yml` once the repository variable `DEPLOY_ENABLED` is `true` and the `DEPLOY_*` secrets are set.
+
+Useful commands on the server:
+
+```bash
+alias dc='docker compose --env-file .env.production -f docker-compose.prod.yml'
+dc ps                                   # db must show no host port
+dc logs -f backend
+dc exec backend php artisan migrate:status
+dc exec db psql -U app app              # DB access only from the server itself
+dc exec db pg_dump -U app app > backup-$(date +%F).sql
+```
+
+Never add a `ports:` entry to `db`. Docker-published ports bypass `ufw`, so the Azure firewall (NSG) and the missing port are what keep the database private.
