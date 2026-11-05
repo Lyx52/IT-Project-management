@@ -27,5 +27,14 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
+          # The runner can't type a passphrase, so the key must not have one
+          if ! ssh-keygen -y -P '' -f ~/.ssh/id_deploy > /dev/null; then
+            echo "::error::DEPLOY_SSH_KEY is not a valid private key or has a passphrase"
+            exit 1
+          fi
+          # Compare with `ssh-keygen -lf ~/.ssh/authorized_keys` on the server
+          echo "Using key: $(ssh-keygen -lf ~/.ssh/id_deploy)"
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          ssh -i ~/.ssh/id_deploy "$USER@$HOST" '~/IT-Project-management/deploy/deploy.sh'
+          ssh -i ~/.ssh/id_deploy -o BatchMode=yes -o IdentitiesOnly=yes \
+            "$USER@$HOST" '~/IT-Project-management/deploy/deploy.sh'
+
