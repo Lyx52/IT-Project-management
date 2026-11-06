@@ -1,1 +1,25 @@
-/* You can add global styles to this file, and also import other style files */
+@use './styles/variables' as *;
+
+body {
+  margin: 0;
+  background: $background;
+  color: $text-primary;
+  font-family: $font-family;
+  font-size: $font-size-base;
+}
+
+button {
+  cursor: pointer;
+}
+
+.card {
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+}
+
+.btn-primary {
+  --bs-btn-bg: #{$primary};
+  --bs-btn-border-color: #{$primary};
+  --bs-btn-hover-bg: #df6425;
+  --bs-btn-hover-border-color: #df6425;
+}

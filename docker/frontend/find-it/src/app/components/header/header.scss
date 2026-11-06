@@ -1,0 +1,16 @@
+.brand-orange {
+  color: #f07836;
+}
+
+.nav-link {
+  color: #666;
+
+  &:hover,
+  &.active {
+    color: #f07836;
+  }
+}
+
+.navbar-brand {
+  letter-spacing: -1px;
+}
