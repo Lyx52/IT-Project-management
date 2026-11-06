@@ -3,16 +3,24 @@ services:
     image: postgres:17-alpine
     container_name: itpm-db
     environment:
-      POSTGRES_DB: ${DB_DATABASE:-app}
-      POSTGRES_USER: ${DB_USERNAME:-app}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
-      TZ: Europe/Riga
+      # Superuser, only for admin tasks. Laravel connects as APP_DB_USER
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret}
+      # Created by docker/db/initdb on first start
+      APP_DB_NAME: ${DB_DATABASE:-app}
+      APP_DB_USER: ${DB_USERNAME:-app}
+      APP_DB_PASSWORD: ${DB_PASSWORD:-secret}
+      TZ: UTC
+      PGTZ: UTC
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Bound to localhost only, so the DB is not reachable from your network
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+      - ./docker/db/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      # TCP check: the temporary server used during init only listens on a socket
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${APP_DB_USER} -d $${APP_DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -52,6 +60,21 @@ services:
       - "${FRONTEND_PORT:-4200}:4200"
     volumes:
       - ./project/frontend:/var/www/frontend
+
+  # Optional DB web UI: docker compose --profile tools up -d
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: itpm-pgadmin
+    profiles: ["tools"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   db-data:

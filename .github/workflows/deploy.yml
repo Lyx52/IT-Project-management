@@ -1,0 +1,40 @@
+name: Deploy
+
+# Runs deploy/deploy.sh on the Azure VM over SSH after every push to main.
+# Stays off until the repository variable DEPLOY_ENABLED is set to "true".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Run deploy script on server
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # The runner can't type a passphrase, so the key must not have one
+          if ! ssh-keygen -y -P '' -f ~/.ssh/id_deploy > /dev/null; then
+            echo "::error::DEPLOY_SSH_KEY is not a valid private key or has a passphrase"
+            exit 1
+          fi
+          # Compare with `ssh-keygen -lf ~/.ssh/authorized_keys` on the server
+          echo "Using key: $(ssh-keygen -lf ~/.ssh/id_deploy)"
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_deploy -o BatchMode=yes -o IdentitiesOnly=yes \
+            "$USER@$HOST" /opt/IT-Project-management/deploy/deploy.sh
+

@@ -1,3 +1,4 @@
+
 node_modules/
 vendor/
 .angular/
@@ -11,3 +12,5 @@ dist/
 **/obj/
 **/TestResults/
 *.trx
+.env.production
+
