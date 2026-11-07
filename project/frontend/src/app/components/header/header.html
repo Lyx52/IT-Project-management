@@ -1,10 +1,12 @@
 <nav class="navbar navbar-expand-lg bg-white border-bottom px-3 px-lg-4">
   <div class="container-fluid">
 
-    <a class="navbar-brand fw-bold fs-3" href="#">
+    <!-- Logo -->
+    <a class="navbar-brand fw-bold fs-3" routerLink="/home">
       Find<span class="brand-orange">IT</span>
     </a>
 
+    <!-- Sign in -->
     <div class="d-flex align-items-center gap-3 order-lg-3">
       <button class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-person-circle me-1"></i>
@@ -12,17 +14,48 @@
       </button>
     </div>
 
+    <!-- Navigation -->
     <div class="collapse navbar-collapse order-lg-2">
       <ul class="navbar-nav mx-auto gap-lg-3">
+
         <li class="nav-item">
-          <a class="nav-link active" href="#">Home</a>
+          <a
+            class="nav-link"
+            routerLink="/home"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }">
+            Home
+          </a>
         </li>
+
         <li class="nav-item">
-          <a class="nav-link" href="#">Lost items</a>
+          <a
+            class="nav-link"
+            routerLink="/lost"
+            routerLinkActive="active">
+            Lost items
+          </a>
         </li>
+
         <li class="nav-item">
-          <a class="nav-link" href="#">Found items</a>
+          <a
+            class="nav-link"
+            routerLink="/found"
+            routerLinkActive="active">
+            Found items
+          </a>
         </li>
+
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/map"
+            routerLinkActive="active">
+            <i class="bi bi-geo-alt me-1"></i>
+            Map
+          </a>
+        </li>
+
       </ul>
     </div>
 
