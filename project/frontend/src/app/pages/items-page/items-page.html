@@ -1,7 +1,6 @@
 <app-header />
 
 <main class="container-fluid px-3 px-lg-4 py-4">
-
   <!-- Page heading and search -->
   <section class="page-heading mb-4">
     <div>
@@ -12,11 +11,7 @@
     <div class="search-box">
       <i class="bi bi-search"></i>
 
-      <input
-        type="text"
-        class="form-control"
-        placeholder="Search for an item..."
-      />
+      <input type="text" class="form-control" placeholder="Search for an item..." />
 
       <button class="btn btn-primary">Search</button>
     </div>
@@ -41,9 +36,7 @@
 
       <input type="date" class="form-control" />
 
-      <button class="btn btn-outline-secondary">
-        Reset filters
-      </button>
+      <button class="btn btn-outline-secondary">Reset filters</button>
     </div>
   </section>
 
@@ -52,9 +45,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
         <h5 class="fw-bold mb-1">{{ pageTitle }}</h5>
-        <p class="text-muted small mb-0">
-          {{ filteredItems.length }} items available
-        </p>
+        <p class="text-muted small mb-0">{{ filteredItems.length }} items available</p>
       </div>
 
       <button class="btn btn-outline-secondary btn-sm">
@@ -75,11 +66,8 @@
       <div class="empty-state">
         <i class="bi bi-search"></i>
         <h6 class="fw-bold mt-3">No items found</h6>
-        <p class="text-muted mb-0">
-          There are currently no items in this category.
-        </p>
+        <p class="text-muted mb-0">There are currently no items in this category.</p>
       </div>
     }
   </section>
-
 </main>

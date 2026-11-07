@@ -9,7 +9,7 @@ export const MOCK_ITEMS: Item[] = [
     location: 'Riga, University',
     date: '05 Nov 2026',
     type: 'LOST',
-    icon: 'bi-backpack'
+    icon: 'bi-backpack',
   },
   {
     id: 2,
@@ -19,7 +19,7 @@ export const MOCK_ITEMS: Item[] = [
     location: 'Riga, Centre',
     date: '05 Nov 2026',
     type: 'FOUND',
-    icon: 'bi-key'
+    icon: 'bi-key',
   },
   {
     id: 3,
@@ -29,7 +29,7 @@ export const MOCK_ITEMS: Item[] = [
     location: 'Riga, Shopping Centre',
     date: '04 Nov 2026',
     type: 'LOST',
-    icon: 'bi-headphones'
+    icon: 'bi-headphones',
   },
   {
     id: 4,
@@ -39,6 +39,6 @@ export const MOCK_ITEMS: Item[] = [
     location: 'Riga, University',
     date: '03 Nov 2026',
     type: 'FOUND',
-    icon: 'bi-person-vcard'
-  }
+    icon: 'bi-person-vcard',
+  },
 ];

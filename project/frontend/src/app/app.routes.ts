@@ -7,28 +7,28 @@ export const routes: Routes = [
   {
     path: '',
     redirectTo: 'home',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'home',
-    component: HomePageComponent
+    component: HomePageComponent,
   },
   {
     path: 'lost',
     component: ItemsPageComponent,
-    data: { type: 'LOST' }
+    data: { type: 'LOST' },
   },
   {
     path: 'found',
     component: ItemsPageComponent,
-    data: { type: 'FOUND' }
+    data: { type: 'FOUND' },
   },
   {
     path: 'map',
-    component: MapPageComponent
+    component: MapPageComponent,
   },
   {
     path: '**',
-    redirectTo: 'home'
-  }
+    redirectTo: 'home',
+  },
 ];

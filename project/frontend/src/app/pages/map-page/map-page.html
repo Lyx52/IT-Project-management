@@ -1,37 +1,26 @@
 <app-header />
 
 <main class="container-fluid px-3 px-lg-4 py-4">
-
   <div class="page-heading mb-4">
     <div>
       <h4 class="fw-bold mb-1">Explore the map</h4>
-      <p class="text-muted mb-0">
-        Find lost and found items around your area.
-      </p>
+      <p class="text-muted mb-0">Find lost and found items around your area.</p>
     </div>
 
     <div class="map-search">
       <i class="bi bi-search"></i>
-      <input
-        type="text"
-        class="form-control"
-        placeholder="Search location..."
-      />
+      <input type="text" class="form-control" placeholder="Search location..." />
       <button class="btn btn-primary">Search</button>
     </div>
   </div>
 
   <div class="row g-4">
-
     <!-- Items list -->
     <div class="col-12 col-lg-4">
-
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
           <h5 class="fw-bold mb-1">Nearby items</h5>
-          <p class="text-muted small mb-0">
-            {{ items.length }} items on the map
-          </p>
+          <p class="text-muted small mb-0">{{ items.length }} items on the map</p>
         </div>
 
         <button class="btn btn-outline-secondary btn-sm">
@@ -45,14 +34,11 @@
           <app-item-card [item]="item" />
         }
       </div>
-
     </div>
 
     <!-- Map -->
     <div class="col-12 col-lg-8">
-
       <section class="map-container">
-
         <div class="map-toolbar">
           <span>
             <i class="bi bi-geo-alt me-1"></i>
@@ -66,7 +52,6 @@
         </div>
 
         <div class="map-placeholder">
-
           <div class="map-area-label label-one">CENTRE</div>
           <div class="map-area-label label-two">OLD TOWN</div>
           <div class="map-area-label label-three">UNIVERSITY</div>
@@ -104,16 +89,9 @@
             </span>
           </div>
 
-          <div class="map-attribution">
-            Map preview — real map integration planned
-          </div>
-
+          <div class="map-attribution">Map preview — real map integration planned</div>
         </div>
-
       </section>
-
     </div>
-
   </div>
-
 </main>

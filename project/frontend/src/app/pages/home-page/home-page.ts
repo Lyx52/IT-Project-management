@@ -9,17 +9,10 @@ import { MOCK_ITEMS } from '../../models/mock-items';
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [
-    ItemForm,
-    ItemCard,
-    Messenger,
-    Header
-],
+  imports: [ItemForm, ItemCard, Messenger, Header],
   templateUrl: './home-page.html',
-  styleUrl: './home-page.scss'
+  styleUrl: './home-page.scss',
 })
 export class HomePageComponent {
-
   items: Item[] = MOCK_ITEMS;
-
 }

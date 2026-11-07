@@ -1,32 +1,22 @@
 <app-header />
 
 <main class="container-fluid px-3 px-lg-4 py-4">
-
   <!-- Search section -->
   <div class="search-section mb-4">
-
     <div>
       <h4 class="fw-bold mb-1">Find what you've lost.</h4>
-      <p class="text-muted mb-0">
-        One place for lost and found items.
-      </p>
+      <p class="text-muted mb-0">One place for lost and found items.</p>
     </div>
 
     <div class="search-box">
       <i class="bi bi-search"></i>
-      <input
-        type="text"
-        class="form-control"
-        placeholder="Search for an item..."
-      />
+      <input type="text" class="form-control" placeholder="Search for an item..." />
       <button class="btn btn-primary">Search</button>
     </div>
-
   </div>
 
   <!-- Main layout -->
   <div class="row g-4">
-
     <!-- Left column -->
     <div class="col-12 col-lg-3">
       <app-item-form />
@@ -34,13 +24,10 @@
 
     <!-- Center column -->
     <div class="col-12 col-lg-6">
-
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
           <h5 class="fw-bold mb-1">Recent items</h5>
-          <p class="text-muted small mb-0">
-            Browse recently reported items.
-          </p>
+          <p class="text-muted small mb-0">Browse recently reported items.</p>
         </div>
 
         <button class="btn btn-outline-secondary btn-sm">
@@ -50,22 +37,17 @@
       </div>
 
       <div class="row g-3">
-
         @for (item of items; track item.id) {
           <div class="col-12 col-md-6">
             <app-item-card [item]="item" />
           </div>
         }
-
       </div>
-
     </div>
 
     <!-- Right column -->
     <div class="col-12 col-lg-3">
       <app-messenger />
     </div>
-
   </div>
-
 </main>

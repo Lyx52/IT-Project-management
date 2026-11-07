@@ -12,7 +12,7 @@ import { MOCK_ITEMS } from '../../models/mock-items';
   standalone: true,
   imports: [Header, ItemCard],
   templateUrl: './items-page.html',
-  styleUrl: './items-page.scss'
+  styleUrl: './items-page.scss',
 })
 export class ItemsPageComponent {
   private route = inject(ActivatedRoute);
@@ -21,15 +21,13 @@ export class ItemsPageComponent {
   type: 'LOST' | 'FOUND' = 'LOST';
 
   constructor() {
-    this.route.data.subscribe(data => {
+    this.route.data.subscribe((data) => {
       this.type = data['type'];
     });
   }
 
   get pageTitle(): string {
-    return this.type === 'LOST'
-      ? 'Lost items'
-      : 'Found items';
+    return this.type === 'LOST' ? 'Lost items' : 'Found items';
   }
 
   get pageDescription(): string {
@@ -39,6 +37,6 @@ export class ItemsPageComponent {
   }
 
   get filteredItems(): Item[] {
-    return this.items.filter(item => item.type === this.type);
+    return this.items.filter((item) => item.type === this.type);
   }
 }

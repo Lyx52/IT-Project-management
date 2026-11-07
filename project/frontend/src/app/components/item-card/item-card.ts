@@ -8,6 +8,5 @@ import { Item } from '../../models/item.model';
   styleUrl: './item-card.scss',
 })
 export class ItemCard {
-
   @Input({ required: true }) item!: Item;
 }

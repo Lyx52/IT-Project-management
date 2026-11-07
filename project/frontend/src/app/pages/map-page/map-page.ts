@@ -11,7 +11,7 @@ import { MOCK_ITEMS } from '../../models/mock-items';
   standalone: true,
   imports: [Header, ItemCard],
   templateUrl: './map-page.html',
-  styleUrl: './map-page.scss'
+  styleUrl: './map-page.scss',
 })
 export class MapPageComponent {
   items: Item[] = MOCK_ITEMS;
