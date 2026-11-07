@@ -1,0 +1,60 @@
+.messenger-panel {
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.messenger-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #eee;
+}
+
+.conversation {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+
+  &:hover {
+    background: #fafafa;
+  }
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  background: #fff0e6;
+  color: #f07836;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.conversation-info {
+  min-width: 0;
+
+  strong {
+    font-size: 13px;
+  }
+
+  p {
+    font-size: 11px;
+    color: #858585;
+    margin: 3px 0 0;
+  }
+}
+
+.empty-chat {
+  padding: 25px 12px;
+  text-align: center;
+  color: #aaa;
+  font-size: 12px;
+}
