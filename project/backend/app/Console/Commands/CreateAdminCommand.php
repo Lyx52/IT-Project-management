@@ -19,9 +19,9 @@ use Illuminate\Validation\Rules\Password;
  * (CI jobs, cron, scripts). The password is read from a hidden prompt, so it
  * never ends up in shell history, logs or an env file.
  */
-class CreateFirstAdmin extends Command
+class CreateAdminCommand extends Command
 {
-    protected $signature = 'app:create-first-admin
+    protected $signature = 'app:create-admin
         {--username= : Username of the admin}
         {--email= : Email of the admin}';
 

@@ -48,4 +48,4 @@ if [ -z "$(compose ps --status running -q backend)" ]; then
   exit 1
 fi
 
-compose exec backend php artisan app:create-first-admin --username "$1" --email "$2"
+compose exec backend php artisan app:create-admin --username "$1" --email "$2"

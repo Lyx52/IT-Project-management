@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Console\Commands\CreateFirstAdmin;
+use App\Console\Commands\CreateAdminCommand;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
-class CreateFirstAdminCommandTest extends TestCase
+class CreateAdminCommandTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -26,15 +26,15 @@ class CreateFirstAdminCommandTest extends TestCase
 
     private function fakeTerminal(bool $present): void
     {
-        $this->app->bind(CreateFirstAdmin::class, fn () => $present
-            ? new class extends CreateFirstAdmin
+        $this->app->bind(CreateAdminCommand::class, fn () => $present
+            ? new class extends CreateAdminCommand
             {
                 protected function hasTerminal(): bool
                 {
                     return true;
                 }
             }
-            : new class extends CreateFirstAdmin
+            : new class extends CreateAdminCommand
             {
                 protected function hasTerminal(): bool
                 {
@@ -45,7 +45,7 @@ class CreateFirstAdminCommandTest extends TestCase
 
     public function test_creates_admin_with_prompted_password(): void
     {
-        $this->artisan('app:create-first-admin', self::ARGS)
+        $this->artisan('app:create-admin', self::ARGS)
             ->expectsQuestion('Password (min. 12 characters)', self::PASSWORD)
             ->expectsQuestion('Repeat password', self::PASSWORD)
             ->assertSuccessful();
@@ -60,7 +60,7 @@ class CreateFirstAdminCommandTest extends TestCase
 
     public function test_refuses_to_run_without_interactive_terminal(): void
     {
-        $this->artisan('app:create-first-admin', self::ARGS + ['--no-interaction' => true])
+        $this->artisan('app:create-admin', self::ARGS + ['--no-interaction' => true])
             ->expectsOutputToContain('interactive terminal')
             ->assertFailed();
 
@@ -71,7 +71,7 @@ class CreateFirstAdminCommandTest extends TestCase
     {
         $this->fakeTerminal(false);
 
-        $this->artisan('app:create-first-admin', self::ARGS)
+        $this->artisan('app:create-admin', self::ARGS)
             ->expectsOutputToContain('interactive terminal')
             ->assertFailed();
 
@@ -80,7 +80,7 @@ class CreateFirstAdminCommandTest extends TestCase
 
     public function test_rejects_mismatched_passwords(): void
     {
-        $this->artisan('app:create-first-admin', self::ARGS)
+        $this->artisan('app:create-admin', self::ARGS)
             ->expectsQuestion('Password (min. 12 characters)', self::PASSWORD)
             ->expectsQuestion('Repeat password', 'something-else-entirely')
             ->assertFailed();
@@ -90,7 +90,7 @@ class CreateFirstAdminCommandTest extends TestCase
 
     public function test_rejects_short_password(): void
     {
-        $this->artisan('app:create-first-admin', self::ARGS)
+        $this->artisan('app:create-admin', self::ARGS)
             ->expectsQuestion('Password (min. 12 characters)', 'short')
             ->expectsQuestion('Repeat password', 'short')
             ->assertFailed();
@@ -102,7 +102,7 @@ class CreateFirstAdminCommandTest extends TestCase
     {
         User::factory()->admin()->create();
 
-        $this->artisan('app:create-first-admin', self::ARGS)
+        $this->artisan('app:create-admin', self::ARGS)
             ->expectsOutputToContain('already exists')
             ->assertFailed();
 
@@ -113,7 +113,7 @@ class CreateFirstAdminCommandTest extends TestCase
     {
         User::factory()->admin()->create(['banned_at' => now()]);
 
-        $this->artisan('app:create-first-admin', self::ARGS)
+        $this->artisan('app:create-admin', self::ARGS)
             ->expectsQuestion('Password (min. 12 characters)', self::PASSWORD)
             ->expectsQuestion('Repeat password', self::PASSWORD)
             ->assertSuccessful();
@@ -125,7 +125,7 @@ class CreateFirstAdminCommandTest extends TestCase
     {
         User::factory()->create(['username' => 'someone', 'email' => 'Boss@Example.com']);
 
-        $this->artisan('app:create-first-admin', self::ARGS)->assertFailed();
+        $this->artisan('app:create-admin', self::ARGS)->assertFailed();
 
         $this->assertSame(1, User::count());
         $this->assertSame('user', User::first()->role);
@@ -135,7 +135,7 @@ class CreateFirstAdminCommandTest extends TestCase
     {
         User::factory()->create(['username' => 'boss', 'email' => 'other@example.com']);
 
-        $this->artisan('app:create-first-admin', self::ARGS)->assertFailed();
+        $this->artisan('app:create-admin', self::ARGS)->assertFailed();
 
         $this->assertSame(0, User::where('role', 'admin')->count());
     }
