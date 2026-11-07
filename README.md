@@ -78,11 +78,12 @@ docker compose up -d
 docker compose exec backend php artisan db:seed
 ```
 
-The seeder creates `testuser` / `test@example.com` (password `password`). `User::factory()->admin()` creates an admin.
+The seeder creates `testuser` / `test@example.com` and the admin `admin` / `admin@example.com`, both with password `password`. `User::factory()->admin()` creates an admin in tests.
 
 ### Notes for backend
 
-- `App\Models\User` still lists `name` as fillable. It needs to be updated to `username`, `role`, `terms_accepted_at` and `privacy_policy_version`. There is no `name` or `remember_token` column any more.
+- `App\Models\User` still lists `name` as fillable. It needs to be updated to `username`, `terms_accepted_at` and `privacy_policy_version`. There is no `name` or `remember_token` column any more.
+- Never make `role` (or `banned_at`) fillable. Otherwise anyone could register with `"role": "admin"`. Set it explicitly in the admin-only endpoint (`$user->forceFill(['role' => 'admin'])`). A test fails if `role` becomes mass assignable.
 - When installing Sanctum (`php artisan install:api`), delete the `personal_access_tokens` migration it publishes. The table already exists here.
 - Encrypt `messages.body` with the `encrypted` cast in the model.
 - The database can't check "a message needs a body or at least one attachment" (it spans two tables), so the message FormRequest must. Create the message and its attachments in one transaction.
@@ -107,9 +108,24 @@ On the server (repo cloned to `/opt/IT-Project-management`):
 ```bash
 deploy/init-env.sh <hostname> <email>   # once: writes .env.production with random secrets
 deploy/deploy.sh                        # every deploy: pull, build, migrate, restart
+deploy/create-admin.sh <user> <email>   # once, after the first deploy: initial admin
 ```
 
 `deploy.sh` runs `php artisan migrate --force` before switching to the new containers. If a migration fails, the deploy stops and the old version keeps running. Pushes to `main` deploy automatically through `.github/workflows/deploy.yml` once the repository variable `DEPLOY_ENABLED` is `true` and the `DEPLOY_*` secrets are set.
+
+### First admin account
+
+A fresh database has no admin, and production never runs the seeder. After the first deploy, create the initial admin on the server:
+
+```bash
+deploy/create-admin.sh <username> <email>
+```
+
+It asks for the password at a hidden prompt (at least 12 characters), so the password never ends up in git, `.env.production`, logs or your shell history.
+
+It only works for a person in a shell on the server. It refuses to run without an interactive terminal (CI, cron, piped input, `ssh host cmd` without `-t`) and when Docker points at a remote daemon (`DOCKER_HOST`, docker context). The website can't trigger it: there is no route for it, and the Laravel command refuses to run outside an interactive CLI.
+
+This is only for bootstrapping. It refuses to run while an active admin exists. Further admins are managed from the website. If every admin is banned or deleted, running it again creates a new one.
 
 Useful commands on the server:
 
