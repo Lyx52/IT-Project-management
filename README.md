@@ -82,7 +82,8 @@ The seeder creates `testuser` / `test@example.com` and the admin `admin` / `admi
 
 ### Notes for backend
 
-- `App\Models\User` still lists `name` as fillable. It needs to be updated to `username`, `role`, `terms_accepted_at` and `privacy_policy_version`. There is no `name` or `remember_token` column any more.
+- `App\Models\User` still lists `name` as fillable. It needs to be updated to `username`, `terms_accepted_at` and `privacy_policy_version`. There is no `name` or `remember_token` column any more.
+- Never make `role` (or `banned_at`) fillable. Otherwise anyone could register with `"role": "admin"`. Set it explicitly in the admin-only endpoint (`$user->forceFill(['role' => 'admin'])`). A test fails if `role` becomes mass assignable.
 - When installing Sanctum (`php artisan install:api`), delete the `personal_access_tokens` migration it publishes. The table already exists here.
 - Encrypt `messages.body` with the `encrypted` cast in the model.
 - The database can't check "a message needs a body or at least one attachment" (it spans two tables), so the message FormRequest must. Create the message and its attachments in one transaction.
@@ -118,7 +119,9 @@ A fresh database has no admin, and production never runs the seeder. After the f
 deploy/create-admin.sh <username> <email>
 ```
 
-It asks for the password at a hidden prompt (at least 12 characters), so the password never ends up in git, `.env.production` or your shell history. Without a terminal (piped, or `ssh` without `-t`) it generates a random password and prints it once.
+It asks for the password at a hidden prompt (at least 12 characters), so the password never ends up in git, `.env.production`, logs or your shell history.
+
+It only works for a person in a shell on the server. It refuses to run without an interactive terminal (CI, cron, piped input, `ssh host cmd` without `-t`) and when Docker points at a remote daemon (`DOCKER_HOST`, docker context). The website can't trigger it: there is no route for it, and the Laravel command refuses to run outside an interactive CLI.
 
 This is only for bootstrapping. It refuses to run while an active admin exists. Further admins are managed from the website. If every admin is banned or deleted, running it again creates a new one.
 

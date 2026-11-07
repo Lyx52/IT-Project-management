@@ -14,9 +14,10 @@ use Illuminate\Validation\Rules\Password;
  * website by an existing admin, so this refuses to run once an active admin
  * exists.
  *
- * Interactive by default: the password is read from a hidden prompt, so it
- * never ends up in shell history, CI logs or an env file. With
- * --no-interaction a random password is generated and printed once.
+ * Only a person at a terminal can run it: it refuses to run outside the CLI
+ * (e.g. Artisan::call from a web request) or without an interactive TTY
+ * (CI jobs, cron, scripts). The password is read from a hidden prompt, so it
+ * never ends up in shell history, logs or an env file.
  */
 class CreateFirstAdmin extends Command
 {
@@ -31,6 +32,12 @@ class CreateFirstAdmin extends Command
 
     public function handle(): int
     {
+        if (! app()->runningInConsole() || ! $this->input->isInteractive() || ! $this->hasTerminal()) {
+            $this->error('This must be run by a person in an interactive terminal on the server.');
+
+            return self::FAILURE;
+        }
+
         if ($this->activeAdminExists()) {
             $this->error('An admin account already exists. Further admins are managed from the website.');
 
@@ -46,8 +53,12 @@ class CreateFirstAdmin extends Command
             return self::FAILURE;
         }
 
-        [$password, $generated] = $this->readPassword();
-        if ($password === null) {
+        $password = (string) $this->secret('Password (min. 12 characters)');
+        $confirmation = (string) $this->secret('Repeat password');
+
+        if (! hash_equals($password, $confirmation)) {
+            $this->error('Passwords do not match.');
+
             return self::FAILURE;
         }
 
@@ -82,13 +93,16 @@ class CreateFirstAdmin extends Command
 
         $this->info("Admin \"{$user->username}\" <{$user->email}> created (id {$user->id}).");
 
-        if ($generated) {
-            $this->newLine();
-            $this->warn('Generated password (shown only once, store it in your password manager):');
-            $this->line($password);
-        }
-
         return self::SUCCESS;
+    }
+
+    /**
+     * Symfony keeps the input "interactive" even when stdin is a pipe, so a
+     * password could be fed in by a script. Require a real terminal instead.
+     */
+    protected function hasTerminal(): bool
+    {
+        return defined('STDIN') && stream_isatty(STDIN);
     }
 
     /**
@@ -125,31 +139,6 @@ class CreateFirstAdmin extends Command
     {
         $value = $this->option($option);
 
-        if ($value === null) {
-            $value = $this->input->isInteractive() ? $this->ask($question, $default) : $default;
-        }
-
-        return trim((string) $value);
-    }
-
-    /**
-     * @return array{0: ?string, 1: bool} the password, and whether it was generated
-     */
-    private function readPassword(): array
-    {
-        if (! $this->input->isInteractive()) {
-            return [Str::password(24), true];
-        }
-
-        $password = (string) $this->secret('Password (min. 12 characters)');
-        $confirmation = (string) $this->secret('Repeat password');
-
-        if (! hash_equals($password, $confirmation)) {
-            $this->error('Passwords do not match.');
-
-            return [null, false];
-        }
-
-        return [$password, false];
+        return trim((string) ($value ?? $this->ask($question, $default)));
     }
 }
