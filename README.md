@@ -99,6 +99,7 @@ The seeder creates `testuser` / `test@example.com` (password `password`). `User:
 | `proxy` | Caddy. The only container with public ports (80, 443). Gets and renews the Let's Encrypt certificate, redirects HTTP to HTTPS, serves the built Angular app and forwards `/api`, `/sanctum`, `/storage` and `/up` to the backend |
 | `backend` | Laravel on FrankenPHP, plain HTTP on port 8080, reachable only from the proxy |
 | `db` | Postgres on an internal Docker network with no published port and no internet access |
+| `backup` | Daily `pg_dump` to Oracle Cloud Object Storage, kept 7 days. No ports. See [Backups](#backups) |
 
 On the server (repo cloned to `/opt/IT-Project-management`):
 
@@ -117,7 +118,75 @@ dc ps                                   # db must show no host port
 dc logs -f backend
 dc exec backend php artisan migrate:status
 dc exec db psql -U app app              # DB access only from the server itself
-dc exec db pg_dump -U app app > backup-$(date +%F).sql
+dc exec backup backup now               # extra backup to Oracle right away (see Backups)
 ```
 
 Never add a `ports:` entry to `db`. Docker-published ports bypass `ufw`, so the Azure firewall (NSG) and the missing port are what keep the database private.
+
+### Backups
+
+The `backup` container runs `pg_dump` every day at 02:00 UTC (`BACKUP_AT` in `.env.production` to change it) and uploads the dump to the Oracle Cloud Object Storage bucket `db-backups`, so it's off the VM's disk. A lifecycle rule on the bucket deletes each backup after 7 days. Versioning is off, so deleted means gone. Storage is within Oracle's Always Free tier (20 GB; a dump is well under 1 MB today).
+
+The server's URL (`BACKUP_UPLOAD_URL`, a pre-authenticated request) can only **write** backups. It can't list, read or delete them, so someone who takes over the VM can't destroy the backups. Reading them goes through the OCI CLI (Cloud Shell in the Oracle console).
+
+What is **not** in the backup:
+- **`APP_KEY`.** Message bodies are encrypted with it. A restored database without the original key has unreadable messages. Keep a copy of `.env.production` in the team's password manager.
+- **Uploaded files** (the `app-storage` volume: avatars, post images, attachments).
+
+#### Setup (once)
+
+1. In the Oracle Cloud console, open **Cloud Shell** (the `>_` icon, top right). The OCI CLI there is already logged in.
+2. Get the script into Cloud Shell: Cloud Shell menu (gear icon) → **Upload** → `deploy/backup-storage.sh`, or `git clone` the repo.
+3. Run it:
+   ```bash
+   bash backup-storage.sh setup
+   ```
+   It creates the bucket, a policy that lets Object Storage delete old backups, the 7-day delete rule and the write-only URL. At the end it prints a `BACKUP_UPLOAD_URL=https://...` line.
+4. On the server, add that line to `.env.production` (replace the empty `BACKUP_UPLOAD_URL=` line if there is one), then:
+   ```bash
+   deploy/deploy.sh                        # starts the backup container
+   dc exec backup backup now               # first backup, don't wait for 02:00
+   dc ps backup                            # should say (healthy)
+   ```
+5. In Cloud Shell, check it arrived: `bash backup-storage.sh list`.
+
+The URL expires after a year. Running `setup` again makes a new one, and the old one stops working. Put a reminder in the calendar.
+
+#### Checking
+
+`dc ps backup` shows `unhealthy` when no backup succeeded in the last 26 hours or the last one failed (3 attempts, 10 minutes apart). `dc logs backup` says why. `deploy.sh` warns on every deploy if `BACKUP_UPLOAD_URL` is missing. In the console, the bucket is under Storage → Buckets → `db-backups`.
+
+#### Test restore
+
+Do this after setup and whenever the backup setup changes. It doesn't touch the live database.
+
+1. In Cloud Shell, get a download link for the newest backup (valid 1 hour):
+   ```bash
+   bash backup-storage.sh url                    # or: bash backup-storage.sh url app-20261107T020000Z.dump
+   ```
+2. On the server, restore it into the temporary database `restore_test`:
+   ```bash
+   deploy/restore-db.sh 'https://objectstorage.<region>.oraclecloud.com/p/.../o/app-...dump'
+   ```
+   The script checks the file is a valid dump, restores it as the `app` user in a single transaction, and prints row counts per table next to the live database's, plus the newest migration in each. Then it drops `restore_test`, so no extra copy of personal data stays around.
+3. Counts close to live (live has changed since the backup) and the same latest migration mean the backup is good. Add a row below.
+
+| Date | Who | Backup | Where | Result |
+|------|-----|--------|-------|--------|
+| 2026-11-07 | Kan6de | `app-20261107T081800Z.dump` | Local copy of the prod stack, storage emulated (not Oracle) | OK: 25 users / 50 posts / 10 categories restored, latest migration matched. Live restore (`--live`) also tested |
+
+#### Restoring after a failure
+
+1. If the VM is gone: set up a new one, clone the repo to `/opt/IT-Project-management`, put the saved `.env.production` back (same `APP_KEY`, same `BACKUP_UPLOAD_URL`) and run `deploy/deploy.sh`.
+2. Get a download link as in step 1 above. Pick an older backup with `list` if the newest is already broken.
+3. On the server:
+   ```bash
+   deploy/restore-db.sh --live '<url>'
+   ```
+   It restores into a new database first, so the live data is only touched once that worked. After you type the database name to confirm, it stops the backend, renames the current database to `app_before_restore_<time>`, puts the restored one in its place, runs any newer migrations and starts everything again. Drop the old database with the command it prints once the site looks right.
+
+Anything written after the backup was made (at most a day) is lost.
+
+#### Retention and account deletion
+
+A backup is deleted 7–8 days after it was made (the lifecycle rule runs about once a day). A permanently deleted account therefore stays in backups for up to 8 days after the hard delete. To keep the 30-day limit for deleted accounts (AC-17), the job that hard-deletes soft-deleted users must run within 22 days of the deletion request, not 30.

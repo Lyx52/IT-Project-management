@@ -27,6 +27,10 @@ DB_PASSWORD=$(openssl rand -hex 24)
 DB_ROOT_PASSWORD=$(openssl rand -hex 24)
 
 MAIL_MAILER=log
+
+# Daily database backups (see Backups in README.md). Paste the BACKUP_UPLOAD_URL
+# line printed by deploy/backup-storage.sh setup here.
+BACKUP_UPLOAD_URL=
 EOF
 
 echo "Wrote .env.production for https://$1"

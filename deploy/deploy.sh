@@ -35,6 +35,9 @@ main() {
     if compose exec -T proxy wget -qO /dev/null http://backend:8080/up; then
       docker image prune -f >/dev/null
       echo ">> Deployed: https://$(grep '^SITE_ADDRESS=' .env.production | cut -d= -f2)"
+      if ! grep -Eq '^BACKUP_UPLOAD_URL=.+' .env.production; then
+        echo "!! BACKUP_UPLOAD_URL is not set in .env.production, database backups are NOT running. See Backups in README.md" >&2
+      fi
       return 0
     fi
     sleep 3

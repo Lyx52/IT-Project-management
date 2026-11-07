@@ -82,11 +82,35 @@ services:
       timeout: 5s
       retries: 10
 
+  # Daily pg_dump uploaded to Oracle Cloud Object Storage, kept there for
+  # 7 days. See "Backups" in README.md.
+  backup:
+    build:
+      context: .
+      dockerfile: docker/prod/backup/Dockerfile
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: ${DB_DATABASE:-app}
+      PGUSER: ${DB_USERNAME:-app}
+      PGPASSWORD: ${DB_PASSWORD}
+      # Write-only bucket URL (pre-authenticated request), from deploy/backup-storage.sh setup
+      BACKUP_UPLOAD_URL: ${BACKUP_UPLOAD_URL:-}
+      BACKUP_AT: ${BACKUP_AT:-02:00}
+    # internal to reach db, outbound to reach Oracle. No ports.
+    networks: [internal, outbound]
+    depends_on:
+      db:
+        condition: service_healthy
+
 networks:
   web: {}
   # No route in or out, only containers attached to it can talk to each other
   internal:
     internal: true
+  # Internet access for the backup container only
+  outbound: {}
 
 volumes:
   db-data:
