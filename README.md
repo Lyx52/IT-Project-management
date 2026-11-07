@@ -100,7 +100,7 @@ The seeder creates `testuser` / `test@example.com` (password `password`). `User:
 | `backend` | Laravel on FrankenPHP, plain HTTP on port 8080, reachable only from the proxy |
 | `db` | Postgres on an internal Docker network with no published port and no internet access |
 | `backup` | Daily `pg_dump` to Oracle Cloud Object Storage, kept 7 days. No ports. See [Backups](#backups) |
-| `scheduler` | Runs Laravel's scheduler (`php artisan schedule:work`) so daily maintenance jobs (including user-data purge) actually execute |
+| `scheduler` | Laravel's scheduler (`php artisan schedule:work`, jobs in `routes/console.php`), e.g. the daily purge of deleted accounts. Same image as `backend`, no ports |
 
 On the server (repo cloned to `/opt/IT-Project-management`):
 
@@ -126,9 +126,9 @@ Never add a `ports:` entry to `db`. Docker-published ports bypass `ufw`, so the 
 
 ### Backups
 
-The `backup` container runs `pg_dump` every day at 02:00 UTC (`BACKUP_AT` in `.env.production` to change it) and uploads the dump to the Oracle Cloud Object Storage bucket `db-backups`, so it's off the VM's disk. A lifecycle rule on the bucket deletes each backup after 7 days. Versioning is on to keep an older version if someone writes the same object name again. Storage is within Oracle's Always Free tier (20 GB; a dump is well under 1 MB today).
+The `backup` container runs `pg_dump` every day at 02:00 UTC (`BACKUP_AT` in `.env.production` to change it) and uploads the dump to the Oracle Cloud Object Storage bucket `db-backups`, so it's off the VM's disk. A lifecycle rule on the bucket deletes each backup after 7 days. Versioning is off, so deleted means gone. Storage is within Oracle's Always Free tier (20 GB; a dump is well under 1 MB today).
 
-The server's URL (`BACKUP_UPLOAD_URL`, a pre-authenticated request) can only **write** backups. It can't list, read or delete them, and the bucket is private (`NoPublicAccess`). Reading them goes through the OCI CLI (Cloud Shell in the Oracle console).
+The server's URL (`BACKUP_UPLOAD_URL`, a pre-authenticated request) can only **write** backups. It can't list, read or delete them, and the bucket is private (`NoPublicAccess`). Backup names end in a random suffix, so they can't be guessed and overwritten either. Reading them goes through the OCI CLI (Cloud Shell in the Oracle console).
 
 What is **not** in the backup:
 - **`APP_KEY`.** Message bodies are encrypted with it. A restored database without the original key has unreadable messages. Keep a copy of `.env.production` in the team's password manager.
@@ -174,7 +174,7 @@ Do this after setup and whenever the backup setup changes. It doesn't touch the 
 
 | Date | Who | Backup | Where | Result |
 |------|-----|--------|-------|--------|
-| 2026-11-07 | Kan6de | `app-20261107T081800Z-1a2b3c4d.dump` | Local copy of the prod stack, storage emulated (not Oracle) | OK: 25 users / 50 posts / 10 categories restored, latest migration matched. Live restore (`--live`) also tested |
+| 2026-11-07 | Kan6de | `app-20261107T101120Z-ad6414e7.dump` | Local copy of the prod stack, storage emulated (not Oracle) | OK: 25 users restored (live had 24 after a purge), latest migration matched. Live restore (`--live`) also tested |
 
 #### Restoring after a failure
 
@@ -190,4 +190,16 @@ Anything written after the backup was made (at most a day) is lost.
 
 #### Retention and account deletion
 
-A backup is deleted 7–8 days after it was made (the lifecycle rule runs about once a day). A permanently deleted account therefore stays in backups for up to 8 days after the hard delete. To keep the 30-day limit for deleted accounts (AC-17), users are soft-deleted first and the scheduled `model:prune` task (run by the `scheduler` container) hard-deletes soft-deleted users after 22 days.
+AC-17 says a deleted account must be gone within 30 days, backups included. Deleting an account soft-deletes it. The `scheduler` container runs `model:prune` every day at 00:00 UTC, which permanently deletes accounts soft-deleted more than **21 days** ago, together with their posts, messages and uploaded files.
+
+Worst case, the data then still exists for 21 days (waiting for the purge) + 1 day (until the daily purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **30 days**.
+
+The numbers live in [`config/retention.php`](project/backend/config/retention.php):
+
+| Setting | Default | Change it with |
+|---------|---------|----------------|
+| `account_purge_days` | 21 | `ACCOUNT_PURGE_DAYS=` in `.env.production`, then `deploy/deploy.sh` |
+| `backup_retention_days` | 7 | `RETENTION_DAYS` in `deploy/backup-storage.sh` + rerun `setup`; change both |
+| `deleted_account_limit_days` | 30 | AC-17, not meant to change |
+
+`account_purge_days + backup_retention_days + 2` must stay at or below 30. A test (`tests/Feature/UserPruningTest.php`) fails if the defaults break that. So keeping backups longer means purging accounts sooner.

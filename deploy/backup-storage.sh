@@ -5,7 +5,7 @@
 # The VM only gets a URL that can write new backups.
 #
 #   deploy/backup-storage.sh setup
-#       Creates the bucket "db-backups" (Standard tier, private, with
+#       Creates the bucket "db-backups" (Standard tier, private, no
 #       versioning), the rule that deletes backups after 7 days and a
 #       write-only URL. Prints the BACKUP_UPLOAD_URL line for .env.production.
 #       Run again to replace the URL (the old one stops working).
@@ -18,10 +18,11 @@
 #       for 1 hour. Pass it to deploy/restore-db.sh on the server.
 #
 # The bucket goes in the root compartment unless BACKUP_COMPARTMENT is set
-# to a compartment OCID.
+# to a compartment OCID. BACKUP_BUCKET picks another bucket name.
 set -euo pipefail
 
-BUCKET=db-backups
+BUCKET=${BACKUP_BUCKET:-db-backups}
+# Must match backup_retention_days in project/backend/config/retention.php
 RETENTION_DAYS=7
 WRITER=backup-writer
 URL_VALID_DAYS=365
@@ -69,17 +70,23 @@ setup() {
       echo "Set the bucket to NoPublicAccess (or set BUCKET to a new name) and run setup again." >&2
       exit 1
     fi
-    if [ "$(oci os bucket get --bucket-name "$BUCKET" --namespace-name "$ns" --query 'data.versioning' --raw-output)" != Enabled ]; then
-      echo "Versioning is off for $BUCKET, so an overwrite could destroy a retained backup." >&2
-      echo "Enable versioning (or set BUCKET to a new name) and run setup again." >&2
+    # With versioning, the delete rule only turns a backup into an old
+    # version, which is kept forever: breaks the 7 days and AC-17
+    if [ "$(oci os bucket get --bucket-name "$BUCKET" --namespace-name "$ns" --query 'data.versioning' --raw-output)" != Disabled ]; then
+      echo "Versioning is on for bucket $BUCKET, so deleted backups would be kept as old versions." >&2
+      echo "Versioning can't be switched fully off again. Use a new bucket instead:" >&2
+      echo "  BACKUP_BUCKET=db-backups-2 bash $0 setup" >&2
+      echo "then delete bucket $BUCKET in the console (Storage > Buckets)." >&2
       exit 1
     fi
   else
     # Standard tier: covered by Always Free and, unlike Infrequent Access or
-    # Archive, no minimum storage time.
+    # Archive, no minimum storage time. No versioning, so a deleted backup is
+    # really gone. Overwriting isn't a risk: backup names end in a random
+    # suffix (docker/prod/backup/backup.sh) and the URL can't list them.
     echo ">> Creating bucket $BUCKET"
     oci os bucket create --name "$BUCKET" --namespace-name "$ns" --compartment-id "$compartment" \
-      --public-access-type NoPublicAccess --storage-tier Standard --versioning Enabled > /dev/null
+      --public-access-type NoPublicAccess --storage-tier Standard --versioning Disabled > /dev/null
   fi
 
   # Write-only: the server can't list, read or delete backups
@@ -111,7 +118,7 @@ setup() {
   fi
 
   echo ">> Delete rule: backups older than $RETENTION_DAYS days"
-  local rule="[{\"name\":\"delete-after-$RETENTION_DAYS-days\",\"action\":\"DELETE\",
+  local rule="[{\"name\":\"delete-after-$RETENTION_DAYS-days\",\"action\":\"DELETE\",\"target\":\"objects\",
     \"timeAmount\":$RETENTION_DAYS,\"timeUnit\":\"DAYS\",\"isEnabled\":true}]"
   local attempt
   # A new IAM policy can take a minute before the rule is accepted

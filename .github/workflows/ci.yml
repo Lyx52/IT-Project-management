@@ -123,7 +123,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [backend, proxy]
+        image: [backend, proxy, backup]
     steps:
       - uses: actions/checkout@v4
 

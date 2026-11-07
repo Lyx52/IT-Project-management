@@ -3,8 +3,8 @@
 #
 #   deploy/restore-db.sh <dump file or URL>
 #       Test restore: loads the backup into a temporary database
-#       "restore_test_<timestamp>",
-#       compares row counts with the live database, then drops it again.
+#       "restore_test_<timestamp>", compares row counts with the live
+#       database, then drops it again.
 #       The live database is not touched.
 #
 #   deploy/restore-db.sh --live <dump file or URL>
@@ -24,7 +24,7 @@ if [ "${1:-}" = --live ]; then
   shift
 fi
 if [ $# -ne 1 ]; then
-  sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' >&2
   exit 1
 fi
 source=$1
@@ -136,7 +136,6 @@ target_created=false
 echo ">> Running migrations newer than the backup, starting containers"
 compose run --rm backend php artisan migrate --force
 compose up -d
-trap 'rm -f "$dump"' EXIT
 
 echo
 echo ">> Restored. Check the site, then delete the old database:"
