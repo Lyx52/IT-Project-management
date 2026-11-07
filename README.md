@@ -78,7 +78,7 @@ docker compose up -d
 docker compose exec backend php artisan db:seed
 ```
 
-The seeder creates `testuser` / `test@example.com` (password `password`). `User::factory()->admin()` creates an admin.
+The seeder creates `testuser` / `test@example.com` and the admin `admin` / `admin@example.com`, both with password `password`. `User::factory()->admin()` creates an admin in tests.
 
 ### Notes for backend
 
@@ -105,9 +105,22 @@ On the server (repo cloned to `/opt/IT-Project-management`):
 ```bash
 deploy/init-env.sh <hostname> <email>   # once: writes .env.production with random secrets
 deploy/deploy.sh                        # every deploy: pull, build, migrate, restart
+deploy/create-admin.sh <user> <email>   # once, after the first deploy: initial admin
 ```
 
 `deploy.sh` runs `php artisan migrate --force` before switching to the new containers. If a migration fails, the deploy stops and the old version keeps running. Pushes to `main` deploy automatically through `.github/workflows/deploy.yml` once the repository variable `DEPLOY_ENABLED` is `true` and the `DEPLOY_*` secrets are set.
+
+### First admin account
+
+A fresh database has no admin, and production never runs the seeder. After the first deploy, create the initial admin on the server:
+
+```bash
+deploy/create-admin.sh <username> <email>
+```
+
+It asks for the password at a hidden prompt (at least 12 characters), so the password never ends up in git, `.env.production` or your shell history. Without a terminal (piped, or `ssh` without `-t`) it generates a random password and prints it once.
+
+This is only for bootstrapping. It refuses to run while an active admin exists. Further admins are managed from the website. If every admin is banned or deleted, running it again creates a new one.
 
 Useful commands on the server:
 
