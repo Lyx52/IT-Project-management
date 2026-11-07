@@ -1,0 +1,28 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# A hostname here makes Caddy fetch and renew a certificate and redirect
+# http:// to https:// on its own.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	@backend path /api/* /sanctum/* /storage/* /up
+	handle @backend {
+		reverse_proxy backend:8080
+	}
+
+	# Angular SPA: unknown paths fall back to index.html for client-side routing
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

@@ -12,7 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // In production HTTPS ends at the Caddy proxy. Trust its X-Forwarded-*
+        // headers so Laravel builds https:// URLs and secure cookies work.
+        // Safe because the backend has no published port.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
