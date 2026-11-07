@@ -5,7 +5,7 @@
 # The VM only gets a URL that can write new backups.
 #
 #   deploy/backup-storage.sh setup
-#       Creates the bucket "db-backups" (Standard tier, private, no
+#       Creates the bucket "db-backups" (Standard tier, private, with
 #       versioning), the rule that deletes backups after 7 days and a
 #       write-only URL. Prints the BACKUP_UPLOAD_URL line for .env.production.
 #       Run again to replace the URL (the old one stops working).
@@ -64,17 +64,22 @@ setup() {
 
   if oci os bucket get --bucket-name "$BUCKET" --namespace-name "$ns" > /dev/null 2>&1; then
     echo ">> Bucket $BUCKET already exists"
-    if [ "$(oci os bucket get --bucket-name "$BUCKET" --namespace-name "$ns" --query 'data.versioning' --raw-output)" = Enabled ]; then
-      echo "Versioning is on for $BUCKET, so deleted backups would be kept as old versions." >&2
-      echo "Delete the bucket in the console (or set BUCKET to a new name) and run setup again." >&2
+    if [ "$(oci os bucket get --bucket-name "$BUCKET" --namespace-name "$ns" --query 'data."public-access-type"' --raw-output)" != NoPublicAccess ]; then
+      echo "Bucket $BUCKET is public. Backup dumps must never be public." >&2
+      echo "Set the bucket to NoPublicAccess (or set BUCKET to a new name) and run setup again." >&2
+      exit 1
+    fi
+    if [ "$(oci os bucket get --bucket-name "$BUCKET" --namespace-name "$ns" --query 'data.versioning' --raw-output)" != Enabled ]; then
+      echo "Versioning is off for $BUCKET, so an overwrite could destroy a retained backup." >&2
+      echo "Enable versioning (or set BUCKET to a new name) and run setup again." >&2
       exit 1
     fi
   else
     # Standard tier: covered by Always Free and, unlike Infrequent Access or
-    # Archive, no minimum storage time. No versioning, so a deleted backup is gone.
+    # Archive, no minimum storage time.
     echo ">> Creating bucket $BUCKET"
     oci os bucket create --name "$BUCKET" --namespace-name "$ns" --compartment-id "$compartment" \
-      --public-access-type NoPublicAccess --storage-tier Standard --versioning Disabled > /dev/null
+      --public-access-type NoPublicAccess --storage-tier Standard --versioning Enabled > /dev/null
   fi
 
   # Write-only: the server can't list, read or delete backups
@@ -106,7 +111,7 @@ setup() {
   fi
 
   echo ">> Delete rule: backups older than $RETENTION_DAYS days"
-  local rule="[{\"name\":\"delete-after-$RETENTION_DAYS-days\",\"action\":\"DELETE\",\"target\":\"objects\",
+  local rule="[{\"name\":\"delete-after-$RETENTION_DAYS-days\",\"action\":\"DELETE\",
     \"timeAmount\":$RETENTION_DAYS,\"timeUnit\":\"DAYS\",\"isEnabled\":true}]"
   local attempt
   # A new IAM policy can take a minute before the rule is accepted

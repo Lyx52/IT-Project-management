@@ -2,7 +2,8 @@
 # Restores a backup made by the backup container. Run on the server.
 #
 #   deploy/restore-db.sh <dump file or URL>
-#       Test restore: loads the backup into a temporary database "restore_test",
+#       Test restore: loads the backup into a temporary database
+#       "restore_test_<timestamp>",
 #       compares row counts with the live database, then drops it again.
 #       The live database is not touched.
 #
@@ -36,7 +37,11 @@ stamp=$(date -u +%Y%m%d%H%M%S)
 if $live; then
   target=${app_db}_restoring
 else
-  target=restore_test
+  target=restore_test_$stamp
+fi
+if [ "$target" = "$app_db" ]; then
+  echo "Refusing to use live database '$app_db' as restore target" >&2
+  exit 1
 fi
 
 admin_sql() {
@@ -116,9 +121,9 @@ if [ "$answer" != "$app_db" ]; then
 fi
 
 echo ">> Stopping backend"
-compose stop backend backup
+compose stop backend backup scheduler
 # From here on nothing is dropped automatically, whatever fails
-trap 'rm -f "$dump"' EXIT
+trap 'rm -f "$dump"; compose up -d > /dev/null 2>&1 || true' EXIT
 admin_sql "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$app_db' AND pid <> pg_backend_pid()" > /dev/null
 admin_sql "ALTER DATABASE \"$app_db\" RENAME TO \"$old\""
 admin_sql "ALTER DATABASE \"$target\" RENAME TO \"$app_db\""
@@ -126,6 +131,7 @@ admin_sql "ALTER DATABASE \"$target\" RENAME TO \"$app_db\""
 echo ">> Running migrations newer than the backup, starting containers"
 compose run --rm backend php artisan migrate --force
 compose up -d
+trap 'rm -f "$dump"' EXIT
 
 echo
 echo ">> Restored. Check the site, then delete the old database:"

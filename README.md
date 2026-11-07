@@ -100,6 +100,7 @@ The seeder creates `testuser` / `test@example.com` (password `password`). `User:
 | `backend` | Laravel on FrankenPHP, plain HTTP on port 8080, reachable only from the proxy |
 | `db` | Postgres on an internal Docker network with no published port and no internet access |
 | `backup` | Daily `pg_dump` to Oracle Cloud Object Storage, kept 7 days. No ports. See [Backups](#backups) |
+| `scheduler` | Runs Laravel's scheduler (`php artisan schedule:work`) so daily maintenance jobs (including user-data purge) actually execute |
 
 On the server (repo cloned to `/opt/IT-Project-management`):
 
@@ -125,9 +126,9 @@ Never add a `ports:` entry to `db`. Docker-published ports bypass `ufw`, so the 
 
 ### Backups
 
-The `backup` container runs `pg_dump` every day at 02:00 UTC (`BACKUP_AT` in `.env.production` to change it) and uploads the dump to the Oracle Cloud Object Storage bucket `db-backups`, so it's off the VM's disk. A lifecycle rule on the bucket deletes each backup after 7 days. Versioning is off, so deleted means gone. Storage is within Oracle's Always Free tier (20 GB; a dump is well under 1 MB today).
+The `backup` container runs `pg_dump` every day at 02:00 UTC (`BACKUP_AT` in `.env.production` to change it) and uploads the dump to the Oracle Cloud Object Storage bucket `db-backups`, so it's off the VM's disk. A lifecycle rule on the bucket deletes each backup after 7 days. Versioning is on to keep an older version if someone writes the same object name again. Storage is within Oracle's Always Free tier (20 GB; a dump is well under 1 MB today).
 
-The server's URL (`BACKUP_UPLOAD_URL`, a pre-authenticated request) can only **write** backups. It can't list, read or delete them, so someone who takes over the VM can't destroy the backups. Reading them goes through the OCI CLI (Cloud Shell in the Oracle console).
+The server's URL (`BACKUP_UPLOAD_URL`, a pre-authenticated request) can only **write** backups. It can't list, read or delete them, and the bucket is private (`NoPublicAccess`). Reading them goes through the OCI CLI (Cloud Shell in the Oracle console).
 
 What is **not** in the backup:
 - **`APP_KEY`.** Message bodies are encrypted with it. A restored database without the original key has unreadable messages. Keep a copy of `.env.production` in the team's password manager.
@@ -162,18 +163,18 @@ Do this after setup and whenever the backup setup changes. It doesn't touch the 
 
 1. In Cloud Shell, get a download link for the newest backup (valid 1 hour):
    ```bash
-   bash backup-storage.sh url                    # or: bash backup-storage.sh url app-20261107T020000Z.dump
+   bash backup-storage.sh url                    # or: bash backup-storage.sh url app-20261107T020000Z-1a2b3c4d.dump
    ```
-2. On the server, restore it into the temporary database `restore_test`:
+2. On the server, restore it into a temporary database named `restore_test_<timestamp>`:
    ```bash
    deploy/restore-db.sh 'https://objectstorage.<region>.oraclecloud.com/p/.../o/app-...dump'
    ```
-   The script checks the file is a valid dump, restores it as the `app` user in a single transaction, and prints row counts per table next to the live database's, plus the newest migration in each. Then it drops `restore_test`, so no extra copy of personal data stays around.
+   The script checks the file is a valid dump, restores it as the `app` user in a single transaction, and prints row counts per table next to the live database's, plus the newest migration in each. Then it drops the temporary restore database, so no extra copy of personal data stays around.
 3. Counts close to live (live has changed since the backup) and the same latest migration mean the backup is good. Add a row below.
 
 | Date | Who | Backup | Where | Result |
 |------|-----|--------|-------|--------|
-| 2026-11-07 | Kan6de | `app-20261107T081800Z.dump` | Local copy of the prod stack, storage emulated (not Oracle) | OK: 25 users / 50 posts / 10 categories restored, latest migration matched. Live restore (`--live`) also tested |
+| 2026-11-07 | Kan6de | `app-20261107T081800Z-1a2b3c4d.dump` | Local copy of the prod stack, storage emulated (not Oracle) | OK: 25 users / 50 posts / 10 categories restored, latest migration matched. Live restore (`--live`) also tested |
 
 #### Restoring after a failure
 
@@ -189,4 +190,4 @@ Anything written after the backup was made (at most a day) is lost.
 
 #### Retention and account deletion
 
-A backup is deleted 7–8 days after it was made (the lifecycle rule runs about once a day). A permanently deleted account therefore stays in backups for up to 8 days after the hard delete. To keep the 30-day limit for deleted accounts (AC-17), the job that hard-deletes soft-deleted users must run within 22 days of the deletion request, not 30.
+A backup is deleted 7–8 days after it was made (the lifecycle rule runs about once a day). A permanently deleted account therefore stays in backups for up to 8 days after the hard delete. To keep the 30-day limit for deleted accounts (AC-17), users are soft-deleted first and the scheduled `model:prune` task (run by the `scheduler` container) hard-deletes soft-deleted users after 22 days.

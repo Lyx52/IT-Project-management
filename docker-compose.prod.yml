@@ -104,6 +104,40 @@ services:
       db:
         condition: service_healthy
 
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/prod/backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_NAME: ${APP_NAME:-Lost and Found}
+      APP_ENV: production
+      APP_KEY: ${APP_KEY:?set APP_KEY in .env.production}
+      APP_DEBUG: "false"
+      APP_URL: https://${SITE_ADDRESS}
+      FRONTEND_URL: https://${SITE_ADDRESS}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: info
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-app}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env.production}
+      SESSION_DRIVER: database
+      SESSION_SECURE_COOKIE: "true"
+      SANCTUM_STATEFUL_DOMAINS: ${SITE_ADDRESS}
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+    volumes:
+      - app-storage:/app/storage
+    networks: [internal]
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      db:
+        condition: service_healthy
+
 networks:
   web: {}
   # No route in or out, only containers attached to it can talk to each other

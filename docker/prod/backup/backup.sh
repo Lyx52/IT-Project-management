@@ -32,7 +32,8 @@ backup_now() {
   fi
   mkdir -p "$STATE_DIR"
 
-  name="$PGDATABASE-$(date -u +%Y%m%dT%H%M%SZ).dump"
+  suffix=$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')
+  name="$PGDATABASE-$(date -u +%Y%m%dT%H%M%SZ)-$suffix.dump"
   file="$STATE_DIR/$name"
   trap 'rm -f "$file"' EXIT
 
