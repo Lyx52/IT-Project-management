@@ -51,11 +51,14 @@ admin_sql() {
 drop_target() { admin_sql "DROP DATABASE IF EXISTS \"$target\" WITH (FORCE)" || true; }
 
 dump=$(mktemp)
+target_created=false
 cleanup() {
   rm -f "$dump"
   # The test copy holds personal data, never leave it behind. A failed live
   # restore leaves nothing half-done either.
-  drop_target
+  if $target_created; then
+    drop_target
+  fi
 }
 trap cleanup EXIT
 
@@ -73,6 +76,7 @@ compose exec -T db pg_restore --list < "$dump" > /dev/null
 echo ">> Restoring into database $target"
 drop_target
 admin_sql "CREATE DATABASE \"$target\" OWNER \"$app_user\" ENCODING 'UTF8' TEMPLATE template0"
+target_created=true
 # Same rights as docker/db/initdb: only the app user (and superuser) may connect
 admin_sql "REVOKE ALL ON DATABASE \"$target\" FROM PUBLIC"
 # As the app user, so it owns everything like in the live database.
@@ -123,10 +127,11 @@ fi
 echo ">> Stopping backend"
 compose stop backend backup scheduler
 # From here on nothing is dropped automatically, whatever fails
-trap 'rm -f "$dump"; compose up -d > /dev/null 2>&1 || true' EXIT
+trap 'rm -f "$dump"' EXIT
 admin_sql "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$app_db' AND pid <> pg_backend_pid()" > /dev/null
 admin_sql "ALTER DATABASE \"$app_db\" RENAME TO \"$old\""
 admin_sql "ALTER DATABASE \"$target\" RENAME TO \"$app_db\""
+target_created=false
 
 echo ">> Running migrations newer than the backup, starting containers"
 compose run --rm backend php artisan migrate --force
