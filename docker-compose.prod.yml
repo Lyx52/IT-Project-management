@@ -31,7 +31,7 @@ services:
       context: .
       dockerfile: docker/prod/backend/Dockerfile
     restart: unless-stopped
-    environment:
+    environment: &laravel-env
       APP_NAME: ${APP_NAME:-Lost and Found}
       APP_ENV: production
       APP_KEY: ${APP_KEY:?set APP_KEY in .env.production}
@@ -52,6 +52,8 @@ services:
       CACHE_STORE: database
       QUEUE_CONNECTION: database
       MAIL_MAILER: ${MAIL_MAILER:-log}
+      # Days until soft-deleted accounts are permanently deleted, see config/retention.php
+      ACCOUNT_PURGE_DAYS: ${ACCOUNT_PURGE_DAYS:-21}
     volumes:
       # Uploads (avatars, post images, message attachments) survive rebuilds
       - app-storage:/app/storage
@@ -82,11 +84,55 @@ services:
       timeout: 5s
       retries: 10
 
+  # Daily pg_dump uploaded to Oracle Cloud Object Storage, kept there for
+  # 7 days. See "Backups" in README.md.
+  backup:
+    build:
+      context: .
+      dockerfile: docker/prod/backup/Dockerfile
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: ${DB_DATABASE:-app}
+      PGUSER: ${DB_USERNAME:-app}
+      PGPASSWORD: ${DB_PASSWORD}
+      # Write-only bucket URL (pre-authenticated request), from deploy/backup-storage.sh setup
+      BACKUP_UPLOAD_URL: ${BACKUP_UPLOAD_URL:-}
+      BACKUP_AT: ${BACKUP_AT:-02:00}
+    # internal to reach db, outbound to reach Oracle. No ports.
+    networks: [internal, outbound]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Laravel's scheduler (routes/console.php), e.g. the daily purge of deleted
+  # accounts. Same image and settings as backend, no web server.
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/prod/backend/Dockerfile
+    restart: unless-stopped
+    environment: *laravel-env
+    volumes:
+      # Same uploads as backend, the purge deletes users' files
+      - app-storage:/app/storage
+    networks: [internal]
+    command: ["php", "artisan", "schedule:work"]
+    # The image's healthcheck probes the web server, which doesn't run here
+    healthcheck:
+      disable: true
+    depends_on:
+      db:
+        condition: service_healthy
+
 networks:
   web: {}
   # No route in or out, only containers attached to it can talk to each other
   internal:
     internal: true
+  # Internet access for the backup container only
+  outbound: {}
 
 volumes:
   db-data:

@@ -1,0 +1,29 @@
+.panel {
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+}
+
+.image-upload {
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  color: #858585;
+  cursor: pointer;
+}
+
+.btn-lost {
+  background: #fff1e9;
+  color: #e87942;
+}
+
+.btn-found {
+  background: #eaf5ef;
+  color: #39976b;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 13px;
+}
