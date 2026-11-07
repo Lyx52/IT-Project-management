@@ -6,16 +6,21 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Prunable, SoftDeletes;
 
     /**
      * Get the attributes that should be cast.
@@ -28,5 +33,49 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Soft-deleted accounts that are due for permanent deletion. The daily
+     * model:prune run (routes/console.php) force-deletes them, and the
+     * database cascades to their posts, images and messages.
+     * The delay is config('retention.account_purge_days'), see config/retention.php.
+     *
+     * @return Builder<self>
+     */
+    public function prunable(): Builder
+    {
+        return static::onlyTrashed()
+            ->where('deleted_at', '<=', now()->subDays(config('retention.account_purge_days')));
+    }
+
+    /**
+     * Deletes the files of everything the database is about to cascade-delete.
+     * Rows don't take their files with them.
+     */
+    protected function pruning(): void
+    {
+        // Both directions: the cascade deletes messages the user sent and received
+        $messageIds = DB::table('messages')
+            ->where('sender_id', $this->id)
+            ->orWhere('receiver_id', $this->id)
+            ->pluck('id');
+
+        $paths = collect([$this->avatar_path])
+            ->merge(
+                DB::table('post_images')
+                    ->join('posts', 'posts.id', '=', 'post_images.post_id')
+                    ->where('posts.user_id', $this->id)
+                    ->pluck('post_images.path')
+            )
+            ->merge(DB::table('message_attachments')->whereIn('message_id', $messageIds)->pluck('path'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($paths !== []) {
+            Storage::disk('local')->delete($paths);
+        }
     }
 }
