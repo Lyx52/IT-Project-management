@@ -21,5 +21,12 @@ class DatabaseSeeder extends Seeder
             'username' => 'testuser',
             'email' => 'test@example.com',
         ]);
+
+        // Local dev only, production never runs the seeder. The production
+        // admin comes from deploy/create-admin.sh
+        User::factory()->admin()->create([
+            'username' => 'admin',
+            'email' => 'admin@example.com',
+        ]);
     }
 }
