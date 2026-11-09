@@ -1,9 +1,21 @@
 .item-card {
   overflow: hidden;
   transition: box-shadow 0.2s;
+  border: 2px solid #f28125;
 
   &:hover {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  }
+}
+/*item card button styling*/
+.btn-sm{
+  color: #f28125;
+  border: 2px solid #f28125;
+  background-color: #f0f0f0;
+
+  &:hover{
+    background-color: #adadad;
+    color:white;
   }
 }
 

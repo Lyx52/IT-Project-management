@@ -1,21 +1,25 @@
+/*search box body styling*/
 .page-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 99%;
   gap: 20px;
-  background: white;
+  background: rgb(230, 226, 226);
   padding: 20px;
-  border: 1px solid #e8e8e8;
+  border: 7px solid #f28125;
   border-radius: 10px;
 }
-
+/*search box element styling*/
 .search-box {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 45%;
-  background: #f7f7f7;
+  background: #d3cece;
   border-radius: 8px;
+  border-width: 5px;
+  border-color: #f28125;
   padding: 5px 8px;
 
   > i {
@@ -30,26 +34,39 @@
   }
 }
 
+.btn-primary{
+  background-color: #e7a46e;
+  border: #f28125 solid 3px;
+  width: 8%;
+  &:hover{
+    background-color: #e4c5ac;
+
+  }
+}
+/*filter box body styling*/
 .filter-section {
   display: flex;
   align-items: center;
+  width: 99%;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 15px;
-  background: white;
+  background: rgb(209, 206, 206);
   padding: 16px 20px;
-  border: 1px solid #e8e8e8;
+  border: 7px solid #f28125;
   border-radius: 10px;
 }
-
+/*filter box element styling*/
 .filter-controls {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  background-color: #e8e8e8;
 
   select,
   input {
+    background-color: #e8e8e8;
     width: 180px;
   }
 }

@@ -1,20 +1,24 @@
+/*search box body styling*/
 .search-section {
   display: flex;
+  width: 99%;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  background: white;
+  background: rgb(230, 226, 226);
   padding: 20px;
   border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border: 7px solid #f28125;
 }
-
+/*search box element styling*/
 .search-box {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 45%;
-  background: #f7f7f7;
+  background: #d3cece;
+  border-width: 5px;
+  border-color: #f28125;
   border-radius: 8px;
   padding: 5px 8px;
 
@@ -27,6 +31,17 @@
     border: none;
     background: transparent;
     box-shadow: none;
+  }
+}
+
+.btn-primary{
+  background-color: #e7a46e;
+  border: #f28125 solid 3px;
+  width: 8%;
+
+  &:hover{
+    background-color: #e4c5ac;
+
   }
 }
 

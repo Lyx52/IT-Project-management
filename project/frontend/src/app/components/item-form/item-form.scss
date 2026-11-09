@@ -1,6 +1,6 @@
 .panel {
-  background: white;
-  border: 1px solid #e8e8e8;
+  background: rgb(247, 246, 246);
+  border: 2px solid #f28125;
   border-radius: 10px;
 }
 
@@ -26,4 +26,13 @@
 .form-label {
   font-weight: 600;
   font-size: 13px;
+}
+/*submit button styling*/
+.btn-primary{
+  background-color: #e7a46e;
+  border: #f28125 solid 3px;
+
+  &:hover{
+    background-color: #e4c5ac;
+  }
 }
