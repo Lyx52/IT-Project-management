@@ -1,6 +1,8 @@
+@use '../../../styles/variables' as *;
+
 .panel {
-  background: rgb(247, 246, 246);
-  border: 2px solid #f28125;
+  background: $background-secondary;
+  border: 2px solid $primary;
   border-radius: 10px;
 }
 
@@ -9,18 +11,18 @@
   border-radius: 8px;
   padding: 20px;
   text-align: center;
-  color: #858585;
+  color: $text-secondary;
   cursor: pointer;
 }
 
 .btn-lost {
   background: #fff1e9;
-  color: #e87942;
+  color: $lost-color;
 }
 
 .btn-found {
   background: #eaf5ef;
-  color: #39976b;
+  color: $found-color;
 }
 
 .form-label {
@@ -29,10 +31,10 @@
 }
 /*submit button styling*/
 .btn-primary {
-  background-color: #e7a46e;
-  border: #f28125 solid 3px;
+  background-color: $background-button-primary;
+  border: $primary solid 3px;
 
   &:hover {
-    background-color: #e4c5ac;
+    background-color: $background-button-secondary;
   }
 }

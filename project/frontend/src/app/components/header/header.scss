@@ -1,5 +1,7 @@
+@use '../../../styles/variables' as *;
+
 .brand-orange {
-  color: #f07836;
+  color: $primary;
 }
 
 .nav-link {
@@ -7,7 +9,7 @@
 
   &:hover,
   &.active {
-    color: #f07836;
+    color: $primary;
   }
 }
 

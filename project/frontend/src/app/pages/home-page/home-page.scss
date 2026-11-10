@@ -1,3 +1,5 @@
+@use '../../../styles/variables' as *;
+
 /*search box body styling*/
 .search-section {
   display: flex;
@@ -5,10 +7,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  background: rgb(230, 226, 226);
+  background: $background-secondary;
   padding: 20px;
   border-radius: 10px;
-  border: 7px solid #f28125;
+  border: 7px solid $primary;
 }
 /*search box element styling*/
 .search-box {
@@ -16,14 +18,14 @@
   align-items: center;
   gap: 10px;
   width: 45%;
-  background: #d3cece;
+  background: $background-tertiary;
   border-width: 5px;
-  border-color: #f28125;
+  border-color: $primary;
   border-radius: 8px;
   padding: 5px 8px;
 
   > i {
-    color: #858585;
+    color: $text-secondary;
     padding-left: 5px;
   }
 
@@ -35,12 +37,12 @@
 }
 
 .btn-primary {
-  background-color: #e7a46e;
-  border: #f28125 solid 3px;
+  background-color: $background-button-primary;
+  border: $primary solid 3px;
   width: 8%;
 
   &:hover {
-    background-color: #e4c5ac;
+    background-color: $background-button-secondary;
   }
 }
 

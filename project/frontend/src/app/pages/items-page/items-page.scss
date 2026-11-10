@@ -1,3 +1,4 @@
+@use '../../../styles/variables' as *;
 /*search box body styling*/
 .page-heading {
   display: flex;
@@ -5,9 +6,9 @@
   align-items: center;
   width: 99%;
   gap: 20px;
-  background: rgb(230, 226, 226);
+  background: $background-secondary;
   padding: 20px;
-  border: 7px solid #f28125;
+  border: 7px solid $primary;
   border-radius: 10px;
 }
 /*search box element styling*/
@@ -16,14 +17,14 @@
   align-items: center;
   gap: 10px;
   width: 45%;
-  background: #d3cece;
+  background: $background-tertiary;
   border-radius: 8px;
   border-width: 5px;
-  border-color: #f28125;
+  border-color: $primary;
   padding: 5px 8px;
 
   > i {
-    color: #858585;
+    color: $text-secondary;
     padding-left: 5px;
   }
 
@@ -35,11 +36,11 @@
 }
 
 .btn-primary {
-  background-color: #e7a46e;
-  border: #f28125 solid 3px;
+  background-color: $background-button-primary;
+  border: $primary solid 3px;
   width: 8%;
   &:hover {
-    background-color: #e4c5ac;
+    background-color: $background-button-secondary;
   }
 }
 /*filter box body styling*/
@@ -50,9 +51,9 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 15px;
-  background: rgb(209, 206, 206);
+  background: $background-secondary;
   padding: 16px 20px;
-  border: 7px solid #f28125;
+  border: 7px solid $primary;
   border-radius: 10px;
 }
 /*filter box element styling*/
@@ -61,25 +62,25 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  background-color: #e8e8e8;
+  background-color: $background-secondary;
 
   select,
   input {
-    background-color: #e8e8e8;
+    background-color: $border-color;
     width: 180px;
   }
 }
 
 .empty-state {
   text-align: center;
-  background: white;
+  background: $surface;
   padding: 60px 20px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid $border-color;
   border-radius: 10px;
 
   > i {
     font-size: 40px;
-    color: #aaa;
+    color: $symbol-color;
   }
 }
 
