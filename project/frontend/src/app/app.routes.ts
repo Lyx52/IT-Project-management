@@ -14,14 +14,8 @@ export const routes: Routes = [
     component: HomePageComponent,
   },
   {
-    path: 'lost',
+    path: 'items',
     component: ItemsPageComponent,
-    data: { type: 'LOST' },
-  },
-  {
-    path: 'found',
-    component: ItemsPageComponent,
-    data: { type: 'FOUND' },
   },
   {
     path: 'map',
