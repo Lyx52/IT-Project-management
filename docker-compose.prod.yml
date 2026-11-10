@@ -52,6 +52,8 @@ services:
       CACHE_STORE: database
       QUEUE_CONNECTION: database
       MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-onboarding@resend.dev}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
       # Days until soft-deleted accounts are permanently deleted, see config/retention.php
       ACCOUNT_PURGE_DAYS: ${ACCOUNT_PURGE_DAYS:-21}
     volumes:
