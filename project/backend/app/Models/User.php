@@ -9,18 +9,20 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['username', 'email', 'password', 'terms_accepted_at', 'privacy_policy_version'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, Prunable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, Prunable, SoftDeletes;
 
     /**
      * Get the attributes that should be cast.
@@ -34,6 +36,19 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'terms_accepted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return HasMany<Post, $this>
+     */
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 
     /**
