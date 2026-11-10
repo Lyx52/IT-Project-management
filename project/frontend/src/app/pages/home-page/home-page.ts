@@ -5,11 +5,12 @@ import { ItemCard } from '../../components/item-card/item-card';
 import { Messenger } from '../../components/messenger/messenger';
 import { Header } from '../../components/header/header';
 import { MOCK_ITEMS } from '../../models/mock-items';
+import { ItemFilters } from '../../components/item-filters/item-filters';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemForm, ItemCard, Messenger, Header],
+  imports: [ItemForm, ItemCard, Messenger, Header,ItemFilters],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })

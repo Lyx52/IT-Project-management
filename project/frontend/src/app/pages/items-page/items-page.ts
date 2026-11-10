@@ -6,11 +6,12 @@ import { Item } from '../../models/item.model';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
 import { MOCK_ITEMS } from '../../models/mock-items';
+import { ItemFilters, ItemFilterValues } from '../../components/item-filters/item-filters';
 
 @Component({
   selector: 'app-items-page',
   standalone: true,
-  imports: [Header, ItemCard],
+  imports: [Header, ItemCard, ItemFilters],
   templateUrl: './items-page.html',
   styleUrl: './items-page.scss',
 })
@@ -19,7 +20,11 @@ export class ItemsPageComponent {
 
   items: Item[] = MOCK_ITEMS;
   type: 'LOST' | 'FOUND' = 'LOST';
+  filters: ItemFilterValues = { category: '', dateFrom: '', dateTo: '' };
 
+  onFiltersChange(filters: ItemFilterValues): void {
+    this.filters = filters;
+  }
   constructor() {
     this.route.data.subscribe((data) => {
       this.type = data['type'];

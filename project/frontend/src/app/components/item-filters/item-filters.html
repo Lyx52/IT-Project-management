@@ -1,0 +1,37 @@
+<section class="filter-section">
+  <div class="d-flex align-items-center gap-2">
+    <i class="bi bi-funnel"></i>
+    <span class="fw-semibold">Filters</span>
+  </div>
+
+  <div class="filter-controls">
+    <select
+      class="form-select"
+      [ngModel]="filters.category"
+      (ngModelChange)="filters.category = $event; onChange()"
+    >
+      <option value="">All categories</option>
+      <option>Accessories</option>
+      <option>Electronics</option>
+      <option>Documents</option>
+    </select>
+
+    <input
+      type="date"
+      class="form-control"
+      [ngModel]="filters.dateFrom"
+      (ngModelChange)="filters.dateFrom = $event; onChange()"
+    />
+
+    <input
+      type="date"
+      class="form-control"
+      [ngModel]="filters.dateTo"
+      (ngModelChange)="filters.dateTo = $event; onChange()"
+    />
+
+    <button type="button" class="btn btn-outline-secondary" (click)="reset()">
+      Reset filters
+    </button>
+  </div>
+</section>
