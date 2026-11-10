@@ -40,6 +40,10 @@ services:
       DB_DATABASE: ${DB_DATABASE:-app}
       DB_USERNAME: ${DB_USERNAME:-app}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
+      # E-mail (verification links). Set MAIL_MAILER=resend and RESEND_API_KEY in .env to send real mail
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-onboarding@resend.dev}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
     ports:
       - "${BACKEND_PORT:-8001}:8000"
     volumes:
