@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\LoginController;
+use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\ResendVerificationController;
@@ -7,8 +9,15 @@ use App\Http\Controllers\Api\V1\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    // Public Auth Routes
     Route::post('/register', RegisterController::class)
         ->middleware('throttle:5,1');
+    Route::post('/login', LoginController::class)
+        ->middleware('throttle:5,1');
+    // Protected Auth Routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', LogoutController::class);
+    });
 
     // Linked from the verification e-mail sent on registration
     Route::get('/email/verify/{id}/{hash}', VerifyEmailController::class)
