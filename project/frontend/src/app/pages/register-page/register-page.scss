@@ -1,0 +1,36 @@
+.auth-wrapper {
+  max-width: 460px;
+}
+
+// Matches the card used across the app, see item-form.scss
+.panel {
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #eaf5ef;
+  color: #39976b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+
+.link-orange {
+  color: #f07836;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
