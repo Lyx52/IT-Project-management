@@ -1,6 +1,6 @@
 <app-header />
 
-<main class="container-fluid px-3 px-lg-4 py-4">
+<main class="page-container py-4">
   <!-- Search section -->
   <div class="search-section mb-4">
     <div>
@@ -15,39 +15,73 @@
     </div>
   </div>
 
-  <!-- Main layout -->
-  <div class="row g-4">
-    <!-- Left column -->
-    <div class="col-12 col-lg-3">
-      <app-item-form />
+  <!-- Recent items -->
+  <section class="items-section">
+    <div class="items-section-header">
+      <div>
+        <h5 class="fw-bold mb-1">Recent items</h5>
+        <p class="text-muted small mb-0">Browse recently reported items.</p>
+      </div>
+
+      <button class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-funnel me-1"></i>
+        Filter
+      </button>
     </div>
 
-    <!-- Center column -->
-    <div class="col-12 col-lg-6">
-      <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="items-grid">
+      @for (item of items; track item.id) {
+        <app-item-card [item]="item" />
+      }
+    </div>
+  </section>
+</main>
+
+<!-- Create post button -->
+<button class="create-post-button" (click)="openCreatePost()" aria-label="Create a post">
+  <i class="bi bi-plus-lg"></i>
+  <span>Create post</span>
+</button>
+
+<!-- Create post modal -->
+@if (isCreatePostOpen) {
+  <div class="modal-backdrop-custom" (click)="closeCreatePost()">
+    <div
+      class="create-post-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="createPostTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header-custom">
         <div>
-          <h5 class="fw-bold mb-1">Recent items</h5>
-          <p class="text-muted small mb-0">Browse recently reported items.</p>
+          <h5 id="createPostTitle" class="fw-bold mb-1">Create a post</h5>
+          <p class="text-muted small mb-0">Share information about a lost or found item.</p>
         </div>
 
-        <button class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-funnel me-1"></i>
-          Filter
-        </button>
+        <button class="btn-close" (click)="closeCreatePost()" aria-label="Close"></button>
       </div>
 
-      <div class="row g-3">
-        @for (item of items; track item.id) {
-          <div class="col-12 col-md-6">
-            <app-item-card [item]="item" />
-          </div>
-        }
+      <div class="modal-body-custom">
+        <app-item-form />
       </div>
-    </div>
-
-    <!-- Right column -->
-    <div class="col-12 col-lg-3">
-      <app-messenger />
     </div>
   </div>
-</main>
+}
+
+<!-- Messenger floating button -->
+<button
+  class="messenger-button"
+  [class.active]="isMessengerOpen"
+  (click)="toggleMessenger()"
+  aria-label="Open messenger"
+>
+  <i [class]="isMessengerOpen ? 'bi bi-x-lg' : 'bi bi-chat-dots-fill'"></i>
+</button>
+
+<!-- Messenger popup -->
+@if (isMessengerOpen) {
+  <div class="messenger-popup">
+    <app-messenger />
+  </div>
+}

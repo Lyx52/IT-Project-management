@@ -1,27 +1,48 @@
 <app-header />
 
-<main class="container-fluid px-3 px-lg-4 py-4">
+<main class="page-container py-4">
   <!-- Page heading and search -->
   <section class="page-heading mb-4">
     <div>
-      <h4 class="fw-bold mb-1">{{ pageTitle }}</h4>
-      <p class="text-muted mb-0">{{ pageDescription }}</p>
+      <h4 class="fw-bold mb-1">Items</h4>
+      <p class="text-muted mb-0">Browse lost and found items.</p>
     </div>
 
     <div class="search-box">
       <i class="bi bi-search"></i>
-
       <input type="text" class="form-control" placeholder="Search for an item..." />
-
       <button class="btn btn-primary">Search</button>
     </div>
   </section>
 
   <!-- Filters -->
   <section class="filter-section mb-4">
-    <div class="d-flex align-items-center gap-2">
-      <i class="bi bi-funnel"></i>
-      <span class="fw-semibold">Filters</span>
+    <div class="filter-header">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel"></i>
+        <span class="fw-semibold">Filters</span>
+      </div>
+
+      <!-- Lost / Found switch -->
+      <div class="items-switch">
+        <button
+          class="switch-button lost"
+          [class.active]="selectedType === 'LOST'"
+          (click)="selectType('LOST')"
+        >
+          <i class="bi bi-search me-2"></i>
+          Lost items
+        </button>
+
+        <button
+          class="switch-button found"
+          [class.active]="selectedType === 'FOUND'"
+          (click)="selectType('FOUND')"
+        >
+          <i class="bi bi-check-circle me-2"></i>
+          Found items
+        </button>
+      </div>
     </div>
 
     <div class="filter-controls">
@@ -33,18 +54,20 @@
       </select>
 
       <input type="date" class="form-control" />
-
       <input type="date" class="form-control" />
 
       <button class="btn btn-outline-secondary">Reset filters</button>
     </div>
   </section>
 
-  <!-- Items -->
-  <section>
-    <div class="d-flex justify-content-between align-items-center mb-3">
+  <!-- Items list -->
+  <section class="items-section">
+    <div class="items-section-header">
       <div>
-        <h5 class="fw-bold mb-1">{{ pageTitle }}</h5>
+        <h5 class="fw-bold mb-1">
+          {{ selectedType === 'LOST' ? 'Lost items' : 'Found items' }}
+        </h5>
+
         <p class="text-muted small mb-0">{{ filteredItems.length }} items available</p>
       </div>
 
@@ -55,11 +78,9 @@
     </div>
 
     @if (filteredItems.length > 0) {
-      <div class="row g-3">
+      <div class="items-grid">
         @for (item of filteredItems; track item.id) {
-          <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-            <app-item-card [item]="item" />
-          </div>
+          <app-item-card [item]="item" />
         }
       </div>
     } @else {
@@ -71,3 +92,52 @@
     }
   </section>
 </main>
+
+<!-- Create post button -->
+<button class="create-post-button" (click)="openCreatePost()" aria-label="Create a post">
+  <i class="bi bi-plus-lg"></i>
+  <span>Create post</span>
+</button>
+
+<!-- Create post modal -->
+@if (isCreatePostOpen) {
+  <div class="modal-backdrop-custom" (click)="closeCreatePost()">
+    <div
+      class="create-post-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="createPostTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header-custom">
+        <div>
+          <h5 id="createPostTitle" class="fw-bold mb-1">Create a post</h5>
+          <p class="text-muted small mb-0">Share information about a lost or found item.</p>
+        </div>
+
+        <button class="btn-close" (click)="closeCreatePost()" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body-custom">
+        <app-item-form />
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Messenger button -->
+<button
+  class="messenger-button"
+  [class.active]="isMessengerOpen"
+  (click)="toggleMessenger()"
+  aria-label="Open messenger"
+>
+  <i [class]="isMessengerOpen ? 'bi bi-x-lg' : 'bi bi-chat-dots-fill'"></i>
+</button>
+
+<!-- Messenger popup -->
+@if (isMessengerOpen) {
+  <div class="messenger-popup">
+    <app-messenger />
+  </div>
+}
