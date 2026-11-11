@@ -1,14 +1,28 @@
 .item-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
   transition: box-shadow 0.2s;
 
   &:hover {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .card-body button {
+    margin-top: auto !important;
+  }
 }
 
 .item-image {
   height: 130px;
+  flex-shrink: 0;
   background: #f0f0f0;
   display: flex;
   align-items: center;
