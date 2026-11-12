@@ -1,10 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { VerifyEmailNotice } from '../verify-email-notice/verify-email-notice';
 
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, VerifyEmailNotice],
   templateUrl: './header.html',
   styleUrl: './header.scss',
 })

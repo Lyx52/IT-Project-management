@@ -44,17 +44,24 @@ export interface RegisterResponse {
 }
 
 /**
- * 200 body of /login.
- *
- * Note what is NOT here: the endpoint returns the token and nothing else, so a
- * successful sign-in tells us nothing about who signed in beyond the address
- * they typed. Sanctum tokens are opaque database keys, not JWTs, so there are
- * no claims to decode either. Showing the username in the header (AC1 of #74)
- * needs the backend to either return the user here or add GET /api/v1/user.
+ * 200 body of /login. The user is nested inside a plain array server-side, so
+ * JsonResource does not add its `data` wrapper here. GET /user returns the
+ * resource directly and therefore IS wrapped.
  */
 export interface LoginResponse {
   access_token: string;
   token_type: string;
+  user: AuthUser;
+}
+
+/** 200 body of GET /api/v1/user, which returns UserResource directly. */
+export interface CurrentUserResponse {
+  data: AuthUser;
+}
+
+/** 202 body of POST /api/v1/email/resend. 409 when already verified. */
+export interface ResendVerificationResponse {
+  message: string;
 }
 
 /** 200 body of /logout. The message is not shown to the user. */

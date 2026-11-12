@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\CurrentUserController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\PostController;
@@ -17,6 +18,7 @@ Route::prefix('v1')->group(function () {
     // Protected Auth Routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', LogoutController::class);
+        Route::get('/user', CurrentUserController::class);
     });
 
     // Linked from the verification e-mail sent on registration
