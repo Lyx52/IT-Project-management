@@ -16,6 +16,7 @@ const USER: AuthUser = {
   username: 'jane_doe',
   email: 'jane@example.com',
   email_verified_at: null,
+  must_verify_email: false,
 };
 
 describe('authGuard', () => {

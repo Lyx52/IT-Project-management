@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\CaptchaController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
@@ -11,8 +12,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // Public Auth Routes
+    Route::get('/captcha', CaptchaController::class)
+        ->middleware('throttle:30,1');
     Route::post('/register', RegisterController::class)
-        ->middleware('throttle:5,1');
+        ->middleware(['throttle:5,1', 'captcha']);
     Route::post('/login', LoginController::class)
         ->middleware('throttle:5,1');
     // Protected Auth Routes

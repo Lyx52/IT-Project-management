@@ -4,6 +4,7 @@ import { Observable, catchError, map, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AuthUser,
+  CaptchaChallenge,
   CurrentUserResponse,
   LoginPayload,
   LoginResponse,
@@ -32,11 +33,7 @@ export class AuthService {
   /** Shown in the header. */
   readonly displayName = computed(() => this.currentUser()?.username ?? null);
 
-  /**
-   * Whether the signed-in user has confirmed their address. Drives the
-   * "verify your e-mail" prompt, and posting is refused server-side until it
-   * is true (`verified` middleware on POST /posts).
-   */
+  /** Whether the signed-in user has confirmed their address. */
   readonly isVerified = computed(() => {
     const user = this.currentUser();
 
@@ -45,6 +42,13 @@ export class AuthService {
     // and undefined !== null.
     return user !== null && user.email_verified_at !== null;
   });
+
+  /**
+   * Whether the signed-in user has to verify their address before posting.
+   * Drives the "verify your e-mail" prompt. False while the backend has
+   * verification turned off, even though `isVerified` is false then too.
+   */
+  readonly mustVerifyEmail = computed(() => this.currentUser()?.must_verify_email === true);
 
   constructor() {
     // Read synchronously so the first render and the first guard check already
@@ -58,16 +62,23 @@ export class AuthService {
   }
 
   /**
-   * Creates an account.
+   * Creates an account. The payload must carry a challenge from `captcha()`
+   * and its answer.
    *
-   * Deliberately does not sign the user in and returns no token: it queues a
-   * verification e-mail and the account stays unverified until that link is
-   * used. Callers should show a "check your e-mail" message.
+   * Deliberately does not sign the user in and returns no token. When the
+   * returned user has `must_verify_email`, a verification e-mail is on its way
+   * and callers should say "check your e-mail"; otherwise the account can sign
+   * in right away.
    */
   register(payload: RegisterPayload): Observable<AuthUser> {
     return this.http
       .post<RegisterResponse>(`${environment.apiBaseUrl}/register`, payload)
       .pipe(map((response) => response.data));
+  }
+
+  /** Fetches a new math CAPTCHA for the registration form. */
+  captcha(): Observable<CaptchaChallenge> {
+    return this.http.get<CaptchaChallenge>(`${environment.apiBaseUrl}/captcha`);
   }
 
   /**

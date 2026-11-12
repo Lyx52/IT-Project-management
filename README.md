@@ -91,6 +91,28 @@ The seeder creates `testuser` / `test@example.com` and the admin `admin` / `admi
 - Deleting a message row doesn't remove its files from disk. Delete them in the model's `deleting` event or in the prune job.
 - Schema changes go through new migrations.
 
+## Registration
+
+### E-mail verification (turned off)
+
+The project has no mail domain yet, so e-mail verification is **off**. New accounts get no verification e-mail and can sign in and post right away.
+
+The verification code is still there. To turn it back on, set `EMAIL_VERIFICATION_ENABLED=true` (`.env` for dev, `.env.production` on the server, then `deploy/deploy.sh`). Mail has to work first (`MAIL_MAILER=resend`, `RESEND_API_KEY`, a `MAIL_FROM_ADDRESS` on a domain verified in Resend).
+
+While it is off, `email_verified_at` stays `null`: nobody is marked as verified who wasn't. So once it is on again, accounts created in the meantime are asked to verify before posting. The header prompt has a "Resend e-mail" button for that. Clients should decide whether to show the prompt from `must_verify_email` in the user payload, not from `email_verified_at`. Details are in [`config/verification.php`](project/backend/config/verification.php).
+
+### Math CAPTCHA
+
+Sign-up asks a small sum ("What is 7 + 5?") to keep automated registrations out. No external service is involved.
+
+1. `GET /api/v1/captcha` returns `captcha_id`, `question` and `expires_in`. The answer stays in the server's cache and is never sent to the browser.
+2. `POST /api/v1/register` sends `captcha_id` and `captcha_answer` with the other fields. The `captcha` middleware checks them before anything else, so without a solved CAPTCHA the endpoint doesn't reveal whether an e-mail address or username is taken.
+3. Every challenge allows **one** attempt, right or wrong, and expires after 5 minutes (`CAPTCHA_TTL_SECONDS`, see [`config/captcha.php`](project/backend/config/captcha.php)). After any failed registration the form fetches a new question.
+
+`GET /captcha` is limited to 30 requests per minute per IP and `POST /register` to 5. Unanswered challenges are deleted from the `cache` table by `app:prune-expired-cache`, which the scheduler runs daily at 00:30 UTC.
+
+This stops generic spam bots, not a bot written for this site: anyone can read the question as easily as a person can.
+
 ## Production (Azure VM)
 
 `docker-compose.prod.yml` runs the live site. It's separate from the dev setup above, which stays unchanged.
