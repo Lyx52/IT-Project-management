@@ -14,6 +14,7 @@ const USER = {
   username: 'jane_doe',
   email: 'jane@example.com',
   email_verified_at: null,
+  must_verify_email: false,
 };
 
 const GENERIC_ERROR = 'Those credentials do not match our records.';
