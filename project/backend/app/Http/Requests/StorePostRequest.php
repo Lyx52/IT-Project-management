@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\PostType;
+use App\Services\PostImageService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,6 +28,8 @@ class StorePostRequest extends FormRequest
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'location_name' => ['nullable', 'string', 'max:150'],
             'event_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'images' => ['sometimes', 'array', 'max:'.PostImageService::MAX_IMAGES],
+            'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
         ];
     }
 }
