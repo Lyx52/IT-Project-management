@@ -1,6 +1,7 @@
 <?php
 
-use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
+use App\Http\Middleware\EnsureEmailIsVerified;
+use App\Http\Middleware\VerifyCaptcha;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,9 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Safe because the backend has no published port.
         $middleware->trustProxies(at: '*');
 
-        // Gate actions such as creating posts behind a verified e-mail
         $middleware->alias([
+            // Gate actions such as creating posts behind a verified e-mail.
+            // A no-op while config('verification.enabled') is false.
             'verified' => EnsureEmailIsVerified::class,
+            // Requires a solved math CAPTCHA, see App\Services\MathCaptcha
+            'captcha' => VerifyCaptcha::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

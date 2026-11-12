@@ -47,9 +47,26 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Post::class);
     }
 
+    /**
+     * Also called by Laravel's listener for the Registered event. Sends nothing
+     * while verification is turned off (config/verification.php).
+     */
     public function sendEmailVerificationNotification(): void
     {
+        if (! config('verification.enabled')) {
+            return;
+        }
+
         $this->notify(new VerifyEmailNotification);
+    }
+
+    /**
+     * Whether this account is blocked from posting until it verifies its
+     * address. Always false while verification is turned off.
+     */
+    public function mustVerifyEmail(): bool
+    {
+        return config('verification.enabled') && ! $this->hasVerifiedEmail();
     }
 
     public function isAdmin(): bool
