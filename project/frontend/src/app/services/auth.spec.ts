@@ -13,6 +13,8 @@ const REGISTER_PAYLOAD: RegisterPayload = {
   password_confirmation: 'correct horse',
   terms_accepted: true,
   privacy_policy_version: '1.0',
+  captcha_id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+  captcha_answer: '12',
 };
 
 const CREDENTIALS: LoginPayload = {
@@ -25,6 +27,7 @@ const USER: AuthUser = {
   username: 'jane_doe',
   email: 'jane@example.com',
   email_verified_at: null,
+  must_verify_email: false,
 };
 
 describe('AuthService', () => {
@@ -310,6 +313,47 @@ describe('AuthService', () => {
       // Guards against `?.email_verified_at !== null`, which answers true when
       // there is no user at all.
       expect(service.isVerified()).toBe(false);
+    });
+  });
+
+  describe('mustVerifyEmail', () => {
+    it('follows must_verify_email, not email_verified_at', () => {
+      // Unverified, but the backend has verification turned off
+      createService({ token: 't', user: USER });
+
+      expect(service.isVerified()).toBe(false);
+      expect(service.mustVerifyEmail()).toBe(false);
+    });
+
+    it('is true when the backend asks this user to verify', () => {
+      createService({ token: 't', user: { ...USER, must_verify_email: true } });
+
+      expect(service.mustVerifyEmail()).toBe(true);
+    });
+
+    it('is false for a signed-out visitor', () => {
+      createService();
+
+      expect(service.mustVerifyEmail()).toBe(false);
+    });
+  });
+
+  describe('captcha', () => {
+    it('GETs a new challenge', () => {
+      createService();
+      const challenge = {
+        captcha_id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+        question: 'What is 7 + 5?',
+        expires_in: 300,
+      };
+      let result: unknown;
+
+      service.captcha().subscribe((c) => (result = c));
+      const request = httpMock.expectOne(`${base}/captcha`);
+      request.flush(challenge);
+
+      expect(request.request.method).toBe('GET');
+      expect(result).toEqual(challenge);
     });
   });
 

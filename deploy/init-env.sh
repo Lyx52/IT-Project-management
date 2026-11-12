@@ -31,6 +31,8 @@ DB_ROOT_PASSWORD=$(openssl rand -hex 24)
 MAIL_MAILER=log
 MAIL_FROM_ADDRESS=
 RESEND_API_KEY=
+# Verification e-mails on sign-up. Needs working mail (above) first.
+EMAIL_VERIFICATION_ENABLED=false
 
 # Daily database backups (see Backups in README.md). Paste the BACKUP_UPLOAD_URL
 # line printed by deploy/backup-storage.sh setup here.

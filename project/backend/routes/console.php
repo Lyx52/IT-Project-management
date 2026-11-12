@@ -13,3 +13,7 @@ Artisan::command('inspire', function () {
 // ago (config/retention.php). Runs in the scheduler container at 00:00 UTC, before
 // the 02:00 database backup, so that backup no longer contains them.
 Schedule::command('model:prune', ['--model' => [User::class]])->dailyAt('00:00');
+
+// Clears unanswered CAPTCHA challenges (and any other expired entries) out of
+// the database cache table, which never removes them by itself.
+Schedule::command('app:prune-expired-cache')->dailyAt('00:30');

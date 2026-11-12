@@ -54,6 +54,8 @@ services:
       MAIL_MAILER: ${MAIL_MAILER:-log}
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-onboarding@resend.dev}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      # Off until the project has its own mail domain, see config/verification.php
+      EMAIL_VERIFICATION_ENABLED: ${EMAIL_VERIFICATION_ENABLED:-false}
       # Days until soft-deleted accounts are permanently deleted, see config/retention.php
       ACCOUNT_PURGE_DAYS: ${ACCOUNT_PURGE_DAYS:-21}
     volumes:

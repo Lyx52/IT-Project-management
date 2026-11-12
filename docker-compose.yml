@@ -44,6 +44,8 @@ services:
       MAIL_MAILER: ${MAIL_MAILER:-log}
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-onboarding@resend.dev}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      # Off until the project has its own mail domain, see config/verification.php
+      EMAIL_VERIFICATION_ENABLED: ${EMAIL_VERIFICATION_ENABLED:-false}
     ports:
       - "${BACKEND_PORT:-8001}:8000"
     volumes:
