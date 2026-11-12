@@ -1,9 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-item-form',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './item-form.html',
   styleUrl: './item-form.scss',
 })
-export class ItemForm {}
+export class ItemForm {
+  private readonly auth = inject(AuthService);
+
+  /** Reporting an item needs an account, so visitors are sent to sign in. */
+  readonly isAuthenticated = this.auth.isAuthenticated;
+}
