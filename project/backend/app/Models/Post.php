@@ -4,14 +4,14 @@ namespace App\Models;
 
 use App\Enums\PostStatus;
 use App\Enums\PostType;
+use App\Services\PostImageService;
 use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['category_id', 'type', 'title', 'description', 'latitude', 'longitude', 'location_name', 'event_date'])]
 class Post extends Model
@@ -44,13 +44,16 @@ class Post extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (Post $post) {
-            $paths = DB::table('post_images')->where('post_id', $post->id)->pluck('path')->all();
+        // Rows go with the post via the FK cascade, the files need removing by hand
+        static::deleting(fn (Post $post) => app(PostImageService::class)->deleteAll($post));
+    }
 
-            if ($paths !== []) {
-                Storage::disk('local')->delete($paths);
-            }
-        });
+    /**
+     * @return HasMany<PostImage, $this>
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(PostImage::class);
     }
 
     /**
