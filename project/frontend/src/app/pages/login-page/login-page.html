@@ -1,0 +1,97 @@
+<app-header />
+
+<main class="container-fluid px-3 px-lg-4 py-4 py-lg-5">
+  <div class="auth-wrapper mx-auto">
+    <div class="panel p-4 p-lg-5">
+      <h4 class="fw-bold mb-1">Welcome back</h4>
+      <p class="text-muted small mb-4">Sign in to report items and reply to messages.</p>
+
+      @if (sessionExpired) {
+        <div class="alert alert-warning py-2 small" role="status">
+          <i class="bi bi-clock-history me-1"></i>
+          Your session has expired. Please sign in again.
+        </div>
+      }
+
+      @if (formError()) {
+        <div class="alert alert-danger py-2 small" role="alert">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          {{ formError() }}
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <fieldset [disabled]="submitting()">
+          <!-- E-mail -->
+          <div class="mb-3">
+            <label class="form-label" for="email">E-mail</label>
+            <input
+              id="email"
+              class="form-control"
+              formControlName="email"
+              type="email"
+              autocomplete="email"
+              placeholder="you@example.com"
+              [class.is-invalid]="error('email')"
+              [attr.aria-invalid]="error('email') ? 'true' : null"
+              [attr.aria-describedby]="error('email') ? 'email-error' : null"
+            />
+            @if (error('email')) {
+              <div class="invalid-feedback d-block" id="email-error">{{ error('email') }}</div>
+            }
+          </div>
+
+          <!-- Password -->
+          <div class="mb-4">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-group">
+              <input
+                id="password"
+                class="form-control"
+                formControlName="password"
+                [type]="passwordVisible() ? 'text' : 'password'"
+                autocomplete="current-password"
+                placeholder="Your password"
+                [class.is-invalid]="error('password')"
+                [attr.aria-invalid]="error('password') ? 'true' : null"
+                [attr.aria-describedby]="error('password') ? 'password-error' : null"
+              />
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                (click)="togglePasswordVisibility()"
+                [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+                [attr.aria-pressed]="passwordVisible()"
+              >
+                <i
+                  class="bi"
+                  [class.bi-eye]="!passwordVisible()"
+                  [class.bi-eye-slash]="passwordVisible()"
+                ></i>
+              </button>
+            </div>
+            @if (error('password')) {
+              <div class="invalid-feedback d-block" id="password-error">
+                {{ error('password') }}
+              </div>
+            }
+          </div>
+
+          <button class="btn btn-primary w-100" type="submit" [attr.aria-busy]="submitting()">
+            @if (submitting()) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+              Signing in...
+            } @else {
+              Sign in
+            }
+          </button>
+        </fieldset>
+      </form>
+
+      <p class="text-muted small text-center mb-0 mt-3">
+        New to FindIT?
+        <a class="link-orange fw-semibold" routerLink="/register">Create an account</a>
+      </p>
+    </div>
+  </div>
+</main>

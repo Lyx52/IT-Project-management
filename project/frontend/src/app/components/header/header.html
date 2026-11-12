@@ -7,12 +7,23 @@
 
     <!-- Account actions -->
     <div class="d-flex align-items-center gap-2 order-lg-3">
-      <button class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-person-circle me-1"></i>
-        Sign in
-      </button>
+      @if (isAuthenticated()) {
+        <span class="current-user d-flex align-items-center">
+          <i class="bi bi-person-circle me-1"></i>
+          <span class="fw-semibold">{{ displayName() }}</span>
+        </span>
 
-      <a class="btn btn-primary btn-sm" routerLink="/register">Sign up</a>
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="logout()">
+          Log out
+        </button>
+      } @else {
+        <a class="btn btn-outline-secondary btn-sm" routerLink="/login">
+          <i class="bi bi-person-circle me-1"></i>
+          Sign in
+        </a>
+
+        <a class="btn btn-primary btn-sm" routerLink="/register">Sign up</a>
+      }
     </div>
 
     <!-- Navigation -->
@@ -43,3 +54,5 @@
     </div>
   </div>
 </nav>
+
+<app-verify-email-notice />
