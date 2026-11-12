@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PostImageService;
 use App\Notifications\VerifyEmailNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -84,12 +85,6 @@ class User extends Authenticatable implements MustVerifyEmail
             ->pluck('id');
 
         $paths = collect([$this->avatar_path])
-            ->merge(
-                DB::table('post_images')
-                    ->join('posts', 'posts.id', '=', 'post_images.post_id')
-                    ->where('posts.user_id', $this->id)
-                    ->pluck('post_images.path')
-            )
             ->merge(DB::table('message_attachments')->whereIn('message_id', $messageIds)->pluck('path'))
             ->filter()
             ->unique()
@@ -98,6 +93,11 @@ class User extends Authenticatable implements MustVerifyEmail
 
         if ($paths !== []) {
             Storage::disk('local')->delete($paths);
+        }
+
+        // Post photos live on the public disk, one directory per post
+        foreach (DB::table('posts')->where('user_id', $this->id)->pluck('id') as $postId) {
+            Storage::disk('public')->deleteDirectory(PostImageService::directory((int) $postId));
         }
     }
 }

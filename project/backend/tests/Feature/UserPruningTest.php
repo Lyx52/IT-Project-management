@@ -28,6 +28,7 @@ class UserPruningTest extends TestCase
     public function test_prune_permanently_deletes_accounts_past_the_purge_delay_with_their_data_and_files(): void
     {
         Storage::fake('local');
+        Storage::fake('public');
         $days = config('retention.account_purge_days');
 
         $due = User::factory()->create(['avatar_path' => 'avatars/due.jpg']);
@@ -46,7 +47,7 @@ class UserPruningTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        DB::table('post_images')->insert(['post_id' => $post, 'path' => 'posts/keys.jpg', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('post_images')->insert(['post_id' => $post, 'path' => 'posts/'.$post.'/keys.jpg', 'created_at' => now(), 'updated_at' => now()]);
 
         // One message each way, both carry an attachment
         foreach ([[$due, $other, 'sent.jpg'], [$other, $due, 'received.jpg']] as [$from, $to, $file]) {
@@ -67,7 +68,9 @@ class UserPruningTest extends TestCase
             ]);
         }
 
-        $files = ['avatars/due.jpg', 'posts/keys.jpg', 'attachments/sent.jpg', 'attachments/received.jpg'];
+        $postFile = 'posts/'.$post.'/keys.jpg';
+        Storage::disk('public')->put($postFile, 'x');
+        $files = ['avatars/due.jpg', 'attachments/sent.jpg', 'attachments/received.jpg'];
         foreach ($files as $file) {
             Storage::disk('local')->put($file, 'x');
         }
@@ -88,6 +91,7 @@ class UserPruningTest extends TestCase
         foreach ($files as $file) {
             Storage::disk('local')->assertMissing($file);
         }
+        Storage::disk('public')->assertMissing($postFile);
     }
 
     public function test_purge_delay_is_configurable(): void
