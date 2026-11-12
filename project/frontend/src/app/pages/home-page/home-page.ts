@@ -10,7 +10,7 @@ import { ItemFilters } from '../../components/item-filters/item-filters';
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemForm, ItemCard, Messenger, Header,ItemFilters],
+  imports: [ItemForm, ItemCard, Messenger, Header, ItemFilters],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })
