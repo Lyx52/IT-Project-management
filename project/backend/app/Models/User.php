@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Services\PostImageService;
 use App\Notifications\VerifyEmailNotification;
+use App\Services\PostImageService;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
