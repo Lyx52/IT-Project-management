@@ -16,4 +16,19 @@ import { ItemFilters } from '../../components/item-filters/item-filters';
 })
 export class HomePageComponent {
   items: Item[] = MOCK_ITEMS;
+
+  isCreatePostOpen = false;
+  isMessengerOpen = false;
+
+  openCreatePost(): void {
+    this.isCreatePostOpen = true;
+  }
+
+  closeCreatePost(): void {
+    this.isCreatePostOpen = false;
+  }
+
+  toggleMessenger(): void {
+    this.isMessengerOpen = !this.isMessengerOpen;
+  }
 }

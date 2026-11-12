@@ -5,12 +5,25 @@
       Find<span class="brand-orange">IT</span>
     </a>
 
-    <!-- Sign in -->
-    <div class="d-flex align-items-center gap-3 order-lg-3">
-      <button class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-person-circle me-1"></i>
-        Sign in
-      </button>
+    <!-- Account actions -->
+    <div class="d-flex align-items-center gap-2 order-lg-3">
+      @if (isAuthenticated()) {
+        <span class="current-user d-flex align-items-center">
+          <i class="bi bi-person-circle me-1"></i>
+          <span class="fw-semibold">{{ displayName() }}</span>
+        </span>
+
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="logout()">
+          Log out
+        </button>
+      } @else {
+        <a class="btn btn-outline-secondary btn-sm" routerLink="/login">
+          <i class="bi bi-person-circle me-1"></i>
+          Sign in
+        </a>
+
+        <a class="btn btn-primary btn-sm" routerLink="/register">Sign up</a>
+      }
     </div>
 
     <!-- Navigation -->
@@ -28,11 +41,7 @@
         </li>
 
         <li class="nav-item">
-          <a class="nav-link" routerLink="/lost" routerLinkActive="active"> Lost items </a>
-        </li>
-
-        <li class="nav-item">
-          <a class="nav-link" routerLink="/found" routerLinkActive="active"> Found items </a>
+          <a class="nav-link" routerLink="/items" routerLinkActive="active"> Items </a>
         </li>
 
         <li class="nav-item">
@@ -45,3 +54,5 @@
     </div>
   </div>
 </nav>
+
+<app-verify-email-notice />

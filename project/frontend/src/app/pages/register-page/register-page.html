@@ -1,0 +1,190 @@
+<app-header />
+
+<main class="container-fluid px-3 px-lg-4 py-4 py-lg-5">
+  <div class="auth-wrapper mx-auto">
+    @if (registered()) {
+      <!-- Success: the account exists but is unverified, and nobody is signed in -->
+      <div class="panel p-4 p-lg-5 text-center">
+        <div class="success-icon mx-auto mb-3">
+          <i class="bi bi-envelope-check"></i>
+        </div>
+
+        <h4 class="fw-bold mb-2">Check your e-mail</h4>
+
+        <p class="text-muted mb-1">We sent a verification link to</p>
+
+        <p class="fw-semibold mb-3">{{ registeredEmail() }}</p>
+
+        <p class="text-muted small mb-4">
+          Open the link to verify your account. You are not signed in yet: verify your e-mail first,
+          then sign in to post items and reply to others.
+        </p>
+
+        <a class="btn btn-primary w-100" routerLink="/login">Go to sign in</a>
+
+        <a class="btn btn-link w-100 mt-2 text-muted" routerLink="/home">Back to home</a>
+      </div>
+    } @else {
+      <div class="panel p-4 p-lg-5">
+        <h4 class="fw-bold mb-1">Create your account</h4>
+        <p class="text-muted small mb-4">
+          Join FindIT to report lost items and help return found ones.
+        </p>
+
+        @if (formError()) {
+          <div class="alert alert-danger py-2 small" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ formError() }}
+          </div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <fieldset [disabled]="submitting()">
+            <!-- Username -->
+            <div class="mb-3">
+              <label class="form-label" for="username">Username</label>
+              <input
+                id="username"
+                class="form-control"
+                formControlName="username"
+                type="text"
+                autocomplete="username"
+                placeholder="e.g. jane_doe"
+                [class.is-invalid]="error('username')"
+                [attr.aria-invalid]="error('username') ? 'true' : null"
+                [attr.aria-describedby]="error('username') ? 'username-error' : 'username-hint'"
+              />
+              @if (error('username')) {
+                <div class="invalid-feedback d-block" id="username-error">
+                  {{ error('username') }}
+                </div>
+              } @else {
+                <div class="form-text" id="username-hint">
+                  3 to 30 characters. Letters, numbers, underscores and hyphens.
+                </div>
+              }
+            </div>
+
+            <!-- E-mail -->
+            <div class="mb-3">
+              <label class="form-label" for="email">E-mail</label>
+              <input
+                id="email"
+                class="form-control"
+                formControlName="email"
+                type="email"
+                autocomplete="email"
+                placeholder="you@example.com"
+                [class.is-invalid]="error('email')"
+                [attr.aria-invalid]="error('email') ? 'true' : null"
+                [attr.aria-describedby]="error('email') ? 'email-error' : null"
+              />
+              @if (error('email')) {
+                <div class="invalid-feedback d-block" id="email-error">{{ error('email') }}</div>
+              }
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label class="form-label" for="password">Password</label>
+              <div class="input-group">
+                <input
+                  id="password"
+                  class="form-control"
+                  formControlName="password"
+                  [type]="passwordVisible() ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  placeholder="At least 8 characters"
+                  [class.is-invalid]="error('password')"
+                  [attr.aria-invalid]="error('password') ? 'true' : null"
+                  [attr.aria-describedby]="error('password') ? 'password-error' : 'password-hint'"
+                />
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  (click)="togglePasswordVisibility()"
+                  [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+                  [attr.aria-pressed]="passwordVisible()"
+                >
+                  <i
+                    class="bi"
+                    [class.bi-eye]="!passwordVisible()"
+                    [class.bi-eye-slash]="passwordVisible()"
+                  ></i>
+                </button>
+              </div>
+              @if (error('password')) {
+                <div class="invalid-feedback d-block" id="password-error">
+                  {{ error('password') }}
+                </div>
+              } @else {
+                <div class="form-text" id="password-hint">At least 8 characters.</div>
+              }
+            </div>
+
+            <!-- Confirm password -->
+            <div class="mb-3">
+              <label class="form-label" for="passwordConfirmation">Confirm password</label>
+              <input
+                id="passwordConfirmation"
+                class="form-control"
+                formControlName="passwordConfirmation"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Repeat your password"
+                [class.is-invalid]="error('passwordConfirmation')"
+                [attr.aria-invalid]="error('passwordConfirmation') ? 'true' : null"
+                [attr.aria-describedby]="
+                  error('passwordConfirmation') ? 'passwordConfirmation-error' : null
+                "
+              />
+              @if (error('passwordConfirmation')) {
+                <div class="invalid-feedback d-block" id="passwordConfirmation-error">
+                  {{ error('passwordConfirmation') }}
+                </div>
+              }
+            </div>
+
+            <!-- Consent -->
+            <div class="mb-4">
+              <div class="form-check">
+                <input
+                  id="termsAccepted"
+                  class="form-check-input"
+                  formControlName="termsAccepted"
+                  type="checkbox"
+                  [class.is-invalid]="error('termsAccepted')"
+                  [attr.aria-invalid]="error('termsAccepted') ? 'true' : null"
+                  [attr.aria-describedby]="error('termsAccepted') ? 'termsAccepted-error' : null"
+                />
+                <label class="form-check-label small" for="termsAccepted">
+                  I accept the <span class="fw-semibold">Terms of Service</span> and the
+                  <span class="fw-semibold">Privacy Policy</span>.
+                </label>
+              </div>
+              @if (error('termsAccepted')) {
+                <div class="invalid-feedback d-block" id="termsAccepted-error">
+                  {{ error('termsAccepted') }}
+                </div>
+              }
+            </div>
+
+            <button class="btn btn-primary w-100" type="submit" [attr.aria-busy]="submitting()">
+              @if (submitting()) {
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                Creating account...
+              } @else {
+                Create account
+              }
+            </button>
+          </fieldset>
+        </form>
+
+        <p class="text-muted small text-center mb-0 mt-3">
+          Already have an account?
+          <a class="link-orange fw-semibold" routerLink="/login">Sign in</a>
+        </p>
+      </div>
+    }
+  </div>
+</main>

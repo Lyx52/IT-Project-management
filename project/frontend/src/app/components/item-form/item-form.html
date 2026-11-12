@@ -52,5 +52,12 @@
     <textarea class="form-control" rows="3" placeholder="Describe the item..."></textarea>
   </div>
 
-  <button class="btn btn-primary w-100">Submit report</button>
+  @if (isAuthenticated()) {
+    <button class="btn btn-primary w-100">Submit report</button>
+  } @else {
+    <a class="btn btn-primary w-100" routerLink="/login">Sign in to report an item</a>
+    <p class="text-muted small text-center mb-0 mt-2">
+      You need an account to report a lost or found item.
+    </p>
+  }
 </div>

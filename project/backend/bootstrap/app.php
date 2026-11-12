@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // headers so Laravel builds https:// URLs and secure cookies work.
         // Safe because the backend has no published port.
         $middleware->trustProxies(at: '*');
+
+        // Gate actions such as creating posts behind a verified e-mail
+        $middleware->alias([
+            'verified' => EnsureEmailIsVerified::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
