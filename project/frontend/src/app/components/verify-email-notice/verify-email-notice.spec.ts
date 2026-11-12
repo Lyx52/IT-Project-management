@@ -11,9 +11,17 @@ const UNVERIFIED: AuthUser = {
   username: 'jane_doe',
   email: 'jane@example.com',
   email_verified_at: null,
+  must_verify_email: true,
 };
 
-const VERIFIED: AuthUser = { ...UNVERIFIED, email_verified_at: '2026-11-12T00:00:00Z' };
+const VERIFIED: AuthUser = {
+  ...UNVERIFIED,
+  email_verified_at: '2026-11-12T00:00:00Z',
+  must_verify_email: false,
+};
+
+/** Unverified, but the backend has verification turned off. */
+const VERIFICATION_OFF: AuthUser = { ...UNVERIFIED, must_verify_email: false };
 
 describe('VerifyEmailNotice', () => {
   const url = `${environment.apiBaseUrl}/email/resend`;
@@ -62,6 +70,20 @@ describe('VerifyEmailNotice', () => {
 
       expect(component.visible()).toBe(false);
       expect(text()).toBe('');
+    });
+
+    it('stays hidden while the backend has verification turned off', () => {
+      setup(VERIFICATION_OFF);
+
+      expect(component.visible()).toBe(false);
+      expect(text()).toBe('');
+    });
+
+    it('stays hidden for a session stored before must_verify_email existed', () => {
+      const { must_verify_email: _, ...legacy } = UNVERIFIED;
+      setup(legacy as AuthUser);
+
+      expect(component.visible()).toBe(false);
     });
 
     it('stays hidden for a visitor who is not signed in', () => {

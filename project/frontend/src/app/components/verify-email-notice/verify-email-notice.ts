@@ -17,11 +17,12 @@ export class VerifyEmailNotice {
   readonly message = signal<string | null>(null);
 
   /**
-   * Only shown to a signed-in user whose address is still unconfirmed. Posting
-   * is refused server-side until then, so this is the one prompt that stops
-   * someone writing a whole report before finding out.
+   * Only shown to a signed-in user who has to confirm their address before
+   * posting. Posting is refused server-side until then, so this is the one
+   * prompt that stops someone writing a whole report before finding out.
+   * Never shown while the backend has verification turned off.
    */
-  readonly visible = computed(() => this.auth.isAuthenticated() && !this.auth.isVerified());
+  readonly visible = computed(() => this.auth.isAuthenticated() && this.auth.mustVerifyEmail());
 
   resend(): void {
     this.state.set('sending');

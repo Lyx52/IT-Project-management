@@ -13,10 +13,15 @@ class ResendVerificationController extends Controller
      *
      * Sends a new verification link to the signed-in user. Heavily rate
      * limited (429 with a Retry-After header), see config/verification.php.
-     * Returns 409 if the address is already verified.
+     * Returns 409 if the address is already verified, and 404 while
+     * verification is turned off (config/verification.php).
      */
     public function __invoke(Request $request): JsonResponse
     {
+        if (! config('verification.enabled')) {
+            return response()->json(['message' => 'E-mail verification is turned off.'], 404);
+        }
+
         $user = $request->user();
 
         if ($user->hasVerifiedEmail()) {
