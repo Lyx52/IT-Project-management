@@ -27,6 +27,10 @@ class PostResource extends JsonResource
             'location_name' => $this->location_name,
             'event_date' => $this->event_date->format('Y-m-d'),
             'resolved_at' => $this->resolved_at,
+            'images' => $this->images->map(fn ($image) => [
+                'id' => $image->id,
+                'url' => $image->url(),
+            ])->values(),
             'category' => [
                 'id' => $this->category->id,
                 'name' => $this->category->name,
