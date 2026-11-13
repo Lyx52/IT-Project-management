@@ -1,5 +1,5 @@
 /* Page heading */
-
+@use '../../../styles/variables' as *;
 .page-heading {
   display: flex;
   justify-content: space-between;
@@ -311,4 +311,18 @@
     grid-template-columns: 1fr;
     gap: 15px;
   }
+}
+.terms-container {
+  background-color: $background;
+  border: 3px solid $primary;
+  border-radius: $border-radius;
+  padding: 20px;
+
+  position: fixed;
+  top: 5%;
+  left: 0.5%;
+  width: 99%;
+  height: 90%;
+
+  display: flex;
 }

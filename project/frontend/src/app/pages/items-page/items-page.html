@@ -11,7 +11,7 @@
     <div class="search-box">
       <i class="bi bi-search"></i>
       <input type="text" class="form-control" placeholder="Search for an item..." />
-      <button class="btn btn-primary">Search</button>
+      <button class="btn btn-primary">{{ texts.searchbutton }}</button>
     </div>
   </section>
 
@@ -20,7 +20,7 @@
     <div class="filter-header">
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-funnel"></i>
-        <span class="fw-semibold">Filters</span>
+        <span class="fw-semibold">{{ texts.filttitle }}</span>
       </div>
 
       <!-- Lost / Found switch -->
@@ -91,6 +91,11 @@
       </div>
     }
   </section>
+    @if (isVisible) {
+    <div class="col-12 terms-container">
+      <app-terms (hideTriggered)="hideTerms()" />
+    </div>
+  }
 </main>
 
 <!-- Create post button -->
@@ -141,3 +146,4 @@
     <app-messenger />
   </div>
 }
+<app-footer (showTriggered)="showTerms()" />

@@ -1,0 +1,29 @@
+@use '../../../styles/variables' as *;
+
+:host {
+  display: flex;
+  left: 50%;
+  height: 90%;
+  width: 90%;
+  box-sizing: border-box;
+  flex-direction: column;
+
+  padding: 2rem;
+  text-align: center;
+}
+
+.terms-window__footer {
+  bottom: 3%;
+}
+
+.button {
+  position: absolute;
+  right: 3%;
+  bottom: 3%;
+}
+
+.terms-window__version {
+  position: absolute;
+  bottom: 3%;
+  left: 3%;
+}

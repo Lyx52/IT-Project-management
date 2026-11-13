@@ -1,0 +1,25 @@
+.cookie-notice {
+  position: relative;
+  left: 20%;
+  top: 5%;
+  height: 90%;
+  width: 100%;
+  flex-direction: column;
+}
+.cookie-notice-title {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.cookie-notice-text {
+  width: 100%;
+  margin-left: 5%;
+  text-align: left;
+}
+
+.cookie-notice-close {
+  position: absolute;
+  top: 95%;
+  left: 50%;
+}
