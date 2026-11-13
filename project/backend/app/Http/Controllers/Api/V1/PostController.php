@@ -69,6 +69,23 @@ class PostController extends Controller
     }
 
     /**
+     * Suggested matches for a post
+     *
+     * Posts that might be the other half of this one, so the author doesn't
+     * have to search: the opposite type (lost posts get found posts and vice
+     * versa), the same category, an event date at most 7 days either side,
+     * less than 2 km away, approved, and not by the same user. Ordered by
+     * distance, closest first, at most 20. Each has `distance_m`, the
+     * distance in metres. Author or admin only.
+     */
+    public function matches(Post $post): AnonymousResourceCollection
+    {
+        Gate::authorize('viewMatches', $post);
+
+        return PostResource::collection($post->suggestedMatches());
+    }
+
+    /**
      * Update a post
      *
      * Partial update, only the fields sent are changed. Author only. Any

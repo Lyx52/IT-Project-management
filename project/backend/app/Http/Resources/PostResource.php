@@ -35,6 +35,8 @@ class PostResource extends JsonResource
                 'id' => $this->user->id,
                 'username' => $this->user->username,
             ],
+            // Only on suggested matches: metres from the post they were matched to
+            'distance_m' => $this->whenHas('distance_m'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
