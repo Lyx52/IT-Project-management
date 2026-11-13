@@ -104,6 +104,8 @@ class MessageTest extends TestCase
         Sanctum::actingAs($this->visitor);
         $this->postJson($this->url($pending), ['body' => 'x'])->assertNotFound();
 
+        // Verification can be switched off in config, so turn it on for this check
+        config(['verification.enabled' => true]);
         Sanctum::actingAs(User::factory()->unverified()->create());
         $this->postJson($this->url(), ['body' => 'x'])->assertForbidden();
 
