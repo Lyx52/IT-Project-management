@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\RegisterController;
+use App\Http\Controllers\Api\V1\ReportPostController;
 use App\Http\Controllers\Api\V1\ResendVerificationController;
 use App\Http\Controllers\Api\V1\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/post/{post}/messages', [MessageController::class, 'store'])
             ->whereNumber('post')
             ->middleware(['verified', 'throttle:30,1']);
+        Route::post('/post/{post}/report', ReportPostController::class)
+            ->whereNumber('post')
+            ->middleware('throttle:10,1');
         Route::delete('/post/{post}', [PostController::class, 'destroy'])->whereNumber('post');
     });
 });
