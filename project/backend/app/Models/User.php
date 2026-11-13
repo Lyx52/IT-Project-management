@@ -36,6 +36,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'banned_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
         ];
     }
@@ -73,6 +74,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function isBanned(): bool
+    {
+        return $this->banned_at !== null;
     }
 
     /**

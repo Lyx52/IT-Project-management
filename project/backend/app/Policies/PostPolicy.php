@@ -14,6 +14,10 @@ class PostPolicy
      */
     public function view(?User $user, Post $post): bool
     {
+        if ($post->user?->isBanned()) {
+            return $user !== null && $user->isAdmin();
+        }
+
         return $post->isPublic()
             || ($user !== null && ($user->id === $post->user_id || $user->isAdmin()));
     }
