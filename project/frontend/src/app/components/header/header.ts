@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import en from '../../../assets/en.json';
+import lv from '../../../assets/lv.json';
 
 @Component({
   selector: 'app-header',
@@ -7,4 +9,6 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   templateUrl: './header.html',
   styleUrl: './header.scss',
 })
-export class Header {}
+export class Header {
+  texts = en;
+}

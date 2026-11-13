@@ -2,7 +2,7 @@
   <div class="container-fluid">
     <!-- Logo -->
     <a class="navbar-brand fw-bold fs-3" routerLink="/home">
-      Find<span class="brand-orange">IT</span>
+      {{ texts.logo1 }}<span class="brand-orange">{{ texts.logo2 }}</span>
     </a>
 
     <!-- Sign in -->
@@ -12,7 +12,7 @@
       <button class="btn btn-outline-secondary btn-sm">LV</button>
       <button class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-person-circle me-1"></i>
-        Sign in
+        {{ texts.sign }}
       </button>
     </div>
 
@@ -26,22 +26,20 @@
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
           >
-            Home
+            {{ texts.li1 }}
           </a>
         </li>
 
         <li class="nav-item">
-          <a class="nav-link" routerLink="/lost" routerLinkActive="active"> Lost items </a>
-        </li>
-
-        <li class="nav-item">
-          <a class="nav-link" routerLink="/found" routerLinkActive="active"> Found items </a>
+          <a class="nav-link" routerLink="/lost" routerLinkActive="active">
+            {{ texts.li2 }}
+          </a>
         </li>
 
         <li class="nav-item">
           <a class="nav-link" routerLink="/map" routerLinkActive="active">
             <i class="bi bi-geo-alt me-1"></i>
-            Map
+            {{ texts.li3 }}
           </a>
         </li>
       </ul>

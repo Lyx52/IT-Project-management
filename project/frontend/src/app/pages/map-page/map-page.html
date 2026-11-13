@@ -3,14 +3,14 @@
 <main class="container-fluid px-3 px-lg-4 py-4">
   <div class="page-heading mb-4">
     <div>
-      <h4 class="fw-bold mb-1">Explore the map</h4>
-      <p class="text-muted mb-0">Find lost and found items around your area.</p>
+      <h4 class="fw-bold mb-1">{{ texts.maptitle }}</h4>
+      <p class="text-muted mb-0">{{ texts.maptext }}</p>
     </div>
 
     <div class="map-search">
       <i class="bi bi-search"></i>
       <input type="text" class="form-control" placeholder="Search location..." />
-      <button class="btn btn-primary">Search</button>
+      <button class="btn btn-primary">{{ texts.searchbutton }}</button>
     </div>
   </div>
 
@@ -19,13 +19,13 @@
     <div class="col-12 col-lg-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h5 class="fw-bold mb-1">Nearby items</h5>
-          <p class="text-muted small mb-0">{{ items.length }} items on the map</p>
+          <h5 class="fw-bold mb-1">{{ texts.nearbyItems }}</h5>
+          <p class="text-muted small mb-0">{{ items.length }} {{ texts.itemsOnMap }}</p>
         </div>
 
         <button class="btn btn-outline-secondary btn-sm">
           <i class="bi bi-funnel me-1"></i>
-          Filter
+          {{ texts.filttitle }}
         </button>
       </div>
 
@@ -47,7 +47,7 @@
 
           <button class="btn btn-light btn-sm">
             <i class="bi bi-crosshair me-1"></i>
-            My location
+            {{ texts.myLocation }}
           </button>
         </div>
 
@@ -80,12 +80,12 @@
           <div class="map-legend">
             <span>
               <i class="legend-dot lost-dot"></i>
-              Lost
+              {{ texts.lost }}
             </span>
 
             <span>
               <i class="legend-dot found-dot"></i>
-              Found
+              {{ texts.found }}
             </span>
           </div>
 
@@ -94,4 +94,10 @@
       </section>
     </div>
   </div>
+  @if (isVisible) {
+    <div class="col-12 terms-container">
+      <app-terms (hideTriggered)="hideTerms()" />
+    </div>
+  }
 </main>
+<app-footer (showTriggered)="showTerms()" />

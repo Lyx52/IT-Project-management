@@ -1,0 +1,14 @@
+<div class="terms-window__content">
+  <div class="terms-window__header">
+    <h2 id="terms-title">{{ termdata.Terms }}</h2>
+  </div>
+  <section class="terms-window__sections">
+    <h3>{{ termdata.subtitle }}</h3>
+    <p>{{ termdata.text }}</p>
+    <p class="terms-window__text">{{ termdata.termsText }}</p>
+  </section>
+  <div class="terms-window__footer">
+    <span class="terms-window__version">Version: {{ version }}</span>
+    <button class="button" type="button" (click)="hideTerms()">X</button>
+  </div>
+</div>
