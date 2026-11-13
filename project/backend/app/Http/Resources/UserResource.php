@@ -19,6 +19,11 @@ class UserResource extends JsonResource
             'username' => $this->username,
             'email' => $this->email,
             'email_verified_at' => $this->email_verified_at,
+            // True only while verification is turned on and this address is
+            // unconfirmed. Clients show the "verify your e-mail" prompt on
+            // this, not on email_verified_at, which stays null while
+            // verification is off.
+            'must_verify_email' => $this->mustVerifyEmail(),
         ];
     }
 }

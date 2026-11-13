@@ -2,28 +2,50 @@
 
 <main class="container-fluid px-3 px-lg-4 py-4 py-lg-5">
   <div class="auth-wrapper mx-auto">
-    @if (registered()) {
-      <!-- Success: the account exists but is unverified, and nobody is signed in -->
-      <div class="panel p-4 p-lg-5 text-center">
-        <div class="success-icon mx-auto mb-3">
-          <i class="bi bi-envelope-check"></i>
+    @if (registeredUser(); as user) {
+      @if (user.must_verify_email) {
+        <!-- Success, verification on: the account is unverified and nobody is signed in -->
+        <div class="panel p-4 p-lg-5 text-center">
+          <div class="success-icon mx-auto mb-3">
+            <i class="bi bi-envelope-check"></i>
+          </div>
+
+          <h4 class="fw-bold mb-2">Check your e-mail</h4>
+
+          <p class="text-muted mb-1">We sent a verification link to</p>
+
+          <p class="fw-semibold mb-3">{{ user.email }}</p>
+
+          <p class="text-muted small mb-4">
+            Open the link to verify your account. You are not signed in yet: verify your e-mail
+            first, then sign in to post items and reply to others.
+          </p>
+
+          <a class="btn btn-primary w-100" routerLink="/login">Go to sign in</a>
+
+          <a class="btn btn-link w-100 mt-2 text-muted" routerLink="/home">Back to home</a>
         </div>
+      } @else {
+        <!-- Success, verification off: the account is ready, sign in now -->
+        <div class="panel p-4 p-lg-5 text-center">
+          <div class="success-icon mx-auto mb-3">
+            <i class="bi bi-person-check"></i>
+          </div>
 
-        <h4 class="fw-bold mb-2">Check your e-mail</h4>
+          <h4 class="fw-bold mb-2">Your account is ready</h4>
 
-        <p class="text-muted mb-1">We sent a verification link to</p>
+          <p class="text-muted mb-1">Welcome, {{ user.username }}.</p>
 
-        <p class="fw-semibold mb-3">{{ registeredEmail() }}</p>
+          <p class="text-muted small mb-4">
+            You are not signed in yet. Sign in with {{ user.email }} and your password to post items
+            and reply to others.
+          </p>
 
-        <p class="text-muted small mb-4">
-          Open the link to verify your account. You are not signed in yet: verify your e-mail first,
-          then sign in to post items and reply to others.
-        </p>
+          <a class="btn btn-primary w-100" routerLink="/login">Sign in</a>
 
-        <a class="btn btn-primary w-100" routerLink="/login">Go to sign in</a>
-
-        <a class="btn btn-link w-100 mt-2 text-muted" routerLink="/home">Back to home</a>
-      </div>
+          <a class="btn btn-link w-100 mt-2 text-muted" routerLink="/home">Back to home</a>
+        </div>
+      }
     } @else {
       <div class="panel p-4 p-lg-5">
         <h4 class="fw-bold mb-1">Create your account</h4>
@@ -165,6 +187,64 @@
               @if (error('termsAccepted')) {
                 <div class="invalid-feedback d-block" id="termsAccepted-error">
                   {{ error('termsAccepted') }}
+                </div>
+              }
+            </div>
+
+            <!-- Math CAPTCHA. The question comes from the server, which keeps the answer. -->
+            <div class="mb-4">
+              <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                <label class="form-label mb-0" for="captchaAnswer">Security question</label>
+                <button
+                  class="btn btn-sm btn-link text-muted p-0 text-decoration-none"
+                  type="button"
+                  (click)="newCaptcha()"
+                  [disabled]="captchaLoading()"
+                  aria-controls="captcha-question"
+                >
+                  <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>New question
+                </button>
+              </div>
+
+              <div class="captcha-row d-flex align-items-center gap-2">
+                <p
+                  class="captcha-question mb-0 flex-grow-1"
+                  id="captcha-question"
+                  aria-live="polite"
+                >
+                  @if (captchaLoading()) {
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                    <span class="text-muted">Loading question...</span>
+                  } @else if (captcha(); as challenge) {
+                    {{ challenge.question }}
+                  } @else {
+                    <span class="text-danger small">{{ captchaError() }}</span>
+                  }
+                </p>
+                <input
+                  id="captchaAnswer"
+                  class="form-control captcha-answer"
+                  formControlName="captchaAnswer"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  placeholder="Answer"
+                  [class.is-invalid]="error('captchaAnswer')"
+                  [attr.aria-invalid]="error('captchaAnswer') ? 'true' : null"
+                  [attr.aria-describedby]="
+                    error('captchaAnswer')
+                      ? 'captcha-question captchaAnswer-error'
+                      : 'captcha-question captchaAnswer-hint'
+                  "
+                />
+              </div>
+              @if (error('captchaAnswer')) {
+                <div class="invalid-feedback d-block" id="captchaAnswer-error">
+                  {{ error('captchaAnswer') }}
+                </div>
+              } @else {
+                <div class="form-text" id="captchaAnswer-hint">
+                  Helps us keep automated sign-ups out.
                 </div>
               }
             </div>

@@ -8,11 +8,13 @@ use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
+use App\Services\PostImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class PostController extends Controller
@@ -25,7 +27,7 @@ class PostController extends Controller
     public function index(): AnonymousResourceCollection
     {
         $posts = Post::approved()
-            ->with(['category', 'user'])
+            ->with(['category', 'user', 'images'])
             ->latest()
             ->latest('id')
             ->paginate(20);
@@ -36,15 +38,24 @@ class PostController extends Controller
     /**
      * Create a post
      *
+     * Send as `multipart/form-data` to attach up to 5 photos (`images[]`,
+     * jpg/png/webp, max 5 MB each). File names are randomised and EXIF/GPS
+     * metadata is stripped.
+     *
      * The post is saved with status `pending` and appears in the feed once a
      * moderator approves it.
      */
-    public function store(StorePostRequest $request): JsonResponse
+    public function store(StorePostRequest $request, PostImageService $images): JsonResponse
     {
         Gate::authorize('create', Post::class);
 
-        $post = $request->user()->posts()->create($request->validated());
-        $post->refresh()->load(['category', 'user']);
+        $post = DB::transaction(function () use ($request, $images) {
+            $post = $request->user()->posts()->create($request->safe()->except('images'));
+            $images->attach($post, $request->file('images', []));
+
+            return $post;
+        });
+        $post->refresh()->load(['category', 'user', 'images']);
 
         return (new PostResource($post))
             ->response()
@@ -65,7 +76,7 @@ class PostController extends Controller
         // 404 rather than 403, so unapproved posts don't reveal they exist
         abort_unless(Gate::forUser($user)->allows('view', $post), 404);
 
-        return new PostResource($post->load(['category', 'user']));
+        return new PostResource($post->load(['category', 'user', 'images']));
     }
 
     /**
@@ -103,7 +114,7 @@ class PostController extends Controller
             $post->save();
         }
 
-        return new PostResource($post->load(['category', 'user']));
+        return new PostResource($post->load(['category', 'user', 'images']));
     }
 
     /**

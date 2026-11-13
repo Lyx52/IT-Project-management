@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -10,7 +10,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Header } from '../../components/header/header';
-import { ValidationErrorBody } from '../../models/auth.model';
+import { AuthUser, CaptchaChallenge, ValidationErrorBody } from '../../models/auth.model';
 import { AuthService } from '../../services/auth';
 
 /**
@@ -24,6 +24,7 @@ const SERVER_FIELD_TO_CONTROL: Record<string, string> = {
   password: 'password',
   password_confirmation: 'passwordConfirmation',
   terms_accepted: 'termsAccepted',
+  captcha_answer: 'captchaAnswer',
 };
 
 /**
@@ -49,15 +50,19 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   templateUrl: './register-page.html',
   styleUrl: './register-page.scss',
 })
-export class RegisterPageComponent {
+export class RegisterPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
 
-  /** Once true the form is replaced by the "check your e-mail" confirmation. */
-  readonly registered = signal(false);
+  /** Set once the account exists; the form is then replaced by a confirmation. */
+  readonly registeredUser = signal<AuthUser | null>(null);
   readonly submitting = signal(false);
-  /** The address the verification e-mail went to, shown in the confirmation. */
-  readonly registeredEmail = signal('');
+
+  /** The current math question. The answer never reaches the browser. */
+  readonly captcha = signal<CaptchaChallenge | null>(null);
+  readonly captchaLoading = signal(false);
+  /** Why no question could be loaded, shown in place of the question. */
+  readonly captchaError = signal<string | null>(null);
   /** An error that belongs to no single field: throttling, network, 5xx. */
   readonly formError = signal<string | null>(null);
   readonly passwordVisible = signal(false);
@@ -82,9 +87,22 @@ export class RegisterPageComponent {
       password: ['', [Validators.required, Validators.minLength(8)]],
       passwordConfirmation: ['', [Validators.required]],
       termsAccepted: [false, [Validators.requiredTrue]],
+      // Answers are never negative, so digits only. Lets the field use the
+      // numeric keypad on phones.
+      captchaAnswer: ['', [Validators.required, Validators.pattern(/^\s*\d+\s*$/)]],
     },
     { validators: passwordsMatch },
   );
+
+  ngOnInit(): void {
+    this.loadCaptcha();
+  }
+
+  /** "New question" button: a fresh challenge and an empty answer field. */
+  newCaptcha(): void {
+    this.form.controls.captchaAnswer.reset('');
+    this.loadCaptcha();
+  }
 
   togglePasswordVisibility(): void {
     this.passwordVisible.update((visible) => !visible);
@@ -131,6 +149,10 @@ export class RegisterPageComponent {
       case 'termsAccepted':
         if (errors['required']) return 'You must accept the terms and privacy policy.';
         break;
+      case 'captchaAnswer':
+        if (errors['required']) return 'Answer the question.';
+        if (errors['pattern']) return 'Enter the answer as a number.';
+        break;
     }
 
     return null;
@@ -144,7 +166,14 @@ export class RegisterPageComponent {
       return;
     }
 
-    const { username, email, password, passwordConfirmation, termsAccepted } =
+    const challenge = this.captcha();
+
+    if (!challenge) {
+      this.formError.set('The security question has not loaded yet. Please try again.');
+      return;
+    }
+
+    const { username, email, password, passwordConfirmation, termsAccepted, captchaAnswer } =
       this.form.getRawValue();
 
     this.submitting.set(true);
@@ -157,18 +186,49 @@ export class RegisterPageComponent {
         password_confirmation: passwordConfirmation,
         terms_accepted: termsAccepted,
         privacy_policy_version: environment.privacyPolicyVersion,
+        captcha_id: challenge.captcha_id,
+        captcha_answer: captchaAnswer.trim(),
       })
       .subscribe({
         next: (user) => {
           this.submitting.set(false);
-          this.registeredEmail.set(user.email);
-          this.registered.set(true);
+          this.registeredUser.set(user);
         },
         error: (error: HttpErrorResponse) => {
           this.submitting.set(false);
+
+          // The server uses a challenge up on every attempt, so the old
+          // question cannot be answered again. Clear its answer before
+          // handleError, which may put the server's message on that field.
+          this.form.controls.captchaAnswer.reset('');
           this.handleError(error);
+          this.loadCaptcha();
         },
       });
+  }
+
+  private loadCaptcha(): void {
+    // Drop the old challenge right away: it may already be used up, and
+    // submit() refuses to send without one.
+    this.captcha.set(null);
+    this.captchaLoading.set(true);
+    this.captchaError.set(null);
+
+    this.auth.captcha().subscribe({
+      next: (challenge) => {
+        this.captchaLoading.set(false);
+        this.captcha.set(challenge);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.captchaLoading.set(false);
+        this.captcha.set(null);
+        this.captchaError.set(
+          error.status === 429
+            ? 'Too many new questions. Please wait a minute and try again.'
+            : 'Could not load the security question.',
+        );
+      },
+    });
   }
 
   private handleError(error: HttpErrorResponse): void {

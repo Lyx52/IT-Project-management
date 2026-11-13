@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Notifications\VerifyEmailNotification;
+use App\Services\PostImageService;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -47,9 +48,26 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Post::class);
     }
 
+    /**
+     * Also called by Laravel's listener for the Registered event. Sends nothing
+     * while verification is turned off (config/verification.php).
+     */
     public function sendEmailVerificationNotification(): void
     {
+        if (! config('verification.enabled')) {
+            return;
+        }
+
         $this->notify(new VerifyEmailNotification);
+    }
+
+    /**
+     * Whether this account is blocked from posting until it verifies its
+     * address. Always false while verification is turned off.
+     */
+    public function mustVerifyEmail(): bool
+    {
+        return config('verification.enabled') && ! $this->hasVerifiedEmail();
     }
 
     public function isAdmin(): bool
@@ -84,12 +102,6 @@ class User extends Authenticatable implements MustVerifyEmail
             ->pluck('id');
 
         $paths = collect([$this->avatar_path])
-            ->merge(
-                DB::table('post_images')
-                    ->join('posts', 'posts.id', '=', 'post_images.post_id')
-                    ->where('posts.user_id', $this->id)
-                    ->pluck('post_images.path')
-            )
             ->merge(DB::table('message_attachments')->whereIn('message_id', $messageIds)->pluck('path'))
             ->filter()
             ->unique()
@@ -98,6 +110,11 @@ class User extends Authenticatable implements MustVerifyEmail
 
         if ($paths !== []) {
             Storage::disk('local')->delete($paths);
+        }
+
+        // Post photos live on the public disk, one directory per post
+        foreach (DB::table('posts')->where('user_id', $this->id)->pluck('id') as $postId) {
+            Storage::disk('public')->deleteDirectory(PostImageService::directory((int) $postId));
         }
     }
 }

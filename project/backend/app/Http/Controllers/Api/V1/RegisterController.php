@@ -21,6 +21,8 @@ class RegisterController extends Controller
             'privacy_policy_version' => $request->validated('privacy_policy_version'),
         ]);
 
+        // Sends the verification e-mail, unless verification is turned off
+        // (config/verification.php). Either way the account can sign in now.
         event(new Registered($user));
 
         return (new UserResource($user))

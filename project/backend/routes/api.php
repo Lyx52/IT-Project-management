@@ -1,18 +1,23 @@
 <?php
 
+use App\Http\Controllers\Api\V1\CaptchaController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
+use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\RegisterController;
+use App\Http\Controllers\Api\V1\ReportPostController;
 use App\Http\Controllers\Api\V1\ResendVerificationController;
 use App\Http\Controllers\Api\V1\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // Public Auth Routes
+    Route::get('/captcha', CaptchaController::class)
+        ->middleware('throttle:30,1');
     Route::post('/register', RegisterController::class)
-        ->middleware('throttle:5,1');
+        ->middleware(['throttle:5,1', 'captcha']);
     Route::post('/login', LoginController::class)
         ->middleware('throttle:5,1');
     // Protected Auth Routes
@@ -37,6 +42,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/posts', [PostController::class, 'store'])->middleware(['verified', 'throttle:10,1']);
         Route::get('/post/{post}/matches', [PostController::class, 'matches'])->whereNumber('post');
         Route::post('/post/{post}', [PostController::class, 'update'])->whereNumber('post');
+        Route::get('/post/{post}/messages', [MessageController::class, 'index'])->whereNumber('post');
+        Route::post('/post/{post}/messages', [MessageController::class, 'store'])
+            ->whereNumber('post')
+            ->middleware(['verified', 'throttle:30,1']);
+        Route::post('/post/{post}/report', ReportPostController::class)
+            ->whereNumber('post')
+            ->middleware('throttle:10,1');
         Route::delete('/post/{post}', [PostController::class, 'destroy'])->whereNumber('post');
     });
 });
