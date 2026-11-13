@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\UserBanController;
 use App\Http\Controllers\Api\V1\CaptchaController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
 use App\Http\Controllers\Api\V1\LoginController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\ReportPostController;
 use App\Http\Controllers\Api\V1\ResendVerificationController;
 use App\Http\Controllers\Api\V1\VerifyEmailController;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -50,4 +52,12 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:10,1');
         Route::delete('/post/{post}', [PostController::class, 'destroy'])->whereNumber('post');
     });
+
+    // Admin Moderation Routes
+    Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])
+        ->prefix('admin')
+        ->group(function () {
+            Route::post('/users/{user}/ban', [UserBanController::class, 'ban'])->whereNumber('user');
+            Route::post('/users/{user}/unban', [UserBanController::class, 'unban'])->whereNumber('user');
+        });
 });
