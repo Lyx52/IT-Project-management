@@ -37,6 +37,15 @@ class PostPolicy
             && $post->status !== PostStatus::Resolved;
     }
 
+    /**
+     * Suggested matches are for the author (and admins), whatever the
+     * post's status, so they show up while the post still awaits moderation.
+     */
+    public function viewMatches(User $user, Post $post): bool
+    {
+        return $user->id === $post->user_id || $user->isAdmin();
+    }
+
     public function delete(User $user, Post $post): bool
     {
         return $user->id === $post->user_id || $user->isAdmin();
