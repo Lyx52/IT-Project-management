@@ -25,7 +25,9 @@ return new class extends Migration
             $table->index(['status', 'created_at']);
         });
 
-        DB::statement("ALTER TABLE reports ADD CONSTRAINT reports_status_check CHECK (status IN ('open', 'closed'))");
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE reports ADD CONSTRAINT reports_status_check CHECK (status IN ('open', 'closed'))");
+        }
     }
 
     /**

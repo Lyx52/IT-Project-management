@@ -30,10 +30,12 @@ return new class extends Migration
             $table->index(['latitude', 'longitude'], 'posts_map_index'); // map bounds
         });
 
-        DB::statement("ALTER TABLE posts ADD CONSTRAINT posts_type_check CHECK (type IN ('lost', 'found'))");
-        DB::statement("ALTER TABLE posts ADD CONSTRAINT posts_status_check CHECK (status IN ('pending', 'approved', 'rejected', 'resolved'))");
-        DB::statement('ALTER TABLE posts ADD CONSTRAINT posts_latitude_check CHECK (latitude BETWEEN -90 AND 90)');
-        DB::statement('ALTER TABLE posts ADD CONSTRAINT posts_longitude_check CHECK (longitude BETWEEN -180 AND 180)');
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE posts ADD CONSTRAINT posts_type_check CHECK (type IN ('lost', 'found'))");
+            DB::statement("ALTER TABLE posts ADD CONSTRAINT posts_status_check CHECK (status IN ('pending', 'approved', 'rejected', 'resolved'))");
+            DB::statement('ALTER TABLE posts ADD CONSTRAINT posts_latitude_check CHECK (latitude BETWEEN -90 AND 90)');
+            DB::statement('ALTER TABLE posts ADD CONSTRAINT posts_longitude_check CHECK (longitude BETWEEN -180 AND 180)');
+        }
         // Listing filters
         DB::statement('CREATE INDEX posts_listing_index ON posts (status, type, event_date DESC)');
 
