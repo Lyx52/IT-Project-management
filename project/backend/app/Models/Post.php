@@ -91,7 +91,8 @@ class Post extends Model
      */
     public function scopeApproved(Builder $query): void
     {
-        $query->where('status', PostStatus::Approved);
+        $query->where('status', PostStatus::Approved)
+            ->whereHas('user', fn (Builder $q) => $q->whereNull('banned_at'));
     }
 
     /**
