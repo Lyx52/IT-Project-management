@@ -50,6 +50,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * @return HasMany<SavedSearch, $this>
+     */
+    public function savedSearches(): HasMany
+    {
+        return $this->hasMany(SavedSearch::class);
+    }
+
+    /**
      * Also called by Laravel's listener for the Registered event. Sends nothing
      * while verification is turned off (config/verification.php).
      */
