@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\PostStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SearchPostsRequest;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
@@ -31,6 +32,26 @@ class PostController extends Controller
             ->latest()
             ->latest('id')
             ->paginate(20);
+
+        return PostResource::collection($posts);
+    }
+
+    /**
+     * Search posts
+     *
+     * Searches the public feed. `q` matches posts whose title or description
+     * contains every word, ignoring case and diacritics. Without `q` this is
+     * the plain feed. Newest first, 20 per page.
+     */
+    public function search(SearchPostsRequest $request): AnonymousResourceCollection
+    {
+        $posts = Post::approved()
+            ->when($request->validated('q'), fn ($query, $text) => $query->search($text))
+            ->with(['category', 'user', 'images'])
+            ->latest()
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString();
 
         return PostResource::collection($posts);
     }
@@ -80,6 +101,23 @@ class PostController extends Controller
     }
 
     /**
+     * Suggested matches for a post
+     *
+     * Posts that might be the other half of this one, so the author doesn't
+     * have to search: the opposite type (lost posts get found posts and vice
+     * versa), the same category, an event date at most 7 days either side,
+     * less than 2 km away, approved, and not by the same user. Ordered by
+     * distance, closest first, at most 20. Each has `distance_m`, the
+     * distance in metres. Author or admin only.
+     */
+    public function matches(Post $post): AnonymousResourceCollection
+    {
+        Gate::authorize('viewMatches', $post);
+
+        return PostResource::collection($post->suggestedMatches());
+    }
+
+    /**
      * Update a post
      *
      * Partial update, only the fields sent are changed. Author only. Any
@@ -96,6 +134,24 @@ class PostController extends Controller
             $post->status = PostStatus::Pending;
             $post->save();
         }
+
+        return new PostResource($post->load(['category', 'user', 'images']));
+    }
+
+    /**
+     * Resolve a post
+     *
+     * Author only. Marks an approved post as resolved and records the time.
+     * The post leaves the public feed but stays reachable by its link, and
+     * can no longer be edited.
+     */
+    public function resolve(Post $post): PostResource
+    {
+        Gate::authorize('resolve', $post);
+
+        $post->status = PostStatus::Resolved;
+        $post->resolved_at = now();
+        $post->save();
 
         return new PostResource($post->load(['category', 'user', 'images']));
     }

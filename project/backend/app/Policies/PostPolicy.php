@@ -24,7 +24,7 @@ class PostPolicy
 
     public function create(User $user): bool
     {
-        return $user->banned_at === null;
+        return ! $user->isBanned();
     }
 
     /**
@@ -32,9 +32,30 @@ class PostPolicy
      */
     public function update(User $user, Post $post): bool
     {
-        return $user->banned_at === null
+        return ! $user->isBanned()
             && $user->id === $post->user_id
             && $post->status !== PostStatus::Resolved;
+    }
+
+    /**
+     * Suggested matches are for the author (and admins), whatever the
+     * post's status, so they show up while the post still awaits moderation.
+     */
+    public function viewMatches(User $user, Post $post): bool
+    {
+        return $user->id === $post->user_id || $user->isAdmin();
+    }
+
+    /**
+     * Only the author marks their post as resolved, and only once it's approved.
+     * Resolved posts are public, so resolving a pending or rejected one would
+     * skip moderation.
+     */
+    public function resolve(User $user, Post $post): bool
+    {
+        return ! $user->isBanned()
+            && $user->id === $post->user_id
+            && $post->isApproved();
     }
 
     public function delete(User $user, Post $post): bool
