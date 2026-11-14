@@ -10,7 +10,11 @@
 
     <div class="search-box">
       <i class="bi bi-search"></i>
-      <input type="text" class="form-control" placeholder="Search for an item..." />
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Search for an item..."
+      />
       <button class="btn btn-primary">Search</button>
     </div>
   </section>
@@ -23,12 +27,19 @@
         <span class="fw-semibold">Filters</span>
       </div>
 
-      <!-- Lost / Found switch -->
       <div class="items-switch">
         <button
+          class="switch-button"
+          [class.active]="selectedType === 'all'"
+          (click)="selectType('all')"
+        >
+          All items
+        </button>
+
+        <button
           class="switch-button lost"
-          [class.active]="selectedType === 'LOST'"
-          (click)="selectType('LOST')"
+          [class.active]="selectedType === 'lost'"
+          (click)="selectType('lost')"
         >
           <i class="bi bi-search me-2"></i>
           Lost items
@@ -36,8 +47,8 @@
 
         <button
           class="switch-button found"
-          [class.active]="selectedType === 'FOUND'"
-          (click)="selectType('FOUND')"
+          [class.active]="selectedType === 'found'"
+          (click)="selectType('found')"
         >
           <i class="bi bi-check-circle me-2"></i>
           Found items
@@ -56,7 +67,12 @@
       <input type="date" class="form-control" />
       <input type="date" class="form-control" />
 
-      <button class="btn btn-outline-secondary">Reset filters</button>
+      <button
+        class="btn btn-outline-secondary"
+        (click)="selectType('all')"
+      >
+        Reset filters
+      </button>
     </div>
   </section>
 
@@ -65,10 +81,18 @@
     <div class="items-section-header">
       <div>
         <h5 class="fw-bold mb-1">
-          {{ selectedType === 'LOST' ? 'Lost items' : 'Found items' }}
+          @if (selectedType === 'lost') {
+            Lost items
+          } @else if (selectedType === 'found') {
+            Found items
+          } @else {
+            All items
+          }
         </h5>
 
-        <p class="text-muted small mb-0">{{ filteredItems.length }} items available</p>
+        <p class="text-muted small mb-0">
+          {{ filteredItems.length }} items available
+        </p>
       </div>
 
       <button class="btn btn-outline-secondary btn-sm">
@@ -77,7 +101,17 @@
       </button>
     </div>
 
-    @if (filteredItems.length > 0) {
+    @if (loadError) {
+      <div class="alert alert-danger">
+        {{ loadError }}
+        <button
+          class="btn btn-sm btn-outline-danger ms-2"
+          (click)="loadPosts()"
+        >
+          Retry
+        </button>
+      </div>
+    } @else if (filteredItems.length > 0) {
       <div class="items-grid">
         @for (item of filteredItems; track item.id) {
           <app-item-card [item]="item" />
@@ -87,14 +121,20 @@
       <div class="empty-state">
         <i class="bi bi-search"></i>
         <h6 class="fw-bold mt-3">No items found</h6>
-        <p class="text-muted mb-0">There are currently no items in this category.</p>
+        <p class="text-muted mb-0">
+          There are currently no items in this category.
+        </p>
       </div>
     }
   </section>
 </main>
 
 <!-- Create post button -->
-<button class="create-post-button" (click)="openCreatePost()" aria-label="Create a post">
+<button
+  class="create-post-button"
+  (click)="openCreatePost()"
+  aria-label="Create a post"
+>
   <i class="bi bi-plus-lg"></i>
   <span>Create post</span>
 </button>
@@ -112,14 +152,21 @@
       <div class="modal-header-custom">
         <div>
           <h5 id="createPostTitle" class="fw-bold mb-1">Create a post</h5>
-          <p class="text-muted small mb-0">Share information about a lost or found item.</p>
+          <p class="text-muted small mb-0">
+            Share information about a lost or found item.
+          </p>
         </div>
 
-        <button class="btn-close" (click)="closeCreatePost()" aria-label="Close"></button>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="closeCreatePost()"
+          aria-label="Close"
+        ></button>
       </div>
 
       <div class="modal-body-custom">
-        <app-item-form />
+        <app-item-form (created)="onPostCreated()" />
       </div>
     </div>
   </div>

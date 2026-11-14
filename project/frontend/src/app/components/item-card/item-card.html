@@ -1,35 +1,49 @@
 <div class="card item-card h-100">
   <div class="item-image">
-    <i class="bi" [class]="item.icon"></i>
+    @if (item.images.length > 0 && !imageFailed) {
+      <img
+        [src]="item.images[0].url"
+        [alt]="item.title"
+        (error)="onImageError()"
+      />
+    } @else {
+      <i class="bi bi-image"></i>
+    }
 
     <span
       class="item-badge"
-      [class.lost]="item.type === 'LOST'"
-      [class.found]="item.type === 'FOUND'"
+      [class.lost]="item.type === 'lost'"
+      [class.found]="item.type === 'found'"
     >
-      {{ item.type }}
+      {{ item.type === 'lost' ? 'LOST' : 'FOUND' }}
     </span>
   </div>
 
   <div class="card-body">
-    <h6 class="fw-bold mb-1">{{ item.name }}</h6>
+    <div class="item-category">
+      {{ item.category.name }}
+    </div>
 
-    <p class="text-muted small mb-3">
+    <h6 class="fw-bold mb-1">{{ item.title }}</h6>
+
+    <p class="text-muted small mb-3 item-description">
       {{ item.description }}
     </p>
 
     <div class="item-info">
       <div>
         <i class="bi bi-geo-alt"></i>
-        {{ item.location }}
+        {{ item.location_name || 'Location not specified' }}
       </div>
 
       <div>
         <i class="bi bi-calendar3"></i>
-        {{ item.date }}
+        {{ item.event_date | date:'d MMM yyyy' }}
       </div>
     </div>
 
-    <button class="btn btn-outline-primary btn-sm w-100 mt-3">View details</button>
+    <button class="btn btn-outline-primary btn-sm w-100 mt-3">
+      View details
+    </button>
   </div>
 </div>
