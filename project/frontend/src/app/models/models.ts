@@ -73,4 +73,9 @@ export interface PostUser {
   username: string;
 }
 
+export interface Category {
+  id: number;
+  name: string;
+}
+
 

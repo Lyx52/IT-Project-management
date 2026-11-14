@@ -1,17 +1,15 @@
 import { Component, inject } from '@angular/core';
 import { Item } from '../../models/models';
-import { ItemForm } from '../../components/item-form/item-form';
 import { ItemCard } from '../../components/item-card/item-card';
 import { Messenger } from '../../components/messenger/messenger';
 import { Header } from '../../components/header/header';
-import { MOCK_ITEMS } from '../../models/mock-items';
 import { PostService } from '../../services/posts.service';
 import { CreatePost } from '../../components/create-post/create-post';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemForm, ItemCard, Messenger, Header, CreatePost],
+  imports: [ItemCard, Messenger, Header, CreatePost],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })

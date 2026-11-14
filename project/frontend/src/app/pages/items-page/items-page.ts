@@ -42,9 +42,6 @@ export class ItemsPageComponent implements OnInit {
 
     this.postService.getPosts().subscribe({
       next: (response) => {
-        console.log('Items page API response:', response);
-        console.log('Items page posts payload:', response.data);
-
         this.items = response.data as Item[];
       },
       error: (error) => {

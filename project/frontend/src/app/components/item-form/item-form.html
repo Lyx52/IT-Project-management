@@ -96,18 +96,55 @@
       <!-- Category -->
       <div class="mb-3">
         <label class="form-label">Category</label>
-        <select class="form-select" formControlName="categoryId">
-          <option [ngValue]="0" disabled>Select category</option>
-          @for (category of categories; track category.id) {
-            <option [ngValue]="category.id">{{ category.name }}</option>
-          }
-        </select>
 
-        @if (
-          form.controls.categoryId.touched &&
-          form.controls.categoryId.invalid
-        ) {
-          <small class="text-danger">Please select a category.</small>
+        @if (categoriesError) {
+          <div class="text-danger small mb-2">
+            {{ categoriesError }}
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            (click)="loadCategories()"
+          >
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            Retry
+          </button>
+        } @else {
+          <select
+            class="form-select"
+            formControlName="categoryId"
+            [disabled]="isCategoriesLoading || categories.length === 0"
+          >
+            <option [ngValue]="0" disabled>
+              @if (isCategoriesLoading) {
+                Loading categories...
+              } @else {
+                Select category
+              }
+            </option>
+
+            @for (category of categories; track category.id) {
+              <option [ngValue]="category.id">
+                {{ category.name }}
+              </option>
+            }
+          </select>
+
+          @if (
+            form.controls.categoryId.touched &&
+            form.controls.categoryId.invalid
+          ) {
+            <small class="text-danger">
+              Please select a category.
+            </small>
+          }
+
+          @if (!isCategoriesLoading && categories.length === 0) {
+            <small class="text-muted">
+              No categories are currently available.
+            </small>
+          }
         }
       </div>
 

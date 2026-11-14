@@ -2,7 +2,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiResponse, Post } from '../models/models';
+import { ApiResponse, Category, Post } from '../models/models';
 import { environment } from '../../environments/environment.development';
 
 @Injectable({
@@ -27,6 +27,20 @@ export class PostService {
       `${environment.apiBaseUrl}/posts`,
       formData,
       { headers: this.headers },
+    );
+  }
+
+  getPostById(id: number): Observable<ApiResponse<Post>> {
+    return this.http.get<ApiResponse<Post>>(
+        `${environment.apiBaseUrl}/post/${id}`,
+        { headers: this.headers },
+    );
+}
+
+  getCategories(): Observable<ApiResponse<Category[]>> {
+    return this.http.get<ApiResponse<Category[]>>(
+        `${environment.apiBaseUrl}/category/query`,
+        { headers: this.headers },
     );
   }
 }

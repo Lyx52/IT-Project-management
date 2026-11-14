@@ -1,10 +1,24 @@
-import { Component, EventEmitter, inject, Output } from '@angular/core';
+
+import {
+  Component,
+  EventEmitter,
+  inject,
+  OnInit,
+  Output,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../../services/auth';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { POST_CATEGORIES } from '../../models/post.category';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
+
+import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
+import { Category } from '../../models/models';
 
 function notFutureDate(control: AbstractControl): ValidationErrors | null {
   if (!control.value) {
@@ -28,7 +42,7 @@ function notFutureDate(control: AbstractControl): ValidationErrors | null {
   templateUrl: './item-form.html',
   styleUrl: './item-form.scss',
 })
-export class ItemForm {
+export class ItemForm implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly postService = inject(PostService);
@@ -36,7 +50,10 @@ export class ItemForm {
   @Output() created = new EventEmitter<void>();
 
   readonly isAuthenticated = this.auth.isAuthenticated;
-  readonly categories = POST_CATEGORIES;
+
+  categories: Category[] = [];
+  isCategoriesLoading = false;
+  categoriesError = '';
 
   readonly maxImages = 5;
   readonly maxImageSize = 5 * 1024 * 1024;
@@ -65,6 +82,27 @@ export class ItemForm {
   imageError = '';
   submitError = '';
   isSubmitting = false;
+
+  ngOnInit(): void {
+    this.loadCategories();
+  }
+
+  loadCategories(): void {
+    this.isCategoriesLoading = true;
+    this.categoriesError = '';
+
+    this.postService.getCategories().subscribe({
+      next: (response) => {
+        this.categories = response.data;
+        this.isCategoriesLoading = false;
+      },
+      error: (error) => {
+        console.error('Failed to load categories:', error);
+        this.categoriesError = 'Failed to load categories. Please try again.';
+        this.isCategoriesLoading = false;
+      },
+    });
+  }
 
   get today(): string {
     const date = new Date();
@@ -160,6 +198,7 @@ export class ItemForm {
     this.postService.createPost(payload).subscribe({
       next: () => {
         this.isSubmitting = false;
+
         this.form.reset({
           type: 'lost',
           categoryId: 0,
@@ -168,6 +207,7 @@ export class ItemForm {
           eventDate: '',
           locationName: '',
         });
+
         this.selectedImages = [];
         this.created.emit();
       },
