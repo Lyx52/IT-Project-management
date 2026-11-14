@@ -95,6 +95,11 @@ class Post extends Model
             ->whereHas('user', fn (Builder $q) => $q->whereNull('banned_at'));
     }
 
+    public function isApproved(): bool
+    {
+        return $this->status === PostStatus::Approved;
+    }
+
     /**
      * Every word must appear in the title or description. Case and diacritics
      * are ignored.
