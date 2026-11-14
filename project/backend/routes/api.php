@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Admin\PostModerationController;
 use App\Http\Controllers\Api\V1\Admin\UserBanController;
 use App\Http\Controllers\Api\V1\CaptchaController;
+use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
@@ -34,6 +35,8 @@ Route::prefix('v1')->group(function () {
         ->whereNumber('id')
         ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
+
+    Route::get('/category/query', [CategoryController::class, 'query']);
 
     Route::get('/posts', [PostController::class, 'index']);
     Route::get('/posts/query', [PostController::class, 'search'])->middleware('throttle:60,1');
