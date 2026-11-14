@@ -39,6 +39,7 @@ class Post extends Model
             'longitude' => 'float',
             'event_date' => 'date:Y-m-d',
             'resolved_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -62,6 +63,14 @@ class Post extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     /**
