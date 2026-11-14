@@ -1,11 +1,4 @@
-
-import {
-  Component,
-  EventEmitter,
-  inject,
-  OnInit,
-  Output,
-} from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -58,11 +51,7 @@ export class ItemForm implements OnInit {
   readonly maxImages = 5;
   readonly maxImageSize = 5 * 1024 * 1024;
 
-  readonly allowedImageTypes = [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-  ];
+  readonly allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
   readonly defaultCoordinates = {
     latitude: 56.9496,
@@ -130,9 +119,7 @@ export class ItemForm implements OnInit {
       return;
     }
 
-    const invalidType = files.find(
-      (file) => !this.allowedImageTypes.includes(file.type),
-    );
+    const invalidType = files.find((file) => !this.allowedImageTypes.includes(file.type));
 
     if (invalidType) {
       this.imageError = 'Only JPG, PNG and WEBP images are allowed.';
@@ -140,9 +127,7 @@ export class ItemForm implements OnInit {
       return;
     }
 
-    const oversizedFile = files.find(
-      (file) => file.size > this.maxImageSize,
-    );
+    const oversizedFile = files.find((file) => file.size > this.maxImageSize);
 
     if (oversizedFile) {
       this.imageError = 'Each image must be 5 MB or smaller.';
@@ -154,9 +139,7 @@ export class ItemForm implements OnInit {
   }
 
   removeImage(index: number): void {
-    this.selectedImages = this.selectedImages.filter(
-      (_, imageIndex) => imageIndex !== index,
-    );
+    this.selectedImages = this.selectedImages.filter((_, imageIndex) => imageIndex !== index);
   }
 
   submit(): void {
@@ -215,9 +198,7 @@ export class ItemForm implements OnInit {
         this.isSubmitting = false;
 
         if (error.status === 422 && error.error?.errors) {
-          const errors = Object.values(error.error.errors)
-            .flat()
-            .join(' ');
+          const errors = Object.values(error.error.errors).flat().join(' ');
 
           this.submitError = errors || 'Please check the form fields.';
           return;
@@ -225,14 +206,12 @@ export class ItemForm implements OnInit {
 
         if (error.status === 403) {
           this.submitError =
-            error.error?.message ??
-            'Your account must have a verified email to create a post.';
+            error.error?.message ?? 'Your account must have a verified email to create a post.';
           return;
         }
 
         this.submitError =
-          error.error?.message ??
-          'Something went wrong while creating the post. Please try again.';
+          error.error?.message ?? 'Something went wrong while creating the post. Please try again.';
       },
     });
   }

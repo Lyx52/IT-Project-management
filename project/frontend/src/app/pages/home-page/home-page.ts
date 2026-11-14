@@ -14,7 +14,7 @@ import { CreatePost } from '../../components/create-post/create-post';
   styleUrl: './home-page.scss',
 })
 export class HomePageComponent {
- private readonly postService = inject(PostService);
+  private readonly postService = inject(PostService);
 
   items: Item[] = [];
 

@@ -1,11 +1,7 @@
 <div class="card item-card h-100">
   <div class="item-image">
     @if (item.images.length > 0 && !imageFailed) {
-      <img
-        [src]="item.images[0].url"
-        [alt]="item.title"
-        (error)="onImageError()"
-      />
+      <img [src]="item.images[0].url" [alt]="item.title" (error)="onImageError()" />
     } @else {
       <i class="bi bi-image"></i>
     }
@@ -38,12 +34,10 @@
 
       <div>
         <i class="bi bi-calendar3"></i>
-        {{ item.event_date | date:'d MMM yyyy' }}
+        {{ item.event_date | date: 'd MMM yyyy' }}
       </div>
     </div>
 
-    <button class="btn btn-outline-primary btn-sm w-100 mt-3">
-      View details
-    </button>
+    <button class="btn btn-outline-primary btn-sm w-100 mt-3">View details</button>
   </div>
 </div>

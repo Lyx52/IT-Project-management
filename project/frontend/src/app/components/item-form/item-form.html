@@ -1,13 +1,9 @@
-
 <div class="panel p-3">
   <h5 class="fw-bold mb-1">Report an item</h5>
-  <p class="text-muted small mb-3">
-    Help someone find their belongings.
-  </p>
+  <p class="text-muted small mb-3">Help someone find their belongings.</p>
 
   @if (isAuthenticated()) {
     <form [formGroup]="form" (ngSubmit)="submit()">
-
       <!-- Lost / Found -->
       <div class="type-selector d-flex gap-2 mb-3">
         <button
@@ -44,9 +40,7 @@
 
           <i class="bi bi-cloud-arrow-up fs-2"></i>
           <p class="mb-0 mt-2">Upload item photos</p>
-          <small class="text-muted">
-            JPG, PNG or WEBP. Up to 5 images, 5 MB each.
-          </small>
+          <small class="text-muted"> JPG, PNG or WEBP. Up to 5 images, 5 MB each. </small>
         </label>
 
         @if (selectedImages.length > 0) {
@@ -102,11 +96,7 @@
             {{ categoriesError }}
           </div>
 
-          <button
-            type="button"
-            class="btn btn-outline-secondary btn-sm"
-            (click)="loadCategories()"
-          >
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="loadCategories()">
             <i class="bi bi-arrow-clockwise me-1"></i>
             Retry
           </button>
@@ -131,19 +121,12 @@
             }
           </select>
 
-          @if (
-            form.controls.categoryId.touched &&
-            form.controls.categoryId.invalid
-          ) {
-            <small class="text-danger">
-              Please select a category.
-            </small>
+          @if (form.controls.categoryId.touched && form.controls.categoryId.invalid) {
+            <small class="text-danger"> Please select a category. </small>
           }
 
           @if (!isCategoriesLoading && categories.length === 0) {
-            <small class="text-muted">
-              No categories are currently available.
-            </small>
+            <small class="text-muted"> No categories are currently available. </small>
           }
         }
       </div>
@@ -151,17 +134,9 @@
       <!-- Date -->
       <div class="mb-3">
         <label class="form-label">Date</label>
-        <input
-          type="date"
-          class="form-control"
-          formControlName="eventDate"
-          [max]="today"
-        />
+        <input type="date" class="form-control" formControlName="eventDate" [max]="today" />
 
-        @if (
-          form.controls.eventDate.touched &&
-          form.controls.eventDate.invalid
-        ) {
+        @if (form.controls.eventDate.touched && form.controls.eventDate.invalid) {
           <small class="text-danger">
             @if (form.controls.eventDate.hasError('required')) {
               Date is required.
@@ -194,10 +169,7 @@
           maxlength="5000"
         ></textarea>
 
-        @if (
-          form.controls.description.touched &&
-          form.controls.description.invalid
-        ) {
+        @if (form.controls.description.touched && form.controls.description.invalid) {
           <small class="text-danger">
             @if (form.controls.description.hasError('required')) {
               Description is required.
@@ -214,11 +186,7 @@
         </div>
       }
 
-      <button
-        type="submit"
-        class="btn btn-primary w-100"
-        [disabled]="isSubmitting"
-      >
+      <button type="submit" class="btn btn-primary w-100" [disabled]="isSubmitting">
         @if (isSubmitting) {
           <span class="spinner-border spinner-border-sm me-2"></span>
           Creating...
@@ -228,9 +196,7 @@
       </button>
     </form>
   } @else {
-    <a class="btn btn-primary w-100" routerLink="/login">
-      Sign in to report an item
-    </a>
+    <a class="btn btn-primary w-100" routerLink="/login"> Sign in to report an item </a>
     <p class="text-muted small text-center mb-0 mt-2">
       You need an account to report a lost or found item.
     </p>

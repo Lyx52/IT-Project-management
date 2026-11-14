@@ -1,4 +1,3 @@
-
 export enum PostCategory {
   Electronics = 1,
   JewelryAccessories = 2,

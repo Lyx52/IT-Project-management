@@ -1,5 +1,3 @@
 import { Item } from './models';
 
-export const MOCK_ITEMS: Item[] = [
-  
-];
+export const MOCK_ITEMS: Item[] = [];

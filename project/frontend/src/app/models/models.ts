@@ -1,4 +1,3 @@
-
 export interface Item {
   id: number;
   type: 'lost' | 'found';
@@ -77,5 +76,3 @@ export interface Category {
   id: number;
   name: string;
 }
-
-
