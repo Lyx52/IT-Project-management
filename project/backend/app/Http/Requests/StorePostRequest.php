@@ -21,7 +21,7 @@ class StorePostRequest extends FormRequest
     {
         return [
             'type' => ['required', 'string', Rule::enum(PostType::class)],
-            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->whereNull('retired_at')],
             'title' => ['required', 'string', 'max:100'],
             'description' => ['required', 'string', 'max:5000'],
             'latitude' => ['required', 'numeric', 'between:-90,90'],

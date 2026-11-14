@@ -69,5 +69,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/moderation/queue', [PostModerationController::class, 'queue']);
             Route::post('/posts/{post}/approve', [PostModerationController::class, 'approve'])->whereNumber('post');
             Route::post('/posts/{post}/reject', [PostModerationController::class, 'reject'])->whereNumber('post');
+            Route::get('/categories', [CategoryController::class, 'adminIndex']);
+            Route::post('/categories', [CategoryController::class, 'store']);
+            Route::patch('/categories/{category}', [CategoryController::class, 'update'])->whereNumber('category');
+            Route::post('/categories/{category}/retire', [CategoryController::class, 'retire'])->whereNumber('category');
+            Route::post('/categories/{category}/restore', [CategoryController::class, 'restore'])->whereNumber('category');
+            Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->whereNumber('category');
         });
 });
