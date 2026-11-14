@@ -38,6 +38,15 @@ class PostPolicy
     }
 
     /**
+     * Suggested matches are for the author (and admins), whatever the
+     * post's status, so they show up while the post still awaits moderation.
+     */
+    public function viewMatches(User $user, Post $post): bool
+    {
+        return $user->id === $post->user_id || $user->isAdmin();
+    }
+
+    /**
      * Only the author marks their post as resolved, and only once it's approved.
      * Resolved posts are public, so resolving a pending or rejected one would
      * skip moderation.
