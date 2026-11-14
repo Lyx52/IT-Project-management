@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\PostModerationController;
 use App\Http\Controllers\Api\V1\Admin\UserBanController;
 use App\Http\Controllers\Api\V1\CaptchaController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
@@ -62,5 +63,8 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::post('/users/{user}/ban', [UserBanController::class, 'ban'])->whereNumber('user');
             Route::post('/users/{user}/unban', [UserBanController::class, 'unban'])->whereNumber('user');
+            Route::get('/moderation/queue', [PostModerationController::class, 'queue']);
+            Route::post('/posts/{post}/approve', [PostModerationController::class, 'approve'])->whereNumber('post');
+            Route::post('/posts/{post}/reject', [PostModerationController::class, 'reject'])->whereNumber('post');
         });
 });
