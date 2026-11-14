@@ -101,6 +101,26 @@ class Post extends Model
     }
 
     /**
+     * Every word must appear in the title or description. Case and diacritics
+     * are ignored.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeSearch(Builder $query, string $text): void
+    {
+        $words = preg_split('/\s+/u', trim($text), -1, PREG_SPLIT_NO_EMPTY);
+
+        foreach (array_slice($words, 0, 10) as $word) {
+            // % and _ are wildcards in ILIKE, so they're matched literally
+            $pattern = '%'.addcslashes($word, '\\%_').'%';
+
+            $query->where(fn (Builder $q) => $q
+                ->whereRaw('unaccent(title) ILIKE unaccent(?)', [$pattern])
+                ->orWhereRaw('unaccent(description) ILIKE unaccent(?)', [$pattern]));
+        }
+    }
+
+    /**
      * Approved and resolved posts are public, pending and rejected ones are not.
      */
     public function isPublic(): bool
