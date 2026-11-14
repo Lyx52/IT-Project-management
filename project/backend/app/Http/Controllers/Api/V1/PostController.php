@@ -101,6 +101,24 @@ class PostController extends Controller
     }
 
     /**
+     * Resolve a post
+     *
+     * Author only. Marks an approved post as resolved and records the time.
+     * The post leaves the public feed but stays reachable by its link, and
+     * can no longer be edited.
+     */
+    public function resolve(Post $post): PostResource
+    {
+        Gate::authorize('resolve', $post);
+
+        $post->status = PostStatus::Resolved;
+        $post->resolved_at = now();
+        $post->save();
+
+        return new PostResource($post->load(['category', 'user', 'images']));
+    }
+
+    /**
      * Delete a post
      *
      * Author or admin. Also deletes the post's images.

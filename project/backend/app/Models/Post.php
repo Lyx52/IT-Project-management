@@ -83,6 +83,11 @@ class Post extends Model
             ->whereHas('user', fn (Builder $q) => $q->whereNull('banned_at'));
     }
 
+    public function isApproved(): bool
+    {
+        return $this->status === PostStatus::Approved;
+    }
+
     /**
      * Approved and resolved posts are public, pending and rejected ones are not.
      */

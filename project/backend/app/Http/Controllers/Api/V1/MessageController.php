@@ -56,7 +56,7 @@ class MessageController extends Controller
     public function store(StoreMessageRequest $request, Post $post): JsonResponse
     {
         $me = $request->user();
-        abort_if($me->banned_at !== null, 403, 'This account has been banned.');
+        abort_if($me->isBanned(), 403, 'This account has been banned.');
 
         $other = $this->counterpart($post, $me, $request->validated('user_id'), forSending: true);
 
