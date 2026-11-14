@@ -4,8 +4,16 @@
   <!-- Page heading and search -->
   <section class="page-heading mb-4">
     <div>
-      <h4 class="fw-bold mb-1">Items</h4>
-      <p class="text-muted mb-0">Browse lost and found items.</p>
+      <h4 class="fw-bold mb-1">
+        {{ selectedType === 'LOST' ? 'Lost items' : 'Found items' }}
+      </h4>
+      <p class="text-muted mb-0">
+        {{
+          selectedType === 'LOST'
+            ? 'Browse items that people have lost.'
+            : 'Browse items that people have found.'
+        }}
+      </p>
     </div>
 
     <div class="search-box">
@@ -16,49 +24,7 @@
   </section>
 
   <!-- Filters -->
-  <section class="filter-section mb-4">
-    <div class="filter-header">
-      <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-funnel"></i>
-        <span class="fw-semibold">Filters</span>
-      </div>
-
-      <!-- Lost / Found switch -->
-      <div class="items-switch">
-        <button
-          class="switch-button lost"
-          [class.active]="selectedType === 'LOST'"
-          (click)="selectType('LOST')"
-        >
-          <i class="bi bi-search me-2"></i>
-          Lost items
-        </button>
-
-        <button
-          class="switch-button found"
-          [class.active]="selectedType === 'FOUND'"
-          (click)="selectType('FOUND')"
-        >
-          <i class="bi bi-check-circle me-2"></i>
-          Found items
-        </button>
-      </div>
-    </div>
-
-    <div class="filter-controls">
-      <select class="form-select">
-        <option selected>All categories</option>
-        <option>Accessories</option>
-        <option>Electronics</option>
-        <option>Documents</option>
-      </select>
-
-      <input type="date" class="form-control" />
-      <input type="date" class="form-control" />
-
-      <button class="btn btn-outline-secondary">Reset filters</button>
-    </div>
-  </section>
+  <app-item-filters class="d-block mb-4" (filtersChange)="onFiltersChange($event)" />
 
   <!-- Items list -->
   <section class="items-section">
