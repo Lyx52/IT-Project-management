@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
         ->name('verification.verify');
 
     Route::get('/posts', [PostController::class, 'index']);
+    Route::get('/posts/query', [PostController::class, 'search'])->middleware('throttle:60,1');
     Route::get('/post/{post}', [PostController::class, 'show'])->whereNumber('post');
 
     Route::middleware('auth:sanctum')->group(function () {

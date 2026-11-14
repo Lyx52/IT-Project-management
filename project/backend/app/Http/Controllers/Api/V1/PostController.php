@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\PostStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SearchPostsRequest;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
@@ -31,6 +32,26 @@ class PostController extends Controller
             ->latest()
             ->latest('id')
             ->paginate(20);
+
+        return PostResource::collection($posts);
+    }
+
+    /**
+     * Search posts
+     *
+     * Searches the public feed. `q` matches posts whose title or description
+     * contains every word, ignoring case and diacritics. Without `q` this is
+     * the plain feed. Newest first, 20 per page.
+     */
+    public function search(SearchPostsRequest $request): AnonymousResourceCollection
+    {
+        $posts = Post::approved()
+            ->when($request->validated('q'), fn ($query, $text) => $query->search($text))
+            ->with(['category', 'user', 'images'])
+            ->latest()
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString();
 
         return PostResource::collection($posts);
     }
