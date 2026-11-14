@@ -44,6 +44,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/posts', [PostController::class, 'store'])->middleware(['verified', 'throttle:10,1']);
         Route::get('/post/{post}/matches', [PostController::class, 'matches'])->whereNumber('post');
         Route::post('/post/{post}', [PostController::class, 'update'])->whereNumber('post');
+        Route::post('/post/{post}/resolve', [PostController::class, 'resolve'])->whereNumber('post');
         Route::get('/post/{post}/messages', [MessageController::class, 'index'])->whereNumber('post');
         Route::post('/post/{post}/messages', [MessageController::class, 'store'])
             ->whereNumber('post')
