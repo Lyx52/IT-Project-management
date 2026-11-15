@@ -104,6 +104,25 @@ class PostSearchTest extends TestCase
         $this->assertSame([$visible->id], $this->search(['q' => 'keys']));
     }
 
+    public function test_filters_by_type_and_category(): void
+    {
+        $phones = Category::where('name', 'Phones')->value('id');
+        $lostKeys = $this->createPost(['title' => 'Keys', 'type' => 'lost']);
+        $foundKeys = $this->createPost(['title' => 'Keys', 'type' => 'found']);
+        $foundPhone = $this->createPost(['title' => 'Keys cover', 'type' => 'found', 'category_id' => $phones]);
+
+        $this->assertEqualsCanonicalizing([$foundKeys->id, $foundPhone->id], $this->search(['type' => 'found']));
+        $this->assertEqualsCanonicalizing([$lostKeys->id, $foundKeys->id], $this->search(['category_id' => $this->keys->id]));
+        $this->assertSame([$foundKeys->id], $this->search(['q' => 'keys', 'type' => 'found', 'category_id' => $this->keys->id]));
+    }
+
+    public function test_rejects_invalid_filters(): void
+    {
+        $this->getJson('/api/v1/posts/query?type=stolen&category_id=999999')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['type', 'category_id']);
+    }
+
     public function test_rejects_an_overlong_query(): void
     {
         $this->getJson('/api/v1/posts/query?q='.str_repeat('a', 101))->assertUnprocessable()->assertJsonValidationErrors('q');

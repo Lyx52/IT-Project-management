@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\ReportPostController;
 use App\Http\Controllers\Api\V1\ResendVerificationController;
+use App\Http\Controllers\Api\V1\SavedSearchController;
+use App\Http\Controllers\Api\V1\UserDataExportController;
 use App\Http\Controllers\Api\V1\VerifyEmailController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +30,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', LogoutController::class);
         Route::get('/user', CurrentUserController::class);
+        Route::get('/user/export', UserDataExportController::class);
     });
 
     // Linked from the verification e-mail sent on registration
@@ -58,6 +61,11 @@ Route::prefix('v1')->group(function () {
             ->whereNumber('post')
             ->middleware('throttle:10,1');
         Route::delete('/post/{post}', [PostController::class, 'destroy'])->whereNumber('post');
+
+        Route::get('/saved-searches', [SavedSearchController::class, 'index']);
+        Route::post('/saved-searches', [SavedSearchController::class, 'store'])->middleware('throttle:20,1');
+        Route::patch('/saved-search/{savedSearch}', [SavedSearchController::class, 'update'])->whereNumber('savedSearch');
+        Route::delete('/saved-search/{savedSearch}', [SavedSearchController::class, 'destroy'])->whereNumber('savedSearch');
     });
 
     // Admin Moderation Routes

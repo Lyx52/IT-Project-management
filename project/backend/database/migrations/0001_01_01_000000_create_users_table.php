@@ -27,7 +27,30 @@ return new class extends Migration
             $table->softDeletes()->index();
         });
 
-        DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('user', 'admin'))");
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('user', 'admin'))");
+        } elseif (DB::connection()->getDriverName() === 'sqlite') {
+            // SQLite cannot add a table constraint after creation, so enforce
+            // the same allowed values with triggers instead.
+            DB::unprepared(<<<'SQL'
+                CREATE TRIGGER users_role_check_insert
+                BEFORE INSERT ON users
+                WHEN NEW.role NOT IN ('user', 'admin')
+                BEGIN
+                    SELECT RAISE(ABORT, 'users.role must be user or admin');
+                END;
+                SQL);
+
+            DB::unprepared(<<<'SQL'
+                CREATE TRIGGER users_role_check_update
+                BEFORE UPDATE OF role ON users
+                WHEN NEW.role NOT IN ('user', 'admin')
+                BEGIN
+                    SELECT RAISE(ABORT, 'users.role must be user or admin');
+                END;
+                SQL);
+        }
+
         // Case-insensitive unique email
         DB::statement('CREATE UNIQUE INDEX users_email_lower_unique ON users (LOWER(email))');
 
