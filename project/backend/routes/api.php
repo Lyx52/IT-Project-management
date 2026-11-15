@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\Admin\UserBanController;
 use App\Http\Controllers\Api\V1\CaptchaController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
+use App\Http\Controllers\Api\V1\UserDataExportController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\MessageController;
@@ -29,6 +30,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', LogoutController::class);
         Route::get('/user', CurrentUserController::class);
+        Route::get('/user/export', UserDataExportController::class);
     });
 
     // Linked from the verification e-mail sent on registration
