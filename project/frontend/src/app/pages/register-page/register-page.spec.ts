@@ -407,15 +407,13 @@ describe('RegisterPageComponent', () => {
       component.form.patchValue({ ...VALID_INPUT, captchaAnswer: '13' });
       component.submit();
 
-      httpMock
-        .expectOne(url)
-        .flush(
-          {
-            message: 'The given data was invalid.',
-            errors: { captcha_answer: ['That answer is not correct. Try the new question.'] },
-          },
-          { status: 422, statusText: 'Unprocessable Content' },
-        );
+      httpMock.expectOne(url).flush(
+        {
+          message: 'The given data was invalid.',
+          errors: { captcha_answer: ['That answer is not correct. Try the new question.'] },
+        },
+        { status: 422, statusText: 'Unprocessable Content' },
+      );
       httpMock.expectOne(captchaUrl).flush(DETERMINANT);
       fixture.detectChanges();
 
