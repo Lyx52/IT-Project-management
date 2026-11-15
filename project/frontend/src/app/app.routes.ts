@@ -4,6 +4,7 @@ import { ItemsPageComponent } from './pages/items-page/items-page';
 import { MapPageComponent } from './pages/map-page/map-page';
 import { LoginPageComponent } from './pages/login-page/login-page';
 import { RegisterPageComponent } from './pages/register-page/register-page';
+import { PostDetailPageComponent } from './pages/post-detail-page/post-detail-page';
 
 export const routes: Routes = [
   {
@@ -30,6 +31,10 @@ export const routes: Routes = [
   {
     path: 'register',
     component: RegisterPageComponent,
+  },
+  {
+    path: 'post/:id',
+    component: PostDetailPageComponent,
   },
   {
     path: '**',

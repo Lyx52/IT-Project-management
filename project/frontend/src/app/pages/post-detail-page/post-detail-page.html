@@ -1,0 +1,149 @@
+<app-header />
+
+<main class="page-container py-4">
+  <a routerLink="/home" class="back-link mb-3">
+    <i class="bi bi-arrow-left me-1"></i>
+    Back to items
+  </a>
+
+  @if (isLoading) {
+    <div class="state-box">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted mb-0 mt-3">Loading post...</p>
+    </div>
+  } @else if (notFound) {
+    <div class="state-box">
+      <i class="bi bi-search"></i>
+      <h5 class="fw-bold mt-3">Post not found</h5>
+      <p class="text-muted mb-0">This post does not exist or is not available.</p>
+    </div>
+  } @else if (errorMessage) {
+    <div class="state-box">
+      <i class="bi bi-exclamation-triangle"></i>
+      <h5 class="fw-bold mt-3">Something went wrong</h5>
+      <p class="text-muted mb-0">{{ errorMessage }}</p>
+    </div>
+  } @else if (post) {
+    <article class="post-detail">
+      <!-- Gallery -->
+      <section class="gallery">
+        <div class="gallery-main">
+          @if (selectedImageUrl) {
+            <img [src]="selectedImageUrl" [alt]="post.title" />
+          } @else {
+            <i class="bi bi-image"></i>
+          }
+        </div>
+
+        @if (post.images.length > 1) {
+          <div class="gallery-thumbs">
+            @for (image of post.images; track image.id; let i = $index) {
+              <button
+                type="button"
+                class="thumb"
+                [class.active]="i === selectedImageIndex"
+                (click)="selectImage(i)"
+                [attr.aria-label]="'Show photo ' + (i + 1)"
+              >
+                <img [src]="image.url" [alt]="post.title + ' photo ' + (i + 1)" />
+              </button>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- Details -->
+      <section class="details">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span
+            class="type-badge"
+            [class.lost]="post.type === 'lost'"
+            [class.found]="post.type === 'found'"
+          >
+            {{ post.type === 'lost' ? 'LOST' : 'FOUND' }}
+          </span>
+
+          @if (post.status === 'resolved') {
+            <span class="resolved-badge">Resolved</span>
+          }
+        </div>
+
+        <h3 class="fw-bold mb-3">{{ post.title }}</h3>
+
+        <ul class="info-list">
+          <li>
+            <i class="bi bi-tag"></i>
+            <span>Category</span>
+            <strong>{{ post.category.name }}</strong>
+          </li>
+          <li>
+            <i class="bi bi-calendar3"></i>
+            <span>Date</span>
+            <strong>{{ post.event_date | date: 'd MMM yyyy' }}</strong>
+          </li>
+          <li>
+            <i class="bi bi-geo-alt"></i>
+            <span>Place</span>
+            <strong>{{ post.location_name || 'Location not specified' }}</strong>
+          </li>
+          <li>
+            <i class="bi bi-person"></i>
+            <span>Posted by</span>
+            <strong>{{ post.user.username }}</strong>
+          </li>
+        </ul>
+
+        <h6 class="fw-bold mt-4">Description</h6>
+        <p class="description">{{ post.description }}</p>
+
+        @if (isOwnPost) {
+          <p class="text-muted small mt-3 mb-0">This is your post.</p>
+        } @else if (canContact) {
+          @if (messageSent) {
+            <div class="alert alert-success mt-3" role="status">
+              Message sent. The {{ post.type === 'lost' ? 'owner' : 'finder' }} will see it.
+            </div>
+          }
+
+          <button type="button" class="btn btn-primary mt-3" (click)="contact()">
+            <i class="bi bi-chat-dots me-1"></i>
+            Contact {{ post.type === 'lost' ? 'the owner' : 'the finder' }}
+          </button>
+
+          @if (isContactOpen) {
+            @if (needsVerification) {
+              <div class="alert alert-warning mt-3" role="alert">
+                Please verify your e-mail address before you send messages.
+              </div>
+            } @else {
+              <div class="mt-3">
+                <label for="messageBody" class="form-label fw-semibold">Your message</label>
+                <textarea
+                  id="messageBody"
+                  class="form-control"
+                  rows="4"
+                  [attr.maxlength]="maxMessageLength"
+                  [(ngModel)]="messageBody"
+                  placeholder="Describe why this is your item..."
+                ></textarea>
+
+                @if (messageError) {
+                  <div class="text-danger small mt-2" role="alert">{{ messageError }}</div>
+                }
+
+                <button
+                  type="button"
+                  class="btn btn-primary mt-2"
+                  [disabled]="isSending || !messageBody.trim()"
+                  (click)="sendMessage()"
+                >
+                  {{ isSending ? 'Sending...' : 'Send message' }}
+                </button>
+              </div>
+            }
+          }
+        }
+      </section>
+    </article>
+  }
+</main>

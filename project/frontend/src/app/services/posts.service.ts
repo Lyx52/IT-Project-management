@@ -37,4 +37,12 @@ export class PostService {
       headers: this.headers,
     });
   }
+
+  sendMessage(postId: number, body: string): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(
+      `${environment.apiBaseUrl}/post/${postId}/messages`,
+      { body },
+      { headers: this.headers },
+    );
+  }
 }
