@@ -26,7 +26,7 @@ class LoginController extends Controller
         // already knows the correct credentials learns that the account is
         // banned, so the endpoint cannot be used to discover which addresses
         // belong to banned accounts.
-        if ($user->banned_at !== null) {
+        if ($user->isBanned()) {
             abort(403, 'This account has been banned.');
         }
 

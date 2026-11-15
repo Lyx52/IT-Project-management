@@ -141,6 +141,11 @@ export class AuthService {
     return this.http.post<ResendVerificationResponse>(`${environment.apiBaseUrl}/email/resend`, {});
   }
 
+  /** Downloads the signed-in user's complete personal-data export as JSON. */
+  exportPersonalData(): Observable<Blob> {
+    return this.http.get(`${environment.apiBaseUrl}/user/export`, { responseType: 'blob' });
+  }
+
   /** Forgets the session locally. Also called by the interceptor on a 401. */
   clear(): void {
     this.accessToken.set(null);

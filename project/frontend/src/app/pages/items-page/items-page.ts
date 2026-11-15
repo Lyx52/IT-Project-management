@@ -1,13 +1,12 @@
-import { Component, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-
-import { Item } from '../../models/item.model';
-
+import { Component, OnInit, inject } from '@angular/core';
+import { Item } from '../../models/models';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
-import { MOCK_ITEMS } from '../../models/mock-items';
 import { ItemForm } from '../../components/item-form/item-form';
 import { Messenger } from '../../components/messenger/messenger';
+import { PostService } from '../../services/posts.service';
+
+type ItemTypeFilter = 'all' | 'lost' | 'found';
 
 @Component({
   selector: 'app-items-page',
@@ -16,22 +15,49 @@ import { Messenger } from '../../components/messenger/messenger';
   templateUrl: './items-page.html',
   styleUrl: './items-page.scss',
 })
-export class ItemsPageComponent {
-  private route = inject(ActivatedRoute);
+export class ItemsPageComponent implements OnInit {
+  private readonly postService = inject(PostService);
 
-  items: Item[] = MOCK_ITEMS;
-
-  selectedType: 'LOST' | 'FOUND' = 'LOST';
+  items: Item[] = [];
+  selectedType: ItemTypeFilter = 'all';
+  loadError = '';
 
   isCreatePostOpen = false;
   isMessengerOpen = false;
 
   get filteredItems(): Item[] {
+    if (this.selectedType === 'all') {
+      return this.items;
+    }
+
     return this.items.filter((item) => item.type === this.selectedType);
   }
 
-  selectType(type: 'LOST' | 'FOUND'): void {
+  ngOnInit(): void {
+    this.loadPosts();
+  }
+
+  loadPosts(): void {
+    this.loadError = '';
+
+    this.postService.getPosts().subscribe({
+      next: (response) => {
+        this.items = response.data as Item[];
+      },
+      error: (error) => {
+        console.error('Failed to fetch posts:', error);
+        this.loadError = 'Failed to load items. Please try again.';
+      },
+    });
+  }
+
+  selectType(type: ItemTypeFilter): void {
     this.selectedType = type;
+  }
+
+  onPostCreated(): void {
+    this.closeCreatePost();
+    this.loadPosts();
   }
 
   openCreatePost(): void {

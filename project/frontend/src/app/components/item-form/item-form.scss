@@ -11,19 +11,55 @@
   text-align: center;
   color: #858585;
   cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+
+  &:hover {
+    border-color: #0d6efd;
+    background: #f8faff;
+  }
 }
 
 .btn-lost {
   background: #fff1e9;
   color: #e87942;
+
+  &.active {
+    border: 2px solid #e87942;
+  }
 }
 
 .btn-found {
   background: #eaf5ef;
   color: #39976b;
+
+  &.active {
+    border: 2px solid #39976b;
+  }
 }
 
 .form-label {
   font-weight: 600;
   font-size: 13px;
+}
+
+.selected-images {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selected-image {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+
+  span {
+    overflow-wrap: anywhere;
+  }
 }

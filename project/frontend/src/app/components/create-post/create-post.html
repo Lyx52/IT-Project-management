@@ -1,0 +1,31 @@
+<!-- Floating create button -->
+<button class="create-post-button" (click)="open()" aria-label="Create a post">
+  <i class="bi bi-plus-lg"></i>
+  <span>Create post</span>
+</button>
+
+<!-- Modal -->
+@if (isOpen) {
+  <div class="modal-backdrop-custom" (click)="close()">
+    <div
+      class="create-post-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="createPostTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header-custom">
+        <div>
+          <h5 id="createPostTitle" class="fw-bold mb-1">Create a post</h5>
+          <p class="text-muted small mb-0">Share information about a lost or found item.</p>
+        </div>
+
+        <button type="button" class="btn-close" (click)="close()" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body-custom">
+        <app-item-form (created)="onPostCreated()" />
+      </div>
+    </div>
+  </div>
+}

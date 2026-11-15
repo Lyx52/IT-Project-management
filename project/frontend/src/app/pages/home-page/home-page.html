@@ -29,45 +29,33 @@
       </button>
     </div>
 
-    <div class="items-grid">
-      @for (item of items; track item.id) {
-        <app-item-card [item]="item" />
-      }
-    </div>
+    @if (isLoading) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="text-muted mt-2 mb-0">Loading items...</p>
+      </div>
+    } @else if (loadError) {
+      <div class="alert alert-danger">
+        {{ loadError }}
+        <button class="btn btn-sm btn-outline-danger ms-2" (click)="loadPosts()">Retry</button>
+      </div>
+    } @else if (items.length === 0) {
+      <div class="text-center py-5">
+        <i class="bi bi-inbox fs-1 text-muted"></i>
+        <p class="text-muted mt-2 mb-0">No items found yet.</p>
+      </div>
+    } @else {
+      <div class="items-grid">
+        @for (item of items; track item.id) {
+          <app-item-card [item]="item" />
+        }
+      </div>
+    }
   </section>
 </main>
 
-<!-- Create post button -->
-<button class="create-post-button" (click)="openCreatePost()" aria-label="Create a post">
-  <i class="bi bi-plus-lg"></i>
-  <span>Create post</span>
-</button>
-
-<!-- Create post modal -->
-@if (isCreatePostOpen) {
-  <div class="modal-backdrop-custom" (click)="closeCreatePost()">
-    <div
-      class="create-post-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="createPostTitle"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="modal-header-custom">
-        <div>
-          <h5 id="createPostTitle" class="fw-bold mb-1">Create a post</h5>
-          <p class="text-muted small mb-0">Share information about a lost or found item.</p>
-        </div>
-
-        <button class="btn-close" (click)="closeCreatePost()" aria-label="Close"></button>
-      </div>
-
-      <div class="modal-body-custom">
-        <app-item-form />
-      </div>
-    </div>
-  </div>
-}
+<!-- Create post component -->
+<app-create-post (created)="onPostCreated()" />
 
 <!-- Messenger floating button -->
 <button

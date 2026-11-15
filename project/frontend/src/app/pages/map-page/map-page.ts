@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { Item } from '../../models/item.model';
+import { Item } from '../../models/models';
 
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';

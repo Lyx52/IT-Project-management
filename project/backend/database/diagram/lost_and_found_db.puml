@@ -150,7 +150,33 @@ entity reports {
   CHECK status IN ('open','closed')
 }
 
+entity saved_searches {
+  * id : bigint <<PK>>
+  --
+  * user_id : bigint <<FK>>  -- cascadeOnDelete
+  * name : varchar(50)
+  q : varchar(100)  -- null = any text
+  type : varchar(5)  -- null = any type
+  category_id : bigint <<FK>>  -- cascadeOnDelete, null = any category
+  created_at : timestamp
+  updated_at : timestamp
+  ..
+  UNIQUE (user_id, name)
+  CHECK type IN ('lost','found')
+}
+
+entity saved_search_matches {
+  * saved_search_id : bigint <<PK, FK>>  -- cascadeOnDelete
+  * post_id : bigint <<PK, FK>>  -- cascadeOnDelete
+  --
+  created_at : timestamp  -- when the notification was sent
+}
+
 users ||--o{ personal_access_tokens : "tokenable (morph)"
+users ||--o{ saved_searches : saves
+categories |o--o{ saved_searches
+saved_searches ||--o{ saved_search_matches
+posts ||--o{ saved_search_matches
 users ||--o{ notifications : "notifiable (morph)"
 users ||..o| password_reset_tokens : "by email"
 users ||--o{ posts : creates
