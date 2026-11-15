@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\ReportPostController;
 use App\Http\Controllers\Api\V1\ResendVerificationController;
 use App\Http\Controllers\Api\V1\SavedSearchController;
+use App\Http\Controllers\Api\V1\UserDataExportController;
 use App\Http\Controllers\Api\V1\VerifyEmailController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', LogoutController::class);
         Route::get('/user', CurrentUserController::class);
+        Route::get('/user/export', UserDataExportController::class);
     });
 
     // Linked from the verification e-mail sent on registration
