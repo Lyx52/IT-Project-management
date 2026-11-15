@@ -91,11 +91,6 @@
       </div>
     }
   </section>
-    @if (isVisible) {
-    <div class="col-12 terms-container">
-      <app-terms (hideTriggered)="hideTerms()" />
-    </div>
-  }
 </main>
 
 <!-- Create post button -->
@@ -146,4 +141,4 @@
     <app-messenger />
   </div>
 }
-<app-footer (showTriggered)="showTerms()" />
+<app-footer (showTriggered)="openTerms()" />

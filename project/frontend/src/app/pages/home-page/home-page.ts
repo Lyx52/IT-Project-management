@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { Item } from '../../models/item.model';
 import { ItemForm } from '../../components/item-form/item-form';
 import { ItemCard } from '../../components/item-card/item-card';
@@ -7,20 +8,19 @@ import { Header } from '../../components/header/header';
 import { MOCK_ITEMS } from '../../models/mock-items';
 import { Footer } from '../../components/footer/footer';
 import { CookieNotice } from '../../components/cookie/cookie-notice';
-import { Terms } from '../../components/terms/terms';
 import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemForm, ItemCard, Messenger, Header, Footer, CookieNotice, Terms],
+  imports: [ItemForm, ItemCard, Messenger, Header, Footer, CookieNotice],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })
 export class HomePageComponent {
   items: Item[] = MOCK_ITEMS;
- cookieVisible = false;
+  cookieVisible = false;
   texts = en;
 
   ngOnInit() {
@@ -33,14 +33,6 @@ export class HomePageComponent {
   }
   hidecookie(): void {
     this.cookieVisible = false;
-  }
-
-  isVisible = false;
-  showTerms(): void {
-    this.isVisible = true;
-  }
-  hideTerms(): void {
-    this.isVisible = false;
   }
   isCreatePostOpen = false;
   isMessengerOpen = false;
@@ -55,5 +47,9 @@ export class HomePageComponent {
 
   toggleMessenger(): void {
     this.isMessengerOpen = !this.isMessengerOpen;
+  }
+  constructor(private router: Router) {}
+  openTerms() {
+    this.router.navigate(['/terms']);
   }
 }

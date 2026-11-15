@@ -7,4 +7,6 @@ import lv from '../../../assets/lv.json';
   templateUrl: './messenger.html',
   styleUrl: './messenger.scss',
 })
-export class Messenger {texts = en;}
+export class Messenger {
+  texts = en;
+}

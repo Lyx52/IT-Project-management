@@ -7,7 +7,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Header } from '../../components/header/header';
 import { AuthUser, CaptchaChallenge, ValidationErrorBody } from '../../models/auth.model';
@@ -53,6 +53,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 export class RegisterPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
 
   /** Set once the account exists; the form is then replaced by a confirmation. */
   readonly registeredUser = signal<AuthUser | null>(null);
@@ -103,7 +104,12 @@ export class RegisterPageComponent implements OnInit {
     this.form.controls.captchaAnswer.reset('');
     this.loadCaptcha();
   }
-
+  openTerms() {
+    this.router.navigate(['/terms']);
+  }
+  openPrivacy() {
+    this.router.navigate(['/privacy']);
+  }
   togglePasswordVisibility(): void {
     this.passwordVisible.update((visible) => !visible);
   }

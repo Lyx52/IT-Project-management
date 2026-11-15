@@ -35,16 +35,12 @@
       }
     </div>
   </section>
-   @if (isVisible) {
-      <div class="col-12 terms-container">
-        <app-terms (hideTriggered)="hideTerms()" />
-      </div>
-    }
-    @if (cookieVisible) {
-      <div class="cookie-container">
-        <app-cookie-notice (hidecookieTrig)="hidecookie()" />
-      </div>
-    }
+
+  @if (cookieVisible) {
+    <div class="cookie-container">
+      <app-cookie-notice (hidecookieTrig)="hidecookie()" />
+    </div>
+  }
 </main>
 
 <!-- Create post button -->
@@ -95,4 +91,4 @@
     <app-messenger />
   </div>
 }
-<app-footer (showTriggered)="showTerms()" />
+<app-footer (showTriggered)="openTerms()" />

@@ -180,8 +180,8 @@
                   [attr.aria-describedby]="error('termsAccepted') ? 'termsAccepted-error' : null"
                 />
                 <label class="form-check-label small" for="termsAccepted">
-                  I accept the <span class="fw-semibold">Terms of Service</span> and the
-                  <span class="fw-semibold">Privacy Policy</span>.
+                  I accept the <a class="fw-semibold" (click)="openTerms()">Terms of Service</a> and
+                  the <a class="fw-semibold" (click)="openPrivacy()">Privacy Policy</a>.
                 </label>
               </div>
               @if (error('termsAccepted')) {
