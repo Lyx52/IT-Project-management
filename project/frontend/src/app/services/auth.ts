@@ -63,7 +63,7 @@ export class AuthService {
 
   /**
    * Creates an account. The payload must carry a challenge from `captcha()`
-   * and its answer.
+   * and its answer: typed in by the user, or found by CaptchaSolver.
    *
    * Deliberately does not sign the user in and returns no token. When the
    * returned user has `must_verify_email`, a verification e-mail is on its way
@@ -76,7 +76,7 @@ export class AuthService {
       .pipe(map((response) => response.data));
   }
 
-  /** Fetches a new math CAPTCHA for the registration form. */
+  /** Fetches a new CAPTCHA for the registration form, of the server's chosen type. */
   captcha(): Observable<CaptchaChallenge> {
     return this.http.get<CaptchaChallenge>(`${environment.apiBaseUrl}/captcha`);
   }
