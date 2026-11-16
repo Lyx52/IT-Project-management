@@ -14,6 +14,7 @@ export class Header {
   private readonly router = inject(Router);
 
   readonly isAuthenticated = this.auth.isAuthenticated;
+  readonly isAdmin = this.auth.isAdmin;
   readonly displayName = this.auth.displayName;
 
   logout(): void {

@@ -46,6 +46,7 @@ export interface AuthUser {
   id: number;
   username: string;
   email: string;
+  role?: 'user' | 'admin';
   email_verified_at: string | null;
   /**
    * True only while the backend has e-mail verification turned on and this

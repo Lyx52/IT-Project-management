@@ -4,6 +4,8 @@ import { ItemsPageComponent } from './pages/items-page/items-page';
 import { MapPageComponent } from './pages/map-page/map-page';
 import { LoginPageComponent } from './pages/login-page/login-page';
 import { RegisterPageComponent } from './pages/register-page/register-page';
+import { AdminStatisticsPage } from './pages/admin-statistics-page/admin-statistics-page';
+import { adminGuard } from './guards/admin-guard';
 
 export const routes: Routes = [
   {
@@ -30,6 +32,11 @@ export const routes: Routes = [
   {
     path: 'register',
     component: RegisterPageComponent,
+  },
+  {
+    path: 'admin/statistics',
+    component: AdminStatisticsPage,
+    canActivate: [adminGuard],
   },
   {
     path: '**',
