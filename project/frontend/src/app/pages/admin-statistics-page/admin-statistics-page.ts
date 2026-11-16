@@ -20,7 +20,9 @@ export class AdminStatisticsPage {
 
   readonly statuses = ['pending', 'approved', 'rejected', 'resolved'] as const;
   readonly types = ['lost', 'found'] as const;
-  readonly from = signal(dateInputValue(new Date(new Date().getFullYear(), new Date().getMonth(), 1)));
+  readonly from = signal(
+    dateInputValue(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+  );
   readonly to = signal(dateInputValue(new Date()));
   readonly statistics = signal<PlatformStatistics | null>(null);
   readonly loading = signal(false);

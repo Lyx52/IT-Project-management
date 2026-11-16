@@ -17,8 +17,11 @@ export class AdminStatisticsService {
   private readonly http = inject(HttpClient);
 
   get(from: string, to: string): Observable<{ data: PlatformStatistics }> {
-    return this.http.get<{ data: PlatformStatistics }>(`${environment.apiBaseUrl}/admin/statistics`, {
-      params: { from, to },
-    });
+    return this.http.get<{ data: PlatformStatistics }>(
+      `${environment.apiBaseUrl}/admin/statistics`,
+      {
+        params: { from, to },
+      },
+    );
   }
 }

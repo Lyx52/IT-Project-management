@@ -81,7 +81,12 @@
                   <td>{{ row.counts?.[status] ?? 0 }}</td>
                 }
                 <td class="fw-semibold">
-                  {{ (row.counts?.pending ?? 0) + (row.counts?.approved ?? 0) + (row.counts?.rejected ?? 0) + (row.counts?.resolved ?? 0) }}
+                  {{
+                    (row.counts?.pending ?? 0) +
+                      (row.counts?.approved ?? 0) +
+                      (row.counts?.rejected ?? 0) +
+                      (row.counts?.resolved ?? 0)
+                  }}
                 </td>
               </tr>
             }
