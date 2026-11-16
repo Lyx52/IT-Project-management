@@ -8,6 +8,8 @@
     <!-- Account actions -->
     <div class="d-flex align-items-center gap-2 order-lg-3">
       @if (isAuthenticated()) {
+        <app-notification-bell />
+
         <span class="current-user d-flex align-items-center">
           <i class="bi bi-person-circle me-1"></i>
           <span class="fw-semibold">{{ displayName() }}</span>
@@ -66,6 +68,18 @@
             {{ texts.li3 }}
           </a>
         </li>
+        @if (isAuthenticated()) {
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/my-posts" routerLinkActive="active">My posts</a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/saved-searches" routerLinkActive="active">
+              <i class="bi bi-bell me-1"></i>
+              Saved searches
+            </a>
+          </li>
+        }
         @if (isAdmin()) {
           <li class="nav-item">
             <a class="nav-link" routerLink="/admin/statistics" routerLinkActive="active">

@@ -49,6 +49,9 @@ describe('Header', () => {
   });
 
   afterEach(() => {
+    // A signed-in header holds the notification bell, which loads on its own
+    // (covered in notification-bell.spec.ts)
+    httpMock.match(`${environment.apiBaseUrl}/notifications`);
     httpMock.verify();
     localStorage.clear();
     vi.restoreAllMocks();
