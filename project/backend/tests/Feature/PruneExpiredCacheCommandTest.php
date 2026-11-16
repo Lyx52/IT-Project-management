@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Services\MathCaptcha;
+use App\Services\CaptchaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -21,11 +21,11 @@ class PruneExpiredCacheCommandTest extends TestCase
 
     public function test_deletes_unanswered_challenges_once_they_expire(): void
     {
-        app(MathCaptcha::class)->create();
+        app(CaptchaService::class)->create();
         $this->assertSame(1, DB::table('cache')->count());
 
         $this->travel(config('captcha.ttl_seconds') + 1)->seconds();
-        app(MathCaptcha::class)->create();
+        app(CaptchaService::class)->create();
 
         $this->artisan('app:prune-expired-cache')->assertSuccessful();
 
