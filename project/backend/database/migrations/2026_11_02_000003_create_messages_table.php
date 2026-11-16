@@ -26,10 +26,12 @@ return new class extends Migration
             $table->index(['sender_id', 'receiver_id', 'created_at'], 'messages_conversation_index');
         });
 
-        DB::statement('ALTER TABLE messages ADD CONSTRAINT messages_sender_receiver_check CHECK (sender_id <> receiver_id)');
-        DB::statement('ALTER TABLE messages ADD CONSTRAINT messages_content_check CHECK (body IS NOT NULL OR file_path IS NOT NULL)');
-        DB::statement("ALTER TABLE messages ADD CONSTRAINT messages_media_type_check CHECK (media_type IN ('image', 'video'))");
-        DB::statement('ALTER TABLE messages ADD CONSTRAINT messages_file_media_check CHECK ((file_path IS NULL) = (media_type IS NULL))');
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE messages ADD CONSTRAINT messages_sender_receiver_check CHECK (sender_id <> receiver_id)');
+            DB::statement('ALTER TABLE messages ADD CONSTRAINT messages_content_check CHECK (body IS NOT NULL OR file_path IS NOT NULL)');
+            DB::statement("ALTER TABLE messages ADD CONSTRAINT messages_media_type_check CHECK (media_type IN ('image', 'video'))");
+            DB::statement('ALTER TABLE messages ADD CONSTRAINT messages_file_media_check CHECK ((file_path IS NULL) = (media_type IS NULL))');
+        }
         DB::statement('CREATE INDEX messages_unread_index ON messages (receiver_id) WHERE read_at IS NULL');
     }
 

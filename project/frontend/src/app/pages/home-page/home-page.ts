@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component,inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Item } from '../../models/item.model';
 import { ItemForm } from '../../components/item-form/item-form';
@@ -10,16 +10,23 @@ import { Footer } from '../../components/footer/footer';
 import { CookieNotice } from '../../components/cookie/cookie-notice';
 import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
+import { PostService } from '../../services/posts.service';
+import { CreatePost } from '../../components/create-post/create-post';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemForm, ItemCard, Messenger, Header, Footer, CookieNotice],
+  imports: [ItemForm, ItemCard, Messenger, Header, Footer, CookieNotice,CreatePost],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })
 export class HomePageComponent {
-  items: Item[] = MOCK_ITEMS;
+  private readonly postService = inject(PostService);
+
+  items: Item[] = [];
+
+  isLoading = false;
+  loadError = '';
   cookieVisible = false;
   texts = en;
 
@@ -37,12 +44,29 @@ export class HomePageComponent {
   isCreatePostOpen = false;
   isMessengerOpen = false;
 
-  openCreatePost(): void {
-    this.isCreatePostOpen = true;
+  ngOnInit(): void {
+    this.loadPosts();
   }
 
-  closeCreatePost(): void {
-    this.isCreatePostOpen = false;
+  loadPosts(): void {
+    this.isLoading = true;
+    this.loadError = '';
+
+    this.postService.getPosts().subscribe({
+      next: (response) => {
+        this.items = response.data as Item[];
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Failed to fetch posts:', error);
+        this.loadError = 'Failed to load items. Please try again.';
+        this.isLoading = false;
+      },
+    });
+  }
+
+  onPostCreated(): void {
+    this.loadPosts();
   }
 
   toggleMessenger(): void {
