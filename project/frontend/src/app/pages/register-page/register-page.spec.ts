@@ -6,9 +6,12 @@ import {
 } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { Subject } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
-import { CaptchaChallenge } from '../../models/auth.model';
+import { CaptchaSolver, SolveEvent } from '../../captcha/captcha-solver';
+import { PowProblem } from '../../captcha/pow';
+import { CaptchaChallenge, DeterminantCaptcha, MathCaptcha } from '../../models/auth.model';
 import { RegisterPageComponent } from './register-page';
 
 const VALID_INPUT = {
@@ -17,7 +20,6 @@ const VALID_INPUT = {
   password: 'correct horse',
   passwordConfirmation: 'correct horse',
   termsAccepted: true,
-  captchaAnswer: '12',
 };
 
 /** Verification turned off on the backend: the account can sign in right away. */
@@ -31,20 +33,78 @@ const CREATED_USER = {
 
 const CHALLENGE: CaptchaChallenge = {
   captcha_id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
-  question: 'What is 7 + 5?',
+  type: 'hash',
+  algorithm: 'SHA-256',
+  salt: 'aaaaaaaaaaaaaaaaaaaaaaaa',
+  challenge: 'a'.repeat(64),
+  max_number: 3_000_000,
   expires_in: 300,
 };
 
 const NEXT_CHALLENGE: CaptchaChallenge = {
   captcha_id: '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed',
-  question: 'What is 15 − 4?',
+  type: 'hash',
+  algorithm: 'SHA-256',
+  salt: 'bbbbbbbbbbbbbbbbbbbbbbbb',
+  challenge: 'b'.repeat(64),
+  max_number: 3_000_000,
   expires_in: 300,
 };
+
+const MATH: MathCaptcha = {
+  captcha_id: '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b',
+  type: 'math',
+  question: 'What is 7 + 5?',
+  expires_in: 300,
+};
+
+const DETERMINANT: DeterminantCaptcha = {
+  captcha_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+  type: 'determinant',
+  question: 'What is the determinant of this matrix?',
+  matrix: [
+    [2, 7],
+    [3, 4],
+  ],
+  expires_in: 300,
+};
+
+/**
+ * Stands in for the Web Worker: each solve() call is a run the test finishes
+ * by hand, so no real hashing happens and every state can be reached.
+ */
+class FakeSolver {
+  readonly runs: { problem: PowProblem; events: Subject<SolveEvent> }[] = [];
+
+  solve(problem: PowProblem) {
+    const events = new Subject<SolveEvent>();
+    this.runs.push({ problem, events });
+    return events.asObservable();
+  }
+
+  get current() {
+    return this.runs[this.runs.length - 1];
+  }
+
+  progress(fraction: number) {
+    this.current.events.next({ type: 'progress', fraction });
+  }
+
+  finish(number: number) {
+    this.current.events.next({ type: 'solved', number });
+    this.current.events.complete();
+  }
+
+  fail() {
+    this.current.events.error(new Error('No number matches'));
+  }
+}
 
 describe('RegisterPageComponent', () => {
   let fixture: ComponentFixture<RegisterPageComponent>;
   let component: RegisterPageComponent;
   let httpMock: HttpTestingController;
+  let solver: FakeSolver;
   const url = `${environment.apiBaseUrl}/register`;
   const captchaUrl = `${environment.apiBaseUrl}/captcha`;
 
@@ -53,8 +113,15 @@ describe('RegisterPageComponent', () => {
     // by another file would break the "stays signed out" assertion below.
     localStorage.clear();
 
+    solver = new FakeSolver();
+
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: CaptchaSolver, useValue: solver },
+      ],
     });
 
     fixture = TestBed.createComponent(RegisterPageComponent);
@@ -62,13 +129,21 @@ describe('RegisterPageComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
-    // The page asks for its first question as soon as it opens
+    // The page fetches and solves its first challenge as soon as it opens
     httpMock.expectOne(captchaUrl).flush(CHALLENGE);
+    solver.finish(1234567);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     httpMock.verify();
   });
+
+  /** Throws the solved challenge away and starts on NEXT_CHALLENGE, unsolved. */
+  const startNextCheck = () => {
+    component.newCaptcha();
+    httpMock.expectOne(captchaUrl).flush(NEXT_CHALLENGE);
+  };
 
   const text = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
 
@@ -90,7 +165,6 @@ describe('RegisterPageComponent', () => {
       httpMock.expectNone(url);
       expect(component.error('username')).toBe('Choose a username.');
       expect(component.error('email')).toBe('Enter your e-mail address.');
-      expect(component.error('captchaAnswer')).toBe('Answer the question.');
     });
 
     it('rejects a username with characters the backend regex forbids', () => {
@@ -139,90 +213,279 @@ describe('RegisterPageComponent', () => {
         'You must accept the terms and privacy policy.',
       );
     });
+  });
 
-    it('blocks submission until the question is answered', () => {
-      component.form.patchValue({ ...VALID_INPUT, captchaAnswer: '' });
+  describe('security check', () => {
+    it('solves the challenge from the server in the background', () => {
+      fixture.detectChanges();
+
+      expect(solver.runs[0].problem).toEqual({
+        salt: CHALLENGE.salt,
+        challenge: CHALLENGE.challenge,
+        maxNumber: CHALLENGE.max_number,
+      });
+      expect(component.captchaStatus()).toBe('solved');
+      expect(text()).toContain('Your browser passed the check.');
+    });
+
+    it('shows progress while the browser is working', () => {
+      startNextCheck();
+      solver.progress(0.427);
+      fixture.detectChanges();
+
+      expect(component.captchaStatus()).toBe('solving');
+      expect(component.captchaPercent()).toBe(42);
+      expect(text()).toContain('Checking your browser...');
+      expect(text()).toContain('42%');
+    });
+
+    it('stops the previous search when a new challenge is started', () => {
+      startNextCheck();
+      const unfinished = solver.current.events;
+
+      startNextCheck();
+
+      expect(unfinished.observed).toBe(false);
+    });
+
+    it('waits for the check to finish, then sends the form by itself', () => {
+      startNextCheck();
+      component.form.patchValue(VALID_INPUT);
+
+      component.submit();
+      fixture.detectChanges();
+
+      httpMock.expectNone(url);
+      expect(component.awaitingCaptcha()).toBe(true);
+      expect(text()).toContain('Finishing the security check...');
+
+      solver.finish(77);
+
+      const request = httpMock.expectOne(url);
+      expect(request.request.body.captcha_id).toBe(NEXT_CHALLENGE.captcha_id);
+      expect(request.request.body.captcha_answer).toBe('77');
+      expect(component.awaitingCaptcha()).toBe(false);
+      request.flush({ data: CREATED_USER });
+    });
+
+    it('fetches a fresh challenge when the solved one is about to expire', () => {
+      const later = Date.now() + (CHALLENGE.expires_in - 10) * 1000;
+      vi.spyOn(Date, 'now').mockReturnValue(later);
+      component.form.patchValue(VALID_INPUT);
 
       component.submit();
 
       httpMock.expectNone(url);
-      expect(component.error('captchaAnswer')).toBe('Answer the question.');
-    });
-
-    it('rejects an answer that is not a whole number', () => {
-      type('captchaAnswer', 'twelve');
-
-      expect(component.error('captchaAnswer')).toBe('Enter the answer as a number.');
-    });
-  });
-
-  describe('security question', () => {
-    it('shows the question from the server', () => {
-      fixture.detectChanges();
-
-      expect(component.captcha()).toEqual(CHALLENGE);
-      expect(text()).toContain('What is 7 + 5?');
-    });
-
-    it('fetches a new question on request and clears the old answer', () => {
-      type('captchaAnswer', '12');
-
-      component.newCaptcha();
       httpMock.expectOne(captchaUrl).flush(NEXT_CHALLENGE);
-      fixture.detectChanges();
+      solver.finish(5);
 
-      expect(component.captcha()).toEqual(NEXT_CHALLENGE);
-      expect(component.form.controls.captchaAnswer.value).toBe('');
-      // Reset to pristine, so the empty field is not flagged straight away
-      expect(component.error('captchaAnswer')).toBeNull();
-      expect(text()).toContain('What is 15 − 4?');
+      expect(httpMock.expectOne(url).request.body.captcha_id).toBe(NEXT_CHALLENGE.captcha_id);
     });
 
-    it('explains when no question could be loaded and does not submit', () => {
+    it('explains when no challenge could be loaded and offers to try again', () => {
       component.newCaptcha();
       httpMock
         .expectOne(captchaUrl)
         .flush({ message: 'Server Error' }, { status: 500, statusText: 'Internal Server Error' });
       fixture.detectChanges();
 
-      expect(component.captcha()).toBeNull();
-      expect(text()).toContain('Could not load the security question.');
-
-      component.form.patchValue(VALID_INPUT);
-      component.submit();
-
-      httpMock.expectNone(url);
-      expect(component.formError()).toBe(
-        'The security question has not loaded yet. Please try again.',
-      );
+      expect(component.captchaStatus()).toBe('error');
+      expect(text()).toContain('The security check could not be completed.');
+      expect(text()).toContain('Try again');
     });
 
-    it('does not submit the old question while a new one is loading', () => {
-      component.form.patchValue(VALID_INPUT);
-      component.newCaptcha();
-      component.form.controls.captchaAnswer.setValue('12');
-
-      component.submit();
-
-      httpMock.expectNone(url);
-      httpMock.expectOne(captchaUrl).flush(NEXT_CHALLENGE);
-    });
-
-    it('explains a 429 when asking for new questions too often', () => {
+    it('explains a 429 when asking for new challenges too often', () => {
       component.newCaptcha();
       httpMock
         .expectOne(captchaUrl)
         .flush({ message: 'Too Many Attempts.' }, { status: 429, statusText: 'Too Many Requests' });
 
       expect(component.captchaError()).toBe(
-        'Too many new questions. Please wait a minute and try again.',
+        'Too many security checks. Please wait a minute and try again.',
       );
+    });
+
+    it('reports a search that found nothing', () => {
+      startNextCheck();
+      solver.fail();
+
+      expect(component.captchaStatus()).toBe('error');
+      expect(component.captchaError()).toBe('The security check could not be completed.');
+    });
+
+    it('runs the check again when the form is sent after it failed', () => {
+      startNextCheck();
+      solver.fail();
+      component.form.patchValue(VALID_INPUT);
+
+      component.submit();
+
+      httpMock.expectOne(captchaUrl).flush(CHALLENGE);
+      solver.finish(9);
+      httpMock.expectOne(url).flush({ data: CREATED_USER });
+
+      expect(component.registeredUser()).toEqual(CREATED_USER);
+    });
+
+    it('gives up on sending, with a message, when the check fails while waiting', () => {
+      startNextCheck();
+      component.form.patchValue(VALID_INPUT);
+      component.submit();
+
+      solver.fail();
+
+      httpMock.expectNone(url);
+      expect(component.submitting()).toBe(false);
+      expect(component.awaitingCaptcha()).toBe(false);
+      expect(component.formError()).toBe('The security check could not be completed.');
+    });
+  });
+
+  describe('typed-in questions (CAPTCHA_TYPE math or determinant)', () => {
+    /** The server switched type: the next challenge is a question. */
+    const switchTo = (challenge: CaptchaChallenge) => {
+      component.newCaptcha();
+      httpMock.expectOne(captchaUrl).flush(challenge);
+      fixture.detectChanges();
+    };
+
+    it('shows a math question with an answer field, and no background check', () => {
+      switchTo(MATH);
+
+      expect(component.captchaStatus()).toBe('ready');
+      expect(component.form.controls.captchaAnswer.enabled).toBe(true);
+      expect(text()).toContain('What is 7 + 5?');
+      expect(text()).not.toContain('Checking your browser');
+      expect(solver.runs.length).toBe(1);
+    });
+
+    it('shows a determinant as a 2×2 matrix', () => {
+      switchTo(DETERMINANT);
+
+      const matrix = (fixture.nativeElement as HTMLElement).querySelector('.matrix')!;
+      expect(matrix.getAttribute('aria-label')).toBe('matrix with rows 2 7 and 3 4');
+      expect(matrix.textContent!.replace(/\s+/g, '')).toBe('2734');
+      expect(text()).toContain('a·d − b·c');
+    });
+
+    it('requires an answer and accepts only whole numbers', () => {
+      switchTo(MATH);
+      component.form.patchValue(VALID_INPUT);
+
+      component.submit();
+
+      httpMock.expectNone(url);
+      expect(component.error('captchaAnswer')).toBe('Answer the question.');
+
+      type('captchaAnswer', 'twelve');
+      expect(component.error('captchaAnswer')).toBe('Enter the answer as a whole number.');
+    });
+
+    it('sends the typed answer, trimmed', () => {
+      switchTo(MATH);
+      component.form.patchValue({ ...VALID_INPUT, captchaAnswer: ' 12 ' });
+
+      component.submit();
+
+      const request = httpMock.expectOne(url);
+      expect(request.request.body.captcha_id).toBe(MATH.captcha_id);
+      expect(request.request.body.captcha_answer).toBe('12');
+      request.flush({ data: CREATED_USER });
+    });
+
+    it('accepts a negative determinant', () => {
+      switchTo(DETERMINANT);
+      component.form.patchValue({ ...VALID_INPUT, captchaAnswer: '-13' });
+
+      component.submit();
+
+      expect(httpMock.expectOne(url).request.body.captcha_answer).toBe('-13');
+    });
+
+    it('puts a wrong answer on the field, with a new question and an empty answer', () => {
+      switchTo(MATH);
+      component.form.patchValue({ ...VALID_INPUT, captchaAnswer: '13' });
+      component.submit();
+
+      httpMock.expectOne(url).flush(
+        {
+          message: 'The given data was invalid.',
+          errors: { captcha_answer: ['That answer is not correct. Try the new question.'] },
+        },
+        { status: 422, statusText: 'Unprocessable Content' },
+      );
+      httpMock.expectOne(captchaUrl).flush(DETERMINANT);
+      fixture.detectChanges();
+
+      expect(component.error('captchaAnswer')).toBe(
+        'That answer is not correct. Try the new question.',
+      );
+      expect(component.form.controls.captchaAnswer.value).toBe('');
+      expect(component.matrix()).toEqual(DETERMINANT.matrix);
+
+      type('captchaAnswer', '-13');
+      expect(component.error('captchaAnswer')).toBeNull();
+    });
+
+    it('clears the old answer when a new question is asked for', () => {
+      switchTo(MATH);
+      type('captchaAnswer', '12');
+
+      switchTo(DETERMINANT);
+
+      expect(component.form.controls.captchaAnswer.value).toBe('');
+      // Reset to pristine, so the empty field is not flagged straight away
+      expect(component.error('captchaAnswer')).toBeNull();
+    });
+
+    it('does not submit while the question is loading or failed to load', () => {
+      switchTo(MATH);
+      component.form.patchValue({ ...VALID_INPUT, captchaAnswer: '12' });
+
+      component.newCaptcha();
+      component.form.controls.captchaAnswer.setValue('12');
+      component.submit();
+
+      httpMock.expectNone(url);
+      expect(component.formError()).toBe(
+        'The security question has not loaded yet. Please try again.',
+      );
+
+      httpMock
+        .expectOne(captchaUrl)
+        .flush({ message: 'Server Error' }, { status: 500, statusText: 'Internal Server Error' });
+      fixture.detectChanges();
+
+      expect(text()).toContain('Could not load the security question.');
+    });
+
+    it('hides the answer field again when the server switches back to hash', () => {
+      switchTo(MATH);
+
+      switchTo(NEXT_CHALLENGE);
+
+      expect(component.form.controls.captchaAnswer.disabled).toBe(true);
+      expect(component.captchaStatus()).toBe('solving');
+      expect(text()).not.toContain('Security question');
+    });
+
+    it('stops waiting for a hash puzzle when a question arrives instead', () => {
+      startNextCheck();
+      component.form.patchValue(VALID_INPUT);
+      component.submit();
+      expect(component.awaitingCaptcha()).toBe(true);
+
+      switchTo(MATH);
+
+      httpMock.expectNone(url);
+      expect(component.submitting()).toBe(false);
+      expect(component.formError()).toBe('Answer the security question, then send the form again.');
     });
   });
 
   describe('submitting', () => {
-    it('sends the backend field names, the consent flag, the policy version and the answer', () => {
-      component.form.patchValue({ ...VALID_INPUT, captchaAnswer: ' 12 ' });
+    it('sends the backend field names, the consent flag, the policy version and the solved check', () => {
+      component.form.patchValue(VALID_INPUT);
 
       component.submit();
 
@@ -236,7 +499,7 @@ describe('RegisterPageComponent', () => {
         terms_accepted: true,
         privacy_policy_version: environment.privacyPolicyVersion,
         captcha_id: CHALLENGE.captcha_id,
-        captcha_answer: '12',
+        captcha_answer: '1234567',
       });
 
       request.flush({ data: CREATED_USER });
@@ -283,11 +546,12 @@ describe('RegisterPageComponent', () => {
 
     /**
      * The server uses up the challenge on every attempt, so each failed
-     * submission is followed by a request for a new one.
+     * submission is followed by a new challenge, which the browser starts on.
      */
     const expectNewChallenge = () => {
       httpMock.expectOne(captchaUrl).flush(NEXT_CHALLENGE);
-      expect(component.captcha()).toEqual(NEXT_CHALLENGE);
+      expect(solver.current.problem.salt).toBe(NEXT_CHALLENGE.salt);
+      expect(component.captchaStatus()).toBe('solving');
     };
 
     const flush422 = (errors: Record<string, string[]>) => {
@@ -298,32 +562,24 @@ describe('RegisterPageComponent', () => {
       expectNewChallenge();
     };
 
-    it('shows a wrong answer on the question field, with a new question and an empty answer', () => {
-      flush422({ captcha_answer: ['That answer is not correct. Try the new question.'] });
-      fixture.detectChanges();
+    it('reports a rejected check at form level and starts a new one', () => {
+      flush422({ captcha_answer: ['The security check failed. Please try again.'] });
 
-      expect(component.error('captchaAnswer')).toBe(
-        'That answer is not correct. Try the new question.',
-      );
-      expect(component.form.controls.captchaAnswer.value).toBe('');
+      expect(component.formError()).toBe('The security check failed. Please try again.');
       expect(component.registeredUser()).toBeNull();
-      expect(text()).toContain('What is 15 − 4?');
     });
 
-    it('asks for a new answer quietly when another field was the problem', () => {
+    it('can send again once the new check is done', () => {
       flush422({ email: ['The email has already been taken.'] });
+      component.form.controls.email.setValue('someone.else@example.com');
+      solver.finish(42);
 
-      expect(component.error('email')).toBe('The email has already been taken.');
-      expect(component.form.controls.captchaAnswer.value).toBe('');
-      expect(component.error('captchaAnswer')).toBeNull();
-    });
+      component.submit();
 
-    it('drops the wrong-answer message once a new answer is typed', () => {
-      flush422({ captcha_answer: ['That answer is not correct. Try the new question.'] });
-
-      type('captchaAnswer', '11');
-
-      expect(component.error('captchaAnswer')).toBeNull();
+      const request = httpMock.expectOne(url);
+      expect(request.request.body.captcha_id).toBe(NEXT_CHALLENGE.captcha_id);
+      expect(request.request.body.captcha_answer).toBe('42');
+      request.flush({ data: CREATED_USER });
     });
 
     it('shows a duplicate e-mail message on the e-mail field', () => {
@@ -364,7 +620,6 @@ describe('RegisterPageComponent', () => {
       expect(component.error('email')).toBe('The email has already been taken.');
 
       component.form.controls.email.setValue('someone.else@example.com');
-      component.form.controls.captchaAnswer.setValue('11');
 
       expect(component.error('email')).toBeNull();
       expect(component.form.valid).toBe(true);
