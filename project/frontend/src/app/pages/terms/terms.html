@@ -1,0 +1,19 @@
+<app-header />
+<div class="terms-window__content">
+  <button class="button button-cl" type="button" (click)="acceptTerms()">X</button>
+  <div class="terms-window__header">
+    <h2 id="terms-title">{{ termdata.Terms }}</h2>
+  </div>
+  <section class="terms-window__sections">
+    <p>{{ termdata.text }}</p>
+    <h4>{{ termdata.sectionTitle }}</h4>
+    <p>{{ termdata.sectionText }}</p>
+  </section>
+  <div class="terms-window__footer">
+    <p class="terms-window__text">{{ termdata.termsText }}</p>
+    <span class="terms-window__version">Version: {{ version }}</span>
+    <button class="button button-acc" type="button" (click)="acceptTerms()">
+      {{ termdata.accept }}
+    </button>
+  </div>
+</div>

@@ -10,6 +10,8 @@ import {
 } from '@angular/forms';
 
 import { AuthService } from '../../services/auth';
+import en from '../../../assets/en.json';
+import lv from '../../../assets/lv.json';
 import { PostService } from '../../services/posts.service';
 import { Category } from '../../models/models';
 
@@ -37,6 +39,7 @@ function notFutureDate(control: AbstractControl): ValidationErrors | null {
 })
 export class ItemForm implements OnInit {
   private readonly auth = inject(AuthService);
+  texts = en;
   private readonly fb = inject(FormBuilder);
   private readonly postService = inject(PostService);
 
