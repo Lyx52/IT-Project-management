@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Item } from '../../models/item.model';
+import { Item } from '../../models/models';
 import { ItemForm } from '../../components/item-form/item-form';
 import { ItemCard } from '../../components/item-card/item-card';
 import { Messenger } from '../../components/messenger/messenger';
@@ -31,6 +31,7 @@ export class HomePageComponent {
   texts = en;
 
   ngOnInit() {
+    this.loadPosts();
     const alreadyShown = localStorage.getItem('cookieShown');
 
     if (!alreadyShown) {
@@ -43,10 +44,6 @@ export class HomePageComponent {
   }
   isCreatePostOpen = false;
   isMessengerOpen = false;
-
-  ngOnInit(): void {
-    this.loadPosts();
-  }
 
   loadPosts(): void {
     this.isLoading = true;

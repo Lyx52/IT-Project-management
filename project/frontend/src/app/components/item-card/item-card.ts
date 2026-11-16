@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { Item } from '../../models/item.model';
+import { Item } from '../../models/models';
 import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
 import { DatePipe } from '@angular/common';
