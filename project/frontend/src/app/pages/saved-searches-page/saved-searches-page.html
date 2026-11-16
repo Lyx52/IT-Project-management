@@ -1,0 +1,119 @@
+<app-header />
+
+<main class="page-container py-4">
+  <div class="mb-4">
+    <h1 class="h4 fw-bold mb-1">Saved searches</h1>
+    <p class="text-muted mb-0">
+      You get a notification when a newly approved post matches one of these. To add one, search on
+      the <a routerLink="/items">Items</a> page and click “Save this search”.
+    </p>
+  </div>
+
+  @if (isLoading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted mt-2 mb-0">Loading your saved searches...</p>
+    </div>
+  } @else if (loadError()) {
+    <div class="alert alert-danger">
+      {{ loadError() }}
+      <button class="btn btn-sm btn-outline-danger ms-2" type="button" (click)="load()">
+        Retry
+      </button>
+    </div>
+  } @else if (searches().length === 0) {
+    <div class="text-center py-5">
+      <i class="bi bi-bell-slash fs-1 text-muted"></i>
+      <p class="text-muted mt-2">You have no saved searches yet.</p>
+      <a class="btn btn-primary" routerLink="/items">Search items</a>
+    </div>
+  } @else {
+    <ul class="list-group" style="max-width: 900px">
+      @for (search of searches(); track search.id) {
+        <li class="list-group-item py-3">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            @if (editingId() === search.id) {
+              <form
+                class="d-flex flex-wrap align-items-center gap-2 flex-grow-1"
+                (submit)="$event.preventDefault(); saveRename(search)"
+              >
+                <input
+                  class="form-control form-control-sm"
+                  style="max-width: 280px"
+                  maxlength="50"
+                  aria-label="New name"
+                  [value]="editName()"
+                  (input)="editName.set($any($event.target).value)"
+                />
+                <button
+                  class="btn btn-primary btn-sm"
+                  type="submit"
+                  [disabled]="busyId() === search.id"
+                >
+                  Save
+                </button>
+                <button class="btn btn-link btn-sm" type="button" (click)="cancelRename()">
+                  Cancel
+                </button>
+              </form>
+            } @else {
+              <div>
+                <div class="fw-semibold">{{ search.name }}</div>
+                <div class="small text-muted">{{ summary(search) }}</div>
+              </div>
+
+              <div class="d-flex flex-wrap gap-2">
+                <a
+                  class="btn btn-outline-primary btn-sm"
+                  routerLink="/items"
+                  [queryParams]="queryParams(search)"
+                >
+                  <i class="bi bi-search me-1"></i>
+                  Open
+                </a>
+                @if (confirmingDeleteId() === search.id) {
+                  <button
+                    class="btn btn-danger btn-sm"
+                    type="button"
+                    [disabled]="busyId() === search.id"
+                    (click)="delete(search)"
+                  >
+                    Delete “{{ search.name }}”?
+                  </button>
+                  <button
+                    class="btn btn-link btn-sm"
+                    type="button"
+                    (click)="confirmingDeleteId.set(null)"
+                  >
+                    Keep
+                  </button>
+                } @else {
+                  <button
+                    class="btn btn-outline-secondary btn-sm"
+                    type="button"
+                    (click)="startRename(search)"
+                  >
+                    Rename
+                  </button>
+                  <button
+                    class="btn btn-outline-danger btn-sm"
+                    type="button"
+                    (click)="askDelete(search)"
+                  >
+                    Delete
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          @if (rowError()?.id === search.id) {
+            <p class="small text-danger mb-0 mt-2" role="alert">{{ rowError()?.message }}</p>
+          }
+        </li>
+      }
+    </ul>
+  }
+</main>
+
+<app-footer (showTriggered)="openTerms()" />

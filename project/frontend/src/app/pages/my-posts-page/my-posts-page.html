@@ -1,0 +1,52 @@
+<app-header />
+
+<main class="page-container py-4">
+  <div class="mb-4">
+    <h1 class="h4 fw-bold mb-1">My posts</h1>
+    <p class="text-muted mb-0">
+      Open a post to see posts that might match it. New posts appear in the feed once a moderator
+      approves them.
+    </p>
+  </div>
+
+  @if (isLoading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted mt-2 mb-0">Loading your posts...</p>
+    </div>
+  } @else if (loadError()) {
+    <div class="alert alert-danger">
+      {{ loadError() }}
+      <button class="btn btn-sm btn-outline-danger ms-2" type="button" (click)="load()">
+        Retry
+      </button>
+    </div>
+  } @else if (posts().length === 0) {
+    <div class="text-center py-5">
+      <i class="bi bi-inbox fs-1 text-muted"></i>
+      <p class="text-muted mt-2">You have not posted anything yet.</p>
+      <a class="btn btn-primary" routerLink="/items">Go to items</a>
+    </div>
+  } @else {
+    <div class="card-grid">
+      @for (post of posts(); track post.id) {
+        <app-item-card [item]="post" [showStatus]="true" />
+      }
+    </div>
+
+    @if (hasMore()) {
+      <div class="text-center mt-4">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="isLoadingMore()"
+          (click)="loadMore()"
+        >
+          {{ isLoadingMore() ? 'Loading…' : 'Load more' }}
+        </button>
+      </div>
+    }
+  }
+</main>
+
+<app-footer (showTriggered)="openTerms()" />
