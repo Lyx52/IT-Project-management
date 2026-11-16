@@ -1,9 +1,14 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+
 import { Item } from '../../models/models';
+import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
 import { ItemForm } from '../../components/item-form/item-form';
 import { Messenger } from '../../components/messenger/messenger';
+import en from '../../../assets/en.json';
+import lv from '../../../assets/lv.json';
 import { PostService } from '../../services/posts.service';
 
 type ItemTypeFilter = 'all' | 'lost' | 'found';
@@ -11,12 +16,14 @@ type ItemTypeFilter = 'all' | 'lost' | 'found';
 @Component({
   selector: 'app-items-page',
   standalone: true,
-  imports: [Header, ItemCard, ItemForm, Messenger],
+  imports: [Header, ItemCard, ItemForm, Messenger, Footer],
   templateUrl: './items-page.html',
   styleUrl: './items-page.scss',
 })
 export class ItemsPageComponent implements OnInit {
   private readonly postService = inject(PostService);
+  private route = inject(ActivatedRoute);
+  texts = en;
 
   items: Item[] = [];
   selectedType: ItemTypeFilter = 'all';
@@ -24,7 +31,6 @@ export class ItemsPageComponent implements OnInit {
 
   isCreatePostOpen = false;
   isMessengerOpen = false;
-
   get filteredItems(): Item[] {
     if (this.selectedType === 'all') {
       return this.items;
@@ -70,5 +76,9 @@ export class ItemsPageComponent implements OnInit {
 
   toggleMessenger(): void {
     this.isMessengerOpen = !this.isMessengerOpen;
+  }
+  constructor(private router: Router) {}
+  openTerms() {
+    this.router.navigate(['/terms']);
   }
 }

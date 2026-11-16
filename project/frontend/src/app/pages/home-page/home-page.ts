@@ -1,15 +1,22 @@
 import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { Item } from '../../models/models';
+import { ItemForm } from '../../components/item-form/item-form';
 import { ItemCard } from '../../components/item-card/item-card';
 import { Messenger } from '../../components/messenger/messenger';
 import { Header } from '../../components/header/header';
+import { MOCK_ITEMS } from '../../models/mock-items';
+import { Footer } from '../../components/footer/footer';
+import { CookieNotice } from '../../components/cookie/cookie-notice';
+import en from '../../../assets/en.json';
+import lv from '../../../assets/lv.json';
 import { PostService } from '../../services/posts.service';
 import { CreatePost } from '../../components/create-post/create-post';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemCard, Messenger, Header, CreatePost],
+  imports: [ItemForm, ItemCard, Messenger, Header, Footer, CookieNotice, CreatePost],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })
@@ -20,11 +27,23 @@ export class HomePageComponent {
 
   isLoading = false;
   loadError = '';
-  isMessengerOpen = false;
+  cookieVisible = false;
+  texts = en;
 
-  ngOnInit(): void {
+  ngOnInit() {
     this.loadPosts();
+    const alreadyShown = localStorage.getItem('cookieShown');
+
+    if (!alreadyShown) {
+      this.cookieVisible = true;
+      localStorage.setItem('cookieShown', 'true');
+    }
   }
+  hidecookie(): void {
+    this.cookieVisible = false;
+  }
+  isCreatePostOpen = false;
+  isMessengerOpen = false;
 
   loadPosts(): void {
     this.isLoading = true;
@@ -49,5 +68,9 @@ export class HomePageComponent {
 
   toggleMessenger(): void {
     this.isMessengerOpen = !this.isMessengerOpen;
+  }
+  constructor(private router: Router) {}
+  openTerms() {
+    this.router.navigate(['/terms']);
   }
 }
