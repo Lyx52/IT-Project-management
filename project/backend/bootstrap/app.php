@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Gate actions such as creating posts behind a verified e-mail.
             // A no-op while config('verification.enabled') is false.
             'verified' => EnsureEmailIsVerified::class,
-            // Requires a solved math CAPTCHA, see App\Services\MathCaptcha
+            // Requires a solved CAPTCHA, see App\Services\CaptchaService
             'captcha' => VerifyCaptcha::class,
         ]);
     })

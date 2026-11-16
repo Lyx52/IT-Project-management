@@ -7,6 +7,7 @@ use App\Notifications\VerifyEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\Concerns\SolvesCaptcha;
 use Tests\TestCase;
 
@@ -57,14 +58,30 @@ class RegisterTest extends TestCase
         $this->register()->assertCreated()->assertJsonMissingPath('access_token');
     }
 
-    public function test_refuses_a_wrong_answer_and_creates_no_account(): void
+    #[TestWith(['math'])]
+    #[TestWith(['determinant'])]
+    #[TestWith(['hash'])]
+    public function test_creates_an_account_with_each_captcha_type(string $type): void
     {
+        config(['captcha.type' => $type]);
+
+        $this->register()->assertCreated();
+
+        $this->assertDatabaseHas('users', ['email' => 'jane@example.com']);
+    }
+
+    #[TestWith(['math', 'That answer is not correct'])]
+    #[TestWith(['determinant', 'That answer is not correct'])]
+    #[TestWith(['hash', 'The security check failed'])]
+    public function test_refuses_a_wrong_answer_and_creates_no_account(string $type, string $message): void
+    {
+        config(['captcha.type' => $type]);
         $captcha = $this->solvedCaptcha();
         $captcha['captcha_answer'] = (string) ((int) $captcha['captcha_answer'] + 1);
 
         $this->register([], $captcha)
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['captcha_answer' => 'not correct']);
+            ->assertJsonValidationErrors(['captcha_answer' => $message]);
 
         $this->assertDatabaseCount('users', 0);
     }

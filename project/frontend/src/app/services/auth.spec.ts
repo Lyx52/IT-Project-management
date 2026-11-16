@@ -14,7 +14,7 @@ const REGISTER_PAYLOAD: RegisterPayload = {
   terms_accepted: true,
   privacy_policy_version: '1.0',
   captcha_id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
-  captcha_answer: '12',
+  captcha_answer: '1234567',
 };
 
 const CREDENTIALS: LoginPayload = {
@@ -343,7 +343,11 @@ describe('AuthService', () => {
       createService();
       const challenge = {
         captcha_id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
-        question: 'What is 7 + 5?',
+        type: 'hash',
+        algorithm: 'SHA-256',
+        salt: '0123456789abcdef01234567',
+        challenge: 'a'.repeat(64),
+        max_number: 3_000_000,
         expires_in: 300,
       };
       let result: unknown;
