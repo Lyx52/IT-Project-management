@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -13,7 +13,7 @@ import { AuthService } from '../../services/auth';
 import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
 import { PostService } from '../../services/posts.service';
-import { Category } from '../../models/models';
+import { Category, Item } from '../../models/models';
 
 function notFutureDate(control: AbstractControl): ValidationErrors | null {
   if (!control.value) {
@@ -44,6 +44,22 @@ export class ItemForm implements OnInit {
   private readonly postService = inject(PostService);
 
   @Output() created = new EventEmitter<void>();
+
+  /** When set, the form edits this post instead of creating a new one. */
+  @Input() set post(value: Item | null) {
+    this.editing = value;
+    if (value) {
+      this.form.reset({
+        type: value.type,
+        categoryId: value.category.id,
+        title: value.title,
+        description: value.description,
+        eventDate: value.event_date.slice(0, 10),
+        locationName: value.location_name ?? '',
+      });
+    }
+  }
+  editing: Item | null = null;
 
   readonly isAuthenticated = this.auth.isAuthenticated;
 
@@ -164,26 +180,42 @@ export class ItemForm implements OnInit {
 
     const value = this.form.getRawValue();
     const payload = new FormData();
+    const editing = this.editing;
 
     payload.append('type', value.type);
     payload.append('category_id', String(value.categoryId));
     payload.append('title', value.title.trim());
     payload.append('description', value.description.trim());
     payload.append('event_date', value.eventDate);
-    payload.append('latitude', String(this.defaultCoordinates.latitude));
-    payload.append('longitude', String(this.defaultCoordinates.longitude));
 
-    if (value.locationName.trim()) {
+    if (editing) {
+      // Coordinates and photos stay as they are; location_name may be cleared
       payload.append('location_name', value.locationName.trim());
+    } else {
+      payload.append('latitude', String(this.defaultCoordinates.latitude));
+      payload.append('longitude', String(this.defaultCoordinates.longitude));
+
+      if (value.locationName.trim()) {
+        payload.append('location_name', value.locationName.trim());
+      }
+
+      for (const image of this.selectedImages) {
+        payload.append('images[]', image);
+      }
     }
 
-    for (const image of this.selectedImages) {
-      payload.append('images[]', image);
-    }
+    const request = editing
+      ? this.postService.updatePost(editing.id, payload)
+      : this.postService.createPost(payload);
 
-    this.postService.createPost(payload).subscribe({
+    request.subscribe({
       next: () => {
         this.isSubmitting = false;
+
+        if (editing) {
+          this.created.emit();
+          return;
+        }
 
         this.form.reset({
           type: 'lost',
@@ -204,6 +236,11 @@ export class ItemForm implements OnInit {
           const errors = Object.values(error.error.errors).flat().join(' ');
 
           this.submitError = errors || 'Please check the form fields.';
+          return;
+        }
+
+        if (error.status === 403 && editing) {
+          this.submitError = error.error?.message ?? 'You cannot edit this post.';
           return;
         }
 

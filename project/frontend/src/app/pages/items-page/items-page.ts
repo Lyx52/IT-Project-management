@@ -35,6 +35,8 @@ export class ItemsPageComponent implements OnInit {
   /** `null` means all categories. */
   readonly selectedCategoryId = signal<number | null>(null);
 
+  readonly editingItem = signal<Item | null>(null);
+
   isCreatePostOpen = false;
   isMessengerOpen = false;
 
@@ -108,6 +110,19 @@ export class ItemsPageComponent implements OnInit {
 
   closeCreatePost(): void {
     this.isCreatePostOpen = false;
+  }
+
+  openEdit(item: Item): void {
+    this.editingItem.set(item);
+  }
+
+  closeEdit(): void {
+    this.editingItem.set(null);
+  }
+
+  onPostEdited(): void {
+    this.closeEdit();
+    this.loadPosts();
   }
 
   toggleMessenger(): void {

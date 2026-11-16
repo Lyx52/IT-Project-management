@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Item } from '../../models/models';
 import { ItemForm } from '../../components/item-form/item-form';
@@ -42,6 +42,7 @@ export class HomePageComponent {
   hidecookie(): void {
     this.cookieVisible = false;
   }
+  readonly editingItem = signal<Item | null>(null);
   isCreatePostOpen = false;
   isMessengerOpen = false;
 
@@ -63,6 +64,19 @@ export class HomePageComponent {
   }
 
   onPostCreated(): void {
+    this.loadPosts();
+  }
+
+  openEdit(item: Item): void {
+    this.editingItem.set(item);
+  }
+
+  closeEdit(): void {
+    this.editingItem.set(null);
+  }
+
+  onPostEdited(): void {
+    this.closeEdit();
     this.loadPosts();
   }
 
