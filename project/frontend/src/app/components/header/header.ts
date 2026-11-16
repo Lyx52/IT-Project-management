@@ -17,6 +17,7 @@ export class Header {
   texts = en;
 
   readonly isAuthenticated = this.auth.isAuthenticated;
+  readonly isAdmin = this.auth.isAdmin;
   readonly displayName = this.auth.displayName;
   readonly isExportingData = signal(false);
   readonly exportError = signal<string | null>(null);
