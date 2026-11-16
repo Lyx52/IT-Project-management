@@ -191,66 +191,178 @@
               }
             </div>
 
-            <!-- Math CAPTCHA. The question comes from the server, which keeps the answer. -->
+            <!--
+              CAPTCHA, of the type the server's CAPTCHA_TYPE picks: a question
+              the user answers (math, determinant), or a hash puzzle the
+              browser solves in a Web Worker while the user fills in the form.
+            -->
             <div class="mb-4">
               <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                <label class="form-label mb-0" for="captchaAnswer">Security question</label>
-                <button
-                  class="btn btn-sm btn-link text-muted p-0 text-decoration-none"
-                  type="button"
-                  (click)="newCaptcha()"
-                  [disabled]="captchaLoading()"
-                  aria-controls="captcha-question"
-                >
-                  <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>New question
-                </button>
+                @if (asksUser()) {
+                  <label class="form-label mb-0" for="captchaAnswer">Security question</label>
+                  <button
+                    class="btn btn-sm btn-link text-muted p-0 text-decoration-none"
+                    type="button"
+                    (click)="newCaptcha()"
+                    [disabled]="captchaStatus() === 'loading'"
+                    aria-controls="captcha-question"
+                  >
+                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>New question
+                  </button>
+                } @else {
+                  <span class="form-label mb-0" id="captcha-label">Security check</span>
+                }
               </div>
 
-              <div class="captcha-row d-flex align-items-center gap-2">
-                <p
-                  class="captcha-question mb-0 flex-grow-1"
-                  id="captcha-question"
-                  aria-live="polite"
-                >
-                  @if (captchaLoading()) {
-                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                    <span class="text-muted">Loading question...</span>
-                  } @else if (captcha(); as challenge) {
-                    {{ challenge.question }}
-                  } @else {
-                    <span class="text-danger small">{{ captchaError() }}</span>
-                  }
-                </p>
-                <input
-                  id="captchaAnswer"
-                  class="form-control captcha-answer"
-                  formControlName="captchaAnswer"
-                  type="text"
-                  inputmode="numeric"
-                  autocomplete="off"
-                  placeholder="Answer"
-                  [class.is-invalid]="error('captchaAnswer')"
-                  [attr.aria-invalid]="error('captchaAnswer') ? 'true' : null"
-                  [attr.aria-describedby]="
-                    error('captchaAnswer')
-                      ? 'captcha-question captchaAnswer-error'
-                      : 'captcha-question captchaAnswer-hint'
-                  "
-                />
-              </div>
-              @if (error('captchaAnswer')) {
-                <div class="invalid-feedback d-block" id="captchaAnswer-error">
-                  {{ error('captchaAnswer') }}
+              @if (asksUser()) {
+                <div class="captcha-row d-flex align-items-center gap-2">
+                  <div
+                    class="captcha-question mb-0 flex-grow-1"
+                    id="captcha-question"
+                    aria-live="polite"
+                  >
+                    @switch (captchaStatus()) {
+                      @case ('loading') {
+                        <span
+                          class="spinner-border spinner-border-sm me-2"
+                          aria-hidden="true"
+                        ></span>
+                        <span class="text-muted">Loading question...</span>
+                      }
+                      @case ('error') {
+                        <span class="text-danger small">{{ captchaError() }}</span>
+                      }
+                      @default {
+                        @if (matrix(); as m) {
+                          <span class="me-2">Determinant of</span>
+                          <span
+                            class="matrix"
+                            role="img"
+                            [attr.aria-label]="
+                              'matrix with rows ' +
+                              m[0][0] +
+                              ' ' +
+                              m[0][1] +
+                              ' and ' +
+                              m[1][0] +
+                              ' ' +
+                              m[1][1]
+                            "
+                          >
+                            <span>{{ m[0][0] }}</span
+                            ><span>{{ m[0][1] }}</span> <span>{{ m[1][0] }}</span
+                            ><span>{{ m[1][1] }}</span>
+                          </span>
+                          <span class="ms-2">= ?</span>
+                        } @else if (captcha(); as challenge) {
+                          @if (challenge.type === 'math') {
+                            {{ challenge.question }}
+                          }
+                        }
+                      }
+                    }
+                  </div>
+                  <input
+                    id="captchaAnswer"
+                    class="form-control captcha-answer"
+                    formControlName="captchaAnswer"
+                    type="text"
+                    [attr.inputmode]="captchaType() === 'determinant' ? 'text' : 'numeric'"
+                    autocomplete="off"
+                    placeholder="Answer"
+                    [class.is-invalid]="error('captchaAnswer')"
+                    [attr.aria-invalid]="error('captchaAnswer') ? 'true' : null"
+                    [attr.aria-describedby]="
+                      error('captchaAnswer')
+                        ? 'captcha-question captchaAnswer-error'
+                        : 'captcha-question captchaAnswer-hint'
+                    "
+                  />
                 </div>
+                @if (error('captchaAnswer')) {
+                  <div class="invalid-feedback d-block" id="captchaAnswer-error">
+                    {{ error('captchaAnswer') }}
+                  </div>
+                } @else {
+                  <div class="form-text" id="captchaAnswer-hint">
+                    @if (matrix()) {
+                      For rows (a b) and (c d) the determinant is a·d − b·c, and can be negative.
+                    } @else {
+                      Helps us keep automated sign-ups out.
+                    }
+                  </div>
+                }
               } @else {
-                <div class="form-text" id="captchaAnswer-hint">
-                  Helps us keep automated sign-ups out.
+                <div
+                  class="captcha-status d-flex align-items-center gap-2"
+                  [class.is-solved]="captchaStatus() === 'solved'"
+                  [class.is-failed]="captchaStatus() === 'error'"
+                >
+                  <span
+                    class="flex-grow-1"
+                    role="status"
+                    aria-labelledby="captcha-label captcha-text"
+                  >
+                    @switch (captchaStatus()) {
+                      @case ('solved') {
+                        <i class="bi bi-shield-check text-success me-2" aria-hidden="true"></i>
+                        <span id="captcha-text">Your browser passed the check.</span>
+                      }
+                      @case ('error') {
+                        <i
+                          class="bi bi-exclamation-triangle text-danger me-2"
+                          aria-hidden="true"
+                        ></i>
+                        <span class="text-danger" id="captcha-text">{{ captchaError() }}</span>
+                      }
+                      @default {
+                        <span
+                          class="spinner-border spinner-border-sm me-2"
+                          aria-hidden="true"
+                        ></span>
+                        <span id="captcha-text">Checking your browser...</span>
+                      }
+                    }
+                  </span>
+
+                  @if (captchaStatus() === 'error') {
+                    <button
+                      class="btn btn-sm btn-link text-muted p-0 text-decoration-none"
+                      type="button"
+                      (click)="newCaptcha()"
+                    >
+                      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Try again
+                    </button>
+                  } @else if (captchaStatus() === 'solving') {
+                    <span class="text-muted small" aria-hidden="true">{{ captchaPercent() }}%</span>
+                  }
+                </div>
+
+                @if (captchaStatus() === 'solving') {
+                  <div
+                    class="progress captcha-progress mt-1"
+                    role="progressbar"
+                    aria-label="Security check progress"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    [attr.aria-valuenow]="captchaPercent()"
+                  >
+                    <div class="progress-bar" [style.width.%]="captchaPercent()"></div>
+                  </div>
+                }
+
+                <div class="form-text">
+                  Your browser solves a small puzzle to keep automated sign-ups out. It runs while
+                  you fill in the form and takes from a moment to under a minute on slow devices.
                 </div>
               }
             </div>
 
             <button class="btn btn-primary w-100" type="submit" [attr.aria-busy]="submitting()">
-              @if (submitting()) {
+              @if (awaitingCaptcha()) {
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                Finishing the security check...
+              } @else if (submitting()) {
                 <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                 Creating account...
               } @else {
