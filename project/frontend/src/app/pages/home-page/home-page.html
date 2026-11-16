@@ -4,7 +4,7 @@
   <!-- Search section -->
   <div class="search-section mb-4">
     <div>
-      <h4 class="fw-bold mb-1">Find what you've lost.</h4>
+      <h4 class="fw-bold mb-1">{{ texts.hometitle }}</h4>
       <p class="text-muted mb-0">One place for lost and found items.</p>
     </div>
 
@@ -52,6 +52,12 @@
       </div>
     }
   </section>
+
+  @if (cookieVisible) {
+    <div class="cookie-container">
+      <app-cookie-notice (hidecookieTrig)="hidecookie()" />
+    </div>
+  }
 </main>
 
 <!-- Create post component -->
@@ -73,3 +79,4 @@
     <app-messenger />
   </div>
 }
+<app-footer (showTriggered)="openTerms()" />
