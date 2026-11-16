@@ -1,6 +1,6 @@
 <div class="panel p-3">
-  <h5 class="fw-bold mb-1">Report an item</h5>
-  <p class="text-muted small mb-3">Help someone find their belongings.</p>
+  <h5 class="fw-bold mb-1">{{ texts.ftitle }}</h5>
+  <p class="text-muted small mb-3">{{ texts.fp }}</p>
 
   @if (isAuthenticated()) {
     <form [formGroup]="form" (ngSubmit)="submit()">

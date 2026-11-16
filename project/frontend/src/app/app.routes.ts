@@ -4,6 +4,8 @@ import { ItemsPageComponent } from './pages/items-page/items-page';
 import { MapPageComponent } from './pages/map-page/map-page';
 import { LoginPageComponent } from './pages/login-page/login-page';
 import { RegisterPageComponent } from './pages/register-page/register-page';
+import { Terms } from './pages/terms/terms';
+import { PrivacyComponent } from './pages/privacy-policy/privacy';
 
 export const routes: Routes = [
   {
@@ -26,6 +28,14 @@ export const routes: Routes = [
   {
     path: 'login',
     component: LoginPageComponent,
+  },
+  {
+    path: 'terms',
+    component: Terms,
+  },
+  {
+    path: 'privacy',
+    component: PrivacyComponent,
   },
   {
     path: 'register',
