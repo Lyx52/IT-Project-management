@@ -1,0 +1,124 @@
+<app-header />
+
+<main class="page-container py-4">
+  <a class="btn btn-link px-0 mb-3" routerLink="/items">
+    <i class="bi bi-arrow-left me-1"></i>
+    Back to items
+  </a>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="text-muted mt-2 mb-0">Loading post...</p>
+      </div>
+    }
+    @case ('not-found') {
+      <div class="text-center py-5">
+        <i class="bi bi-question-circle fs-1 text-muted"></i>
+        <h1 class="h5 fw-bold mt-3">Post not found</h1>
+        <p class="text-muted mb-0">
+          It may have been removed, or it is still waiting for approval.
+        </p>
+      </div>
+    }
+    @case ('error') {
+      <div class="alert alert-danger">
+        Failed to load the post. Please try again.
+        <button class="btn btn-sm btn-outline-danger ms-2" type="button" (click)="load()">
+          Retry
+        </button>
+      </div>
+    }
+    @case ('ready') {
+      @if (post(); as post) {
+        <article class="post card">
+          @if (post.images.length > 0) {
+            <div class="post-images">
+              @for (image of post.images; track image.id) {
+                <img [src]="image.url" [alt]="post.title" />
+              }
+            </div>
+          }
+
+          <div class="card-body p-4">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+              <span class="post-type" [class]="post.type">
+                {{ post.type === 'lost' ? 'LOST' : 'FOUND' }}
+              </span>
+              <span class="text-muted small">{{ post.category.name }}</span>
+              @if (isMine() && post.status !== 'approved') {
+                <span class="badge text-bg-light text-capitalize">{{ post.status }}</span>
+              }
+            </div>
+
+            <h1 class="h3 fw-bold mb-3">{{ post.title }}</h1>
+
+            <div class="post-info text-muted small mb-3">
+              <span>
+                <i class="bi bi-geo-alt me-1"></i>
+                {{ post.location_name || 'Location not specified' }}
+              </span>
+              <span>
+                <i class="bi bi-calendar3 me-1"></i>
+                {{ post.type === 'lost' ? 'Lost on' : 'Found on' }}
+                {{ post.event_date | date: 'd MMM yyyy' }}
+              </span>
+              <span>
+                <i class="bi bi-person me-1"></i>
+                Posted by {{ post.user.username }} on {{ post.created_at | date: 'd MMM yyyy' }}
+              </span>
+            </div>
+
+            <p class="post-description mb-0">{{ post.description }}</p>
+          </div>
+        </article>
+
+        @if (isMine()) {
+          <section class="mt-5" aria-labelledby="matches-title">
+            <h2 id="matches-title" class="h5 fw-bold mb-1">Possible matches</h2>
+            <p class="text-muted small">
+              {{ post.type === 'lost' ? 'Found' : 'Lost' }} posts in {{ post.category.name }}, dated
+              within 7 days of yours and less than 2 km away, closest first.
+            </p>
+
+            @switch (matchesState()) {
+              @case ('loading') {
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <span class="text-muted small ms-2">Looking for matches...</span>
+              }
+              @case ('error') {
+                <div class="alert alert-warning">
+                  Could not load possible matches.
+                  <button
+                    class="btn btn-sm btn-outline-secondary ms-2"
+                    type="button"
+                    (click)="loadMatches()"
+                  >
+                    Retry
+                  </button>
+                </div>
+              }
+              @case ('ready') {
+                @if (matches().length > 0) {
+                  <div class="card-grid">
+                    @for (match of matches(); track match.id) {
+                      <app-item-card [item]="match" />
+                    }
+                  </div>
+                } @else {
+                  <p class="text-muted mb-0">
+                    No possible matches yet. New posts are checked every time you open this page.
+                    You can also <a routerLink="/items">save a search</a> to get a notification.
+                  </p>
+                }
+              }
+            }
+          </section>
+        }
+      }
+    }
+  }
+</main>
+
+<app-footer (showTriggered)="openTerms()" />

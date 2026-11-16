@@ -20,3 +20,10 @@
     padding-right: 14px;
   }
 }
+
+/* Grid of item cards, shared by the post, my-posts and saved-search pages */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 20px;
+}
