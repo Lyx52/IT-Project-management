@@ -35,43 +35,43 @@
 
       <!-- Images (only when creating) -->
       @if (!editing) {
-      <div class="mb-3">
-        <label class="image-upload d-block">
-          <input
-            type="file"
-            class="d-none"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            (change)="onFilesSelected($event)"
-          />
+        <div class="mb-3">
+          <label class="image-upload d-block">
+            <input
+              type="file"
+              class="d-none"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              (change)="onFilesSelected($event)"
+            />
 
-          <i class="bi bi-cloud-arrow-up fs-2"></i>
-          <p class="mb-0 mt-2">Upload item photos</p>
-          <small class="text-muted"> JPG, PNG or WEBP. Up to 5 images, 5 MB each. </small>
-        </label>
+            <i class="bi bi-cloud-arrow-up fs-2"></i>
+            <p class="mb-0 mt-2">Upload item photos</p>
+            <small class="text-muted"> JPG, PNG or WEBP. Up to 5 images, 5 MB each. </small>
+          </label>
 
-        @if (selectedImages.length > 0) {
-          <div class="selected-images mt-2">
-            @for (image of selectedImages; track image.name + $index) {
-              <div class="selected-image">
-                <span class="small">{{ image.name }}</span>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-danger"
-                  (click)="removeImage($index)"
-                  aria-label="Remove image"
-                >
-                  <i class="bi bi-x"></i>
-                </button>
-              </div>
-            }
-          </div>
-        }
+          @if (selectedImages.length > 0) {
+            <div class="selected-images mt-2">
+              @for (image of selectedImages; track image.name + $index) {
+                <div class="selected-image">
+                  <span class="small">{{ image.name }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="removeImage($index)"
+                    aria-label="Remove image"
+                  >
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          }
 
-        @if (imageError) {
-          <div class="text-danger small mt-1">{{ imageError }}</div>
-        }
-      </div>
+          @if (imageError) {
+            <div class="text-danger small mt-1">{{ imageError }}</div>
+          }
+        </div>
       }
 
       <!-- Title -->
