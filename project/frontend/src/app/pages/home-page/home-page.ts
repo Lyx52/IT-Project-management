@@ -1,4 +1,4 @@
-import { Component,inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Item } from '../../models/item.model';
 import { ItemForm } from '../../components/item-form/item-form';
@@ -16,7 +16,7 @@ import { CreatePost } from '../../components/create-post/create-post';
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemForm, ItemCard, Messenger, Header, Footer, CookieNotice,CreatePost],
+  imports: [ItemForm, ItemCard, Messenger, Header, Footer, CookieNotice, CreatePost],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })

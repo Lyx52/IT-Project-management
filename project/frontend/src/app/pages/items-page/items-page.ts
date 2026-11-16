@@ -1,4 +1,4 @@
-import { Component, inject, OnInit} from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { Item } from '../../models/item.model';
@@ -22,7 +22,7 @@ type ItemTypeFilter = 'all' | 'lost' | 'found';
 })
 export class ItemsPageComponent implements OnInit {
   private readonly postService = inject(PostService);
-   private route = inject(ActivatedRoute);
+  private route = inject(ActivatedRoute);
   texts = en;
 
   items: Item[] = [];
