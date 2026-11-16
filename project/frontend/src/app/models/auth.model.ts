@@ -12,20 +12,52 @@ export interface RegisterPayload {
   privacy_policy_version: string;
   /** From GET /api/v1/captcha. Each challenge allows one attempt. */
   captcha_id: string;
+  /** The typed answer, or the number the browser found, in decimal. */
   captcha_answer: string;
 }
 
 /**
- * 200 body of GET /api/v1/captcha. The answer is kept server-side and is
- * never part of this response.
+ * 200 body of GET /api/v1/captcha. The server's CAPTCHA_TYPE decides which
+ * kind arrives; the answer is always a whole number the server keeps to
+ * itself.
  */
-export interface CaptchaChallenge {
+export type CaptchaChallenge = MathCaptcha | DeterminantCaptcha | HashCaptcha;
+
+interface CaptchaBase {
   captcha_id: string;
-  /** Ready to display, e.g. "What is 7 + 5?". */
-  question: string;
   /** Seconds until the challenge can no longer be answered. */
   expires_in: number;
 }
+
+/** The user types the answer to e.g. "What is 7 + 5?". Never negative. */
+export interface MathCaptcha extends CaptchaBase {
+  type: 'math';
+  question: string;
+}
+
+/** The user types ad − bc for matrix [[a, b], [c, d]]. Can be negative. */
+export interface DeterminantCaptcha extends CaptchaBase {
+  type: 'determinant';
+  question: string;
+  matrix: [[number, number], [number, number]];
+}
+
+/**
+ * A proof-of-work puzzle the browser solves by itself: the answer is the
+ * whole number n in 0..max_number for which SHA-256(salt + n) equals
+ * `challenge`.
+ */
+export interface HashCaptcha extends CaptchaBase {
+  type: 'hash';
+  algorithm: 'SHA-256';
+  salt: string;
+  /** Hex SHA-256 digest of salt followed by the secret number in decimal. */
+  challenge: string;
+  /** The secret number is at most this, so the search is bounded. */
+  max_number: number;
+}
+
+export type CaptchaType = CaptchaChallenge['type'];
 
 /**
  * Contract for POST /api/v1/login (app/Http/Requests/Api/V1/LoginRequest.php).

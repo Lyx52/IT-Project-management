@@ -13,6 +13,16 @@
           <span class="fw-semibold">{{ displayName() }}</span>
         </span>
 
+        <button
+          class="btn btn-outline-primary btn-sm"
+          type="button"
+          [disabled]="isExportingData()"
+          (click)="downloadPersonalData()"
+        >
+          <i class="bi bi-download me-1"></i>
+          {{ isExportingData() ? 'Preparing…' : 'Download my data' }}
+        </button>
+
         <button class="btn btn-outline-secondary btn-sm" type="button" (click)="logout()">
           Log out
         </button>
@@ -25,6 +35,12 @@
         <a class="btn btn-primary btn-sm" routerLink="/register">Sign up</a>
       }
     </div>
+
+    @if (exportError()) {
+      <span class="download-error small text-danger order-lg-4" role="alert">
+        {{ exportError() }}
+      </span>
+    }
 
     <!-- Navigation -->
     <div class="collapse navbar-collapse order-lg-2">

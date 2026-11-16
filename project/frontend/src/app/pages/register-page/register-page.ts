@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -8,9 +8,16 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { EMPTY, Subscription, map, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { CaptchaSolver } from '../../captcha/captcha-solver';
 import { Header } from '../../components/header/header';
-import { AuthUser, CaptchaChallenge, ValidationErrorBody } from '../../models/auth.model';
+import {
+  AuthUser,
+  CaptchaChallenge,
+  CaptchaType,
+  ValidationErrorBody,
+} from '../../models/auth.model';
 import { AuthService } from '../../services/auth';
 
 /**
@@ -26,6 +33,28 @@ const SERVER_FIELD_TO_CONTROL: Record<string, string> = {
   terms_accepted: 'termsAccepted',
   captcha_answer: 'captchaAnswer',
 };
+
+/**
+ * A solved hash puzzle is thrown away this long before the server would
+ * expire it, so a slow request cannot arrive just too late.
+ */
+const CAPTCHA_EXPIRY_MARGIN_MS = 15_000;
+
+/**
+ * loading: fetching a challenge
+ * ready:   a question (math, determinant) is shown for the user to answer
+ * solving: the browser is working on a hash puzzle
+ * solved:  the hash puzzle is done
+ * error:   no challenge could be loaded, or the puzzle could not be solved
+ */
+type CaptchaStatus = 'loading' | 'ready' | 'solving' | 'solved' | 'error';
+
+interface CaptchaSolution {
+  captchaId: string;
+  answer: string;
+  /** Date.now() after which the server no longer accepts it. */
+  expiresAt: number;
+}
 
 /**
  * Checked on the group because it compares two controls. An empty
@@ -52,17 +81,43 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 })
 export class RegisterPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly solver = inject(CaptchaSolver);
   private readonly fb = inject(FormBuilder);
 
   /** Set once the account exists; the form is then replaced by a confirmation. */
   readonly registeredUser = signal<AuthUser | null>(null);
   readonly submitting = signal(false);
 
-  /** The current math question. The answer never reaches the browser. */
+  /**
+   * The CAPTCHA, of whichever type the server's CAPTCHA_TYPE picks. math and
+   * determinant show a question the user answers in `captchaAnswer`; hash is
+   * solved in the background as soon as the page opens, so it is usually
+   * done before the form is filled in.
+   */
   readonly captcha = signal<CaptchaChallenge | null>(null);
-  readonly captchaLoading = signal(false);
-  /** Why no question could be loaded, shown in place of the question. */
+  /** Type of the latest challenge. Kept while the next one loads. */
+  readonly captchaType = signal<CaptchaType | null>(null);
+  /** Whether the user types the answer, rather than the browser finding it. */
+  readonly asksUser = computed(() => {
+    const type = this.captchaType();
+    return type === 'math' || type === 'determinant';
+  });
+  /** The 2×2 matrix of a determinant question, else null. */
+  readonly matrix = computed(() => {
+    const challenge = this.captcha();
+    return challenge?.type === 'determinant' ? challenge.matrix : null;
+  });
+  readonly captchaStatus = signal<CaptchaStatus>('loading');
+  /** Hash puzzle only: share of the search range covered so far, 0 to 1. */
+  readonly captchaProgress = signal(0);
+  readonly captchaPercent = computed(() => Math.floor(this.captchaProgress() * 100));
+  /** Why no challenge could be loaded or solved, shown in its place. */
   readonly captchaError = signal<string | null>(null);
+  /**
+   * Hash puzzle only: "Create account" was pressed before the browser
+   * finished. The form is sent as soon as it does.
+   */
+  readonly awaitingCaptcha = signal(false);
   /** An error that belongs to no single field: throttling, network, 5xx. */
   readonly formError = signal<string | null>(null);
   readonly passwordVisible = signal(false);
@@ -87,18 +142,30 @@ export class RegisterPageComponent implements OnInit {
       password: ['', [Validators.required, Validators.minLength(8)]],
       passwordConfirmation: ['', [Validators.required]],
       termsAccepted: [false, [Validators.requiredTrue]],
-      // Answers are never negative, so digits only. Lets the field use the
-      // numeric keypad on phones.
-      captchaAnswer: ['', [Validators.required, Validators.pattern(/^\s*\d+\s*$/)]],
+      // Only for typed-in answers: disabled, and so not validated, while the
+      // CAPTCHA is a hash puzzle. Determinants can be negative.
+      captchaAnswer: [
+        { value: '', disabled: true },
+        [Validators.required, Validators.pattern(/^\s*-?\d+\s*$/)],
+      ],
     },
     { validators: passwordsMatch },
   );
+
+  /** The solved hash puzzle, until it is sent or expires. */
+  private solution: CaptchaSolution | null = null;
+  private captchaSubscription?: Subscription;
+
+  constructor() {
+    // Unsubscribing stops the worker, so leaving the page stops the work
+    inject(DestroyRef).onDestroy(() => this.captchaSubscription?.unsubscribe());
+  }
 
   ngOnInit(): void {
     this.loadCaptcha();
   }
 
-  /** "New question" button: a fresh challenge and an empty answer field. */
+  /** "New question" and "Try again": a fresh challenge and an empty answer field. */
   newCaptcha(): void {
     this.form.controls.captchaAnswer.reset('');
     this.loadCaptcha();
@@ -151,7 +218,7 @@ export class RegisterPageComponent implements OnInit {
         break;
       case 'captchaAnswer':
         if (errors['required']) return 'Answer the question.';
-        if (errors['pattern']) return 'Enter the answer as a number.';
+        if (errors['pattern']) return 'Enter the answer as a whole number.';
         break;
     }
 
@@ -161,22 +228,59 @@ export class RegisterPageComponent implements OnInit {
   submit(): void {
     this.formError.set(null);
 
+    if (this.submitting()) {
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
+    if (this.asksUser()) {
+      this.submitTypedAnswer();
+    } else {
+      this.submitSolvedPuzzle();
+    }
+  }
+
+  /** math and determinant: send the question's id with what the user typed. */
+  private submitTypedAnswer(): void {
     const challenge = this.captcha();
 
-    if (!challenge) {
+    if (!challenge || challenge.type === 'hash') {
       this.formError.set('The security question has not loaded yet. Please try again.');
       return;
     }
 
-    const { username, email, password, passwordConfirmation, termsAccepted, captchaAnswer } =
-      this.form.getRawValue();
-
     this.submitting.set(true);
+    this.send(challenge.captcha_id, this.form.controls.captchaAnswer.value.trim());
+  }
+
+  /** hash: send the browser's solution, or wait for it. */
+  private submitSolvedPuzzle(): void {
+    this.submitting.set(true);
+
+    if (this.solution && Date.now() < this.solution.expiresAt - CAPTCHA_EXPIRY_MARGIN_MS) {
+      this.send(this.solution.captchaId, this.solution.answer);
+      return;
+    }
+
+    // Still working, failed, or solved so long ago that it has expired: send
+    // once a fresh puzzle is solved
+    this.awaitingCaptcha.set(true);
+
+    if (this.captchaStatus() === 'solved' || this.captchaStatus() === 'error') {
+      this.loadCaptcha();
+    }
+  }
+
+  private send(captchaId: string, answer: string): void {
+    // The server uses a challenge up on every attempt, right or wrong
+    this.solution = null;
+
+    const { username, email, password, passwordConfirmation, termsAccepted } =
+      this.form.getRawValue();
 
     this.auth
       .register({
@@ -186,8 +290,8 @@ export class RegisterPageComponent implements OnInit {
         password_confirmation: passwordConfirmation,
         terms_accepted: termsAccepted,
         privacy_policy_version: environment.privacyPolicyVersion,
-        captcha_id: challenge.captcha_id,
-        captcha_answer: captchaAnswer.trim(),
+        captcha_id: captchaId,
+        captcha_answer: answer,
       })
       .subscribe({
         next: (user) => {
@@ -197,38 +301,108 @@ export class RegisterPageComponent implements OnInit {
         error: (error: HttpErrorResponse) => {
           this.submitting.set(false);
 
-          // The server uses a challenge up on every attempt, so the old
-          // question cannot be answered again. Clear its answer before
-          // handleError, which may put the server's message on that field.
+          // The old question cannot be answered again. Clear its answer
+          // before handleError, which may put the server's message on it.
           this.form.controls.captchaAnswer.reset('');
           this.handleError(error);
+          // A hash puzzle starts on the next one right away, so a corrected
+          // form can be sent again without waiting
           this.loadCaptcha();
         },
       });
   }
 
+  /** Fetches a new challenge; a hash puzzle is then solved in a Web Worker. */
   private loadCaptcha(): void {
-    // Drop the old challenge right away: it may already be used up, and
-    // submit() refuses to send without one.
+    // Stops a search still running for the previous challenge
+    this.captchaSubscription?.unsubscribe();
+    this.solution = null;
     this.captcha.set(null);
-    this.captchaLoading.set(true);
+    this.captchaStatus.set('loading');
+    this.captchaProgress.set(0);
     this.captchaError.set(null);
 
-    this.auth.captcha().subscribe({
-      next: (challenge) => {
-        this.captchaLoading.set(false);
-        this.captcha.set(challenge);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.captchaLoading.set(false);
-        this.captcha.set(null);
-        this.captchaError.set(
-          error.status === 429
-            ? 'Too many new questions. Please wait a minute and try again.'
-            : 'Could not load the security question.',
-        );
-      },
-    });
+    this.captchaSubscription = this.auth
+      .captcha()
+      .pipe(
+        switchMap((challenge) => {
+          this.captcha.set(challenge);
+          this.useCaptchaType(challenge.type);
+
+          if (challenge.type !== 'hash') {
+            this.captchaStatus.set('ready');
+            return EMPTY;
+          }
+
+          // Counted from the response, so slightly before the server's expiry
+          const expiresAt = Date.now() + challenge.expires_in * 1000;
+          this.captchaStatus.set('solving');
+
+          return this.solver
+            .solve({
+              salt: challenge.salt,
+              challenge: challenge.challenge,
+              maxNumber: challenge.max_number,
+            })
+            .pipe(map((event) => ({ event, captchaId: challenge.captcha_id, expiresAt })));
+        }),
+      )
+      .subscribe({
+        next: ({ event, captchaId, expiresAt }) => {
+          if (event.type === 'progress') {
+            this.captchaProgress.set(event.fraction);
+            return;
+          }
+
+          this.solution = { captchaId, answer: String(event.number), expiresAt };
+          this.captchaProgress.set(1);
+          this.captchaStatus.set('solved');
+
+          if (this.awaitingCaptcha()) {
+            this.awaitingCaptcha.set(false);
+            this.send(this.solution.captchaId, this.solution.answer);
+          }
+        },
+        error: (error: unknown) => {
+          this.captchaStatus.set('error');
+          this.captchaError.set(
+            error instanceof HttpErrorResponse && error.status === 429
+              ? 'Too many security checks. Please wait a minute and try again.'
+              : this.asksUser()
+                ? 'Could not load the security question.'
+                : 'The security check could not be completed.',
+          );
+
+          if (this.awaitingCaptcha()) {
+            this.awaitingCaptcha.set(false);
+            this.submitting.set(false);
+            this.formError.set(this.captchaError());
+          }
+        },
+      });
+  }
+
+  /**
+   * Shows or hides the answer field to match the challenge. Only touches the
+   * control when the type actually changes: enabling or disabling re-runs its
+   * validators and would drop a message from the server.
+   */
+  private useCaptchaType(type: CaptchaType): void {
+    this.captchaType.set(type);
+    const answer = this.form.controls.captchaAnswer;
+
+    if (type === 'hash' && answer.enabled) {
+      answer.disable();
+    } else if (type !== 'hash' && answer.disabled) {
+      answer.enable();
+    }
+
+    // Was waiting for a hash puzzle, but the server switched to questions
+    if (type !== 'hash' && this.awaitingCaptcha()) {
+      this.awaitingCaptcha.set(false);
+      this.submitting.set(false);
+      this.formError.set('Answer the security question, then send the form again.');
+    }
   }
 
   private handleError(error: HttpErrorResponse): void {
@@ -269,7 +443,9 @@ export class RegisterPageComponent implements OnInit {
       const controlName = SERVER_FIELD_TO_CONTROL[field];
       const control = controlName ? this.form.get(controlName) : null;
 
-      if (control) {
+      // A disabled control is not on screen, e.g. the answer field while the
+      // CAPTCHA is a hash puzzle
+      if (control?.enabled) {
         control.setErrors({ ...(control.errors ?? {}), server: message });
         control.markAsTouched();
       } else {
