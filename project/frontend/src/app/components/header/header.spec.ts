@@ -99,6 +99,8 @@ describe('Header', () => {
 
   it('folds the page links out on small screens and away again once one is picked', () => {
     setup(false);
+    // The test router has no routes, so following a link would reject
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
 
     const el = fixture.nativeElement as HTMLElement;
     const toggler = el.querySelector<HTMLButtonElement>('.navbar-toggler')!;
