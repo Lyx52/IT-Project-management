@@ -6,6 +6,7 @@ import { LoginPageComponent } from './pages/login-page/login-page';
 import { RegisterPageComponent } from './pages/register-page/register-page';
 import { AdminStatisticsPage } from './pages/admin-statistics-page/admin-statistics-page';
 import { adminGuard } from './guards/admin-guard';
+import { authGuard } from './guards/auth-guard';
 import { Terms } from './pages/terms/terms';
 import { PrivacyComponent } from './pages/privacy-policy/privacy';
 
@@ -24,6 +25,24 @@ export const routes: Routes = [
     path: 'items',
     title: 'Lost & Found Items – FindIT',
     component: ItemsPageComponent,
+  },
+  {
+    path: 'post/:id',
+    title: 'Post – FindIT',
+    loadComponent: () => import('./pages/post-page/post-page').then((m) => m.PostPage),
+  },
+  {
+    path: 'my-posts',
+    title: 'My Posts – FindIT',
+    loadComponent: () => import('./pages/my-posts-page/my-posts-page').then((m) => m.MyPostsPage),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'saved-searches',
+    title: 'Saved Searches – FindIT',
+    loadComponent: () =>
+      import('./pages/saved-searches-page/saved-searches-page').then((m) => m.SavedSearchesPage),
+    canActivate: [authGuard],
   },
   {
     path: 'map',

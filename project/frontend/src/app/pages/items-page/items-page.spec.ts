@@ -1,11 +1,18 @@
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  HttpTestingController,
+  TestRequest,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
-import { Category, Item } from '../../models/models';
+import { Category, Item, PageMeta } from '../../models/models';
 import { ItemsPageComponent } from './items-page';
+
+const API = environment.apiBaseUrl;
 
 const CATEGORIES: Category[] = [
   { id: 1, name: 'Phones' },
@@ -13,9 +20,9 @@ const CATEGORIES: Category[] = [
   { id: 3, name: 'Wallets & Cards' },
 ];
 
-const item = (id: number, type: Item['type'], categoryId: number): Item => ({
+const item = (id: number): Item => ({
   id,
-  type,
+  type: 'found',
   status: 'approved',
   title: `Item ${id}`,
   description: 'Description',
@@ -25,123 +32,276 @@ const item = (id: number, type: Item['type'], categoryId: number): Item => ({
   event_date: '2026-11-01',
   resolved_at: null,
   images: [],
-  category: CATEGORIES.find((c) => c.id === categoryId)!,
+  category: CATEGORIES[1],
   user: { id: 1, username: 'jane_doe' },
   created_at: '2026-11-01T10:00:00Z',
   updated_at: '2026-11-01T10:00:00Z',
 });
 
-const ITEMS: Item[] = [item(1, 'lost', 1), item(2, 'found', 1), item(3, 'lost', 2)];
+const page = (items: Item[], meta: Partial<PageMeta> = {}) => ({
+  data: items,
+  meta: { current_page: 1, last_page: 1, total: items.length, ...meta },
+});
 
 describe('ItemsPageComponent', () => {
-  let fixture: ComponentFixture<ItemsPageComponent>;
+  let harness: RouterTestingHarness;
   let component: ItemsPageComponent;
   let httpMock: HttpTestingController;
 
-  const select = (): HTMLSelectElement =>
-    fixture.nativeElement.querySelector('select[aria-label="Category"]');
-
-  const choose = (value: string) => {
-    select().value = value;
-    select().dispatchEvent(new Event('change'));
-    fixture.detectChanges();
+  const signIn = () => {
+    localStorage.setItem('findit.token', 'stored-token');
+    localStorage.setItem(
+      'findit.user',
+      JSON.stringify({
+        id: 7,
+        username: 'jane_doe',
+        email: 'jane@example.com',
+        email_verified_at: '2026-11-01T10:00:00Z',
+        must_verify_email: false,
+      }),
+    );
   };
 
-  const shownTitles = (): string[] =>
-    component
-      .filteredItems()
-      .map((shown) => shown.title)
-      .sort();
-
-  beforeEach(() => {
+  /** Opens the page at `url`, answering the category request. */
+  const open = async (url = '/items') => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([
+          { path: 'items', component: ItemsPageComponent },
+          { path: 'login', children: [] },
+          { path: 'saved-searches', children: [] },
+        ]),
+      ],
+    });
+    httpMock = TestBed.inject(HttpTestingController);
+    harness = await RouterTestingHarness.create();
+    component = await harness.navigateByUrl(url, ItemsPageComponent);
+    httpMock.expectOne(`${API}/category/query`).flush({ data: CATEGORIES });
+  };
+
+  /** The pending search request, checked against the expected query params. */
+  const expectSearch = (params: Record<string, string>): TestRequest => {
+    const request = httpMock.expectOne((req) => req.url === `${API}/posts/query`);
+    const sent = Object.fromEntries(
+      request.request.params.keys().map((key) => [key, request.request.params.get(key)]),
+    );
+    expect(sent).toEqual({ page: '1', ...params });
+    return request;
+  };
+
+  const settle = async () => {
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+  };
+
+  const text = (): string => harness.routeNativeElement!.textContent ?? '';
+  const query = <T extends Element>(selector: string) =>
+    harness.routeNativeElement!.querySelector(selector) as T;
+  const button = (label: string) =>
+    Array.from(harness.routeNativeElement!.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === label,
+    ) as HTMLButtonElement | undefined;
+
+  const typeSearch = (value: string) => {
+    const input = query<HTMLInputElement>('input[type="search"]');
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    query<HTMLFormElement>('form[role="search"]').dispatchEvent(new Event('submit'));
+  };
+
+  const chooseCategory = (value: string) => {
+    const select = query<HTMLSelectElement>('select[aria-label="Category"]');
+    select.value = value;
+    select.dispatchEvent(new Event('change'));
+  };
+
+  afterEach(() => {
+    // The header's bell asks for notifications when someone is signed in
+    httpMock.match(`${API}/notifications`);
+    httpMock.verify();
+    localStorage.clear();
+  });
+
+  it('shows the whole feed with the total and the categories', async () => {
+    await open();
+    expectSearch({}).flush(page([item(1), item(2)], { total: 2 }));
+    await settle();
+
+    expect(text()).toContain('2 items available');
+    expect(text()).toContain('Item 1');
+    const options = Array.from(query<HTMLSelectElement>('select').options).map((o) =>
+      o.textContent?.trim(),
+    );
+    expect(options).toEqual(['All categories', 'Phones', 'Keys', 'Wallets & Cards']);
+  });
+
+  it('runs the search from the URL, e.g. a link from the home page or a saved search', async () => {
+    await open('/items?q=car%20keys&type=found&category_id=2');
+    expectSearch({ q: 'car keys', type: 'found', category_id: '2' }).flush(page([item(1)]));
+    await settle();
+
+    expect(query<HTMLInputElement>('input[type="search"]').value).toBe('car keys');
+    expect(query<HTMLSelectElement>('select').value).toBe('2');
+    expect(text()).toContain('1 items match this search');
+  });
+
+  it('ignores invalid filters in the URL', async () => {
+    await open('/items?type=stolen&category_id=abc');
+    expectSearch({}).flush(page([]));
+  });
+
+  it('searches on submit and keeps the search in the URL', async () => {
+    await open('/items?type=lost');
+    expectSearch({ type: 'lost' }).flush(page([]));
+
+    typeSearch('  wallet ');
+    await settle();
+
+    expectSearch({ q: 'wallet', type: 'lost' }).flush(page([item(3)]));
+    expect(TestBed.inject(Router).url).toBe('/items?q=wallet&type=lost');
+  });
+
+  it('narrows by category and by lost/found on the server', async () => {
+    await open();
+    expectSearch({}).flush(page([]));
+    await settle(); // the category options are drawn
+
+    chooseCategory('3');
+    await settle();
+    expectSearch({ category_id: '3' }).flush(page([]));
+
+    component.selectType('found');
+    await settle();
+    expectSearch({ category_id: '3', type: 'found' }).flush(page([]));
+
+    component.selectType('all');
+    await settle();
+    expectSearch({ category_id: '3' }).flush(page([]));
+  });
+
+  it('clears every filter on reset', async () => {
+    await open('/items?q=keys&type=found&category_id=2');
+    expectSearch({ q: 'keys', type: 'found', category_id: '2' }).flush(page([]));
+
+    button('Reset filters')!.click();
+    await settle();
+
+    expectSearch({}).flush(page([]));
+    expect(TestBed.inject(Router).url).toBe('/items');
+    expect(query<HTMLInputElement>('input[type="search"]').value).toBe('');
+  });
+
+  it('loads the next page on demand until the last one', async () => {
+    await open();
+    expectSearch({}).flush(page([item(1), item(2)], { last_page: 2, total: 3 }));
+    await settle();
+
+    button('Load more')!.click();
+    const next = httpMock.expectOne((req) => req.url === `${API}/posts/query`);
+    expect(next.request.params.get('page')).toBe('2');
+    // Item 2 moved onto page 2 because a new post arrived: shown only once
+    next.flush(page([item(2), item(3)], { current_page: 2, last_page: 2, total: 3 }));
+    await settle();
+
+    expect(component.items().map((i) => i.id)).toEqual([1, 2, 3]);
+    expect(button('Load more')).toBeUndefined();
+  });
+
+  it('shows an error with a retry when the search fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await open();
+    expectSearch({}).flush('Server error', { status: 500, statusText: 'Server Error' });
+    await settle();
+
+    expect(text()).toContain('Failed to load items. Please try again.');
+    button('Retry')!.click();
+    expectSearch({}).flush(page([item(1)]));
+  });
+
+  describe('saving a search', () => {
+    it('offers nothing to save without filters', async () => {
+      signIn();
+      await open();
+      expectSearch({}).flush(page([]));
+      await settle();
+
+      expect(button('Save this search')).toBeUndefined();
     });
 
-    httpMock = TestBed.inject(HttpTestingController);
-    fixture = TestBed.createComponent(ItemsPageComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+    it('asks visitors to sign in first and brings them back afterwards', async () => {
+      await open('/items?q=keys');
+      expectSearch({ q: 'keys' }).flush(page([]));
+      await settle();
 
-  afterEach(() => httpMock.verify());
+      const link = query<HTMLAnchorElement>('.save-search a');
+      expect(link.textContent?.trim()).toBe('Sign in');
+      expect(link.getAttribute('href')).toBe('/login?returnUrl=%2Fitems%3Fq%3Dkeys');
+    });
 
-  const answerRequests = (categories: Category[] | 'fail' = CATEGORIES) => {
-    httpMock.expectOne(`${environment.apiBaseUrl}/posts`).flush({ data: ITEMS });
+    it('saves the current filters under a suggested name', async () => {
+      signIn();
+      await open('/items?q=car%20keys&type=found&category_id=2');
+      expectSearch({ q: 'car keys', type: 'found', category_id: '2' }).flush(page([]));
+      await settle();
 
-    const categoryRequest = httpMock.expectOne(`${environment.apiBaseUrl}/category/query`);
-    if (categories === 'fail') {
-      categoryRequest.flush('Server error', {
-        status: 500,
-        statusText: 'Server Error',
+      button('Save this search')!.click();
+      await settle();
+      const name = query<HTMLInputElement>('#saved-search-name');
+      expect(name.value).toBe('“car keys” · Found · Keys');
+
+      name.value = 'My car keys';
+      name.dispatchEvent(new Event('input'));
+      name.form!.dispatchEvent(new Event('submit'));
+
+      const request = httpMock.expectOne(`${API}/saved-searches`);
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({
+        name: 'My car keys',
+        q: 'car keys',
+        type: 'found',
+        category_id: 2,
       });
-    } else {
-      categoryRequest.flush({ data: categories });
-    }
+      request.flush(
+        {
+          data: {
+            id: 1,
+            name: 'My car keys',
+            q: 'car keys',
+            type: 'found',
+            category: CATEGORIES[1],
+            created_at: '',
+            updated_at: '',
+          },
+        },
+        { status: 201, statusText: 'Created' },
+      );
+      await settle();
 
-    fixture.detectChanges();
-  };
+      expect(text()).toContain('Saved as “My car keys”');
+    });
 
-  it('lists the categories from the API in the filter', () => {
-    answerRequests();
+    it('shows why the server refused the name', async () => {
+      signIn();
+      await open('/items?type=lost');
+      expectSearch({ type: 'lost' }).flush(page([]));
+      await settle();
 
-    const options = Array.from(select().options).map((option) => option.textContent?.trim());
-    expect(options).toEqual(['All categories', 'Phones', 'Keys', 'Wallets & Cards']);
-    expect(select().value).toBe('');
-  });
+      button('Save this search')!.click();
+      await settle();
+      query<HTMLFormElement>('.save-search form').dispatchEvent(new Event('submit'));
 
-  it('shows only the items in the chosen category', () => {
-    answerRequests();
+      httpMock
+        .expectOne(`${API}/saved-searches`)
+        .flush(
+          { message: 'Invalid', errors: { name: ['The name has already been taken.'] } },
+          { status: 422, statusText: 'Unprocessable Content' },
+        );
+      await settle();
 
-    choose('1');
-
-    expect(component.selectedCategoryId()).toBe(1);
-    expect(shownTitles()).toEqual(['Item 1', 'Item 2']);
-  });
-
-  it('combines the category with the lost/found switch', () => {
-    answerRequests();
-
-    choose('1');
-    component.selectType('lost');
-
-    expect(shownTitles()).toEqual(['Item 1']);
-  });
-
-  it('goes back to every item for "All categories"', () => {
-    answerRequests();
-
-    choose('2');
-    choose('');
-
-    expect(component.selectedCategoryId()).toBeNull();
-    expect(shownTitles()).toEqual(['Item 1', 'Item 2', 'Item 3']);
-  });
-
-  it('clears both the category and the lost/found switch on reset', () => {
-    answerRequests();
-    choose('2');
-    component.selectType('found');
-
-    const reset = Array.from(
-      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
-    ).find((button) => button.textContent?.trim() === 'Reset filters')!;
-    reset.click();
-    fixture.detectChanges();
-
-    expect(component.selectedType()).toBe('all');
-    expect(component.selectedCategoryId()).toBeNull();
-    expect(select().value).toBe('');
-    expect(shownTitles()).toEqual(['Item 1', 'Item 2', 'Item 3']);
-  });
-
-  it('still shows the items when the categories fail to load', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-    answerRequests('fail');
-
-    expect(Array.from(select().options).map((option) => option.value)).toEqual(['']);
-    expect(component.loadError()).toBe('');
-    expect(shownTitles()).toEqual(['Item 1', 'Item 2', 'Item 3']);
+      expect(text()).toContain('The name has already been taken.');
+      expect(query('#saved-search-name')).not.toBeNull();
+    });
   });
 });

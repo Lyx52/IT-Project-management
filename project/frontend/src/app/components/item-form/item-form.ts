@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -63,9 +63,11 @@ export class ItemForm implements OnInit {
 
   readonly isAuthenticated = this.auth.isAuthenticated;
 
-  categories: Category[] = [];
-  isCategoriesLoading = false;
-  categoriesError = '';
+  // Set from HTTP callbacks, so they are signals: components are OnPush by
+  // default and the app runs without zone.js, so plain fields would not redraw
+  readonly categories = signal<Category[]>([]);
+  readonly isCategoriesLoading = signal(false);
+  readonly categoriesError = signal('');
 
   readonly maxImages = 5;
   readonly maxImageSize = 5 * 1024 * 1024;
@@ -88,26 +90,26 @@ export class ItemForm implements OnInit {
 
   selectedImages: File[] = [];
   imageError = '';
-  submitError = '';
-  isSubmitting = false;
+  readonly submitError = signal('');
+  readonly isSubmitting = signal(false);
 
   ngOnInit(): void {
     this.loadCategories();
   }
 
   loadCategories(): void {
-    this.isCategoriesLoading = true;
-    this.categoriesError = '';
+    this.isCategoriesLoading.set(true);
+    this.categoriesError.set('');
 
     this.postService.getCategories().subscribe({
       next: (response) => {
-        this.categories = response.data;
-        this.isCategoriesLoading = false;
+        this.categories.set(response.data);
+        this.isCategoriesLoading.set(false);
       },
       error: (error) => {
         console.error('Failed to load categories:', error);
-        this.categoriesError = 'Failed to load categories. Please try again.';
-        this.isCategoriesLoading = false;
+        this.categoriesError.set('Failed to load categories. Please try again.');
+        this.isCategoriesLoading.set(false);
       },
     });
   }
@@ -175,8 +177,8 @@ export class ItemForm implements OnInit {
       return;
     }
 
-    this.submitError = '';
-    this.isSubmitting = true;
+    this.submitError.set('');
+    this.isSubmitting.set(true);
 
     const value = this.form.getRawValue();
     const payload = new FormData();
@@ -210,7 +212,7 @@ export class ItemForm implements OnInit {
 
     request.subscribe({
       next: () => {
-        this.isSubmitting = false;
+        this.isSubmitting.set(false);
 
         if (editing) {
           this.created.emit();
@@ -230,28 +232,30 @@ export class ItemForm implements OnInit {
         this.created.emit();
       },
       error: (error: HttpErrorResponse) => {
-        this.isSubmitting = false;
+        this.isSubmitting.set(false);
 
         if (error.status === 422 && error.error?.errors) {
           const errors = Object.values(error.error.errors).flat().join(' ');
 
-          this.submitError = errors || 'Please check the form fields.';
+          this.submitError.set(errors || 'Please check the form fields.');
           return;
         }
 
         if (error.status === 403 && editing) {
-          this.submitError = error.error?.message ?? 'You cannot edit this post.';
+          this.submitError.set(error.error?.message ?? 'You cannot edit this post.');
           return;
         }
 
         if (error.status === 403) {
-          this.submitError =
-            error.error?.message ?? 'Your account must have a verified email to create a post.';
+          this.submitError.set(
+            error.error?.message ?? 'Your account must have a verified email to create a post.',
+          );
           return;
         }
 
-        this.submitError =
-          error.error?.message ?? 'Something went wrong while creating the post. Please try again.';
+        this.submitError.set(
+          error.error?.message ?? 'Something went wrong while creating the post. Please try again.',
+        );
       },
     });
   }

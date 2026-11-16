@@ -1,0 +1,63 @@
+<button
+  class="btn btn-outline-secondary btn-sm bell-button"
+  type="button"
+  [attr.aria-expanded]="isOpen()"
+  aria-haspopup="true"
+  [attr.aria-label]="
+    unreadCount() > 0 ? 'Notifications, ' + unreadCount() + ' unread' : 'Notifications'
+  "
+  (click)="toggle()"
+>
+  <i class="bi" [class.bi-bell-fill]="unreadCount() > 0" [class.bi-bell]="unreadCount() === 0"></i>
+  @if (unreadCount() > 0) {
+    <span class="bell-count">{{ unreadCount() > 99 ? '99+' : unreadCount() }}</span>
+  }
+</button>
+
+@if (isOpen()) {
+  <div class="bell-panel card shadow" role="region" aria-label="Notifications">
+    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+      <span class="fw-semibold">Notifications</span>
+      @if (unreadCount() > 0) {
+        <button class="btn btn-link btn-sm p-0" type="button" (click)="markAllRead()">
+          Mark all as read
+        </button>
+      }
+    </div>
+
+    @if (loadError() && notifications().length === 0) {
+      <p class="small text-danger px-3 py-3 mb-0">Could not load notifications.</p>
+    } @else if (notifications().length === 0) {
+      <p class="small text-muted px-3 py-3 mb-0">
+        No notifications yet. Save a search to hear about new matching posts.
+      </p>
+    } @else {
+      <ul class="list-unstyled mb-0 bell-list">
+        @for (notification of notifications(); track notification.id) {
+          <li>
+            <button
+              class="bell-item"
+              type="button"
+              [class.unread]="notification.read_at === null"
+              (click)="open(notification)"
+            >
+              <i class="bi" [class]="icon(notification)"></i>
+              <span class="d-block">
+                <span class="d-block small">{{ notification.details.message }}</span>
+                <span class="d-block small fw-semibold">{{ notification.details.post_title }}</span>
+                <span class="d-block bell-time">
+                  {{ notification.created_at | date: 'd MMM, HH:mm' }}
+                </span>
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    <div class="d-flex gap-3 px-3 py-2 border-top small">
+      <a routerLink="/saved-searches" (click)="isOpen.set(false)">Saved searches</a>
+      <a routerLink="/my-posts" (click)="isOpen.set(false)">My posts</a>
+    </div>
+  </div>
+}

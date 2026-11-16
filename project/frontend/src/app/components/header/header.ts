@@ -1,13 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { NotificationBell } from '../notification-bell/notification-bell';
 import { VerifyEmailNotice } from '../verify-email-notice/verify-email-notice';
 import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
 
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, RouterLinkActive, VerifyEmailNotice],
+  imports: [RouterLink, RouterLinkActive, VerifyEmailNotice, NotificationBell],
   templateUrl: './header.html',
   styleUrl: './header.scss',
 })

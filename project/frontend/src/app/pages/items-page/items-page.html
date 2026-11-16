@@ -8,11 +8,19 @@
       <p class="text-muted mb-0">Browse lost and found items.</p>
     </div>
 
-    <div class="search-box">
+    <form class="search-box" role="search" (submit)="$event.preventDefault(); search()">
       <i class="bi bi-search"></i>
-      <input type="text" class="form-control" placeholder="Search for an item..." />
-      <button class="btn btn-primary">{{ texts.searchbutton }}</button>
-    </div>
+      <input
+        type="search"
+        class="form-control"
+        placeholder="Search for an item..."
+        aria-label="Search for an item"
+        maxlength="100"
+        [value]="searchText()"
+        (input)="searchText.set($any($event.target).value)"
+      />
+      <button class="btn btn-primary" type="submit">{{ texts.searchbutton }}</button>
+    </form>
   </section>
 
   <!-- Filters -->
@@ -72,6 +80,53 @@
 
       <button class="btn btn-outline-secondary" (click)="resetFilters()">Reset filters</button>
     </div>
+
+    <!-- Save this search -->
+    @if (hasFilters()) {
+      <div class="save-search w-100">
+        @if (!isAuthenticated()) {
+          <p class="small text-muted mb-0">
+            <i class="bi bi-bell me-1"></i>
+            <a routerLink="/login" [queryParams]="{ returnUrl: currentUrl() }">Sign in</a>
+            to save this search and get a notification when a new post matches it.
+          </p>
+        } @else if (isSaveOpen()) {
+          <form
+            class="d-flex flex-wrap align-items-center gap-2"
+            (submit)="$event.preventDefault(); submitSave()"
+          >
+            <label class="small fw-semibold" for="saved-search-name">Name this search</label>
+            <input
+              id="saved-search-name"
+              class="form-control form-control-sm w-auto flex-grow-1"
+              style="max-width: 280px"
+              maxlength="50"
+              [value]="saveName()"
+              (input)="saveName.set($any($event.target).value)"
+            />
+            <button class="btn btn-primary btn-sm" type="submit" [disabled]="isSaving()">
+              {{ isSaving() ? 'Saving…' : 'Save' }}
+            </button>
+            <button class="btn btn-link btn-sm" type="button" (click)="closeSave()">Cancel</button>
+          </form>
+          @if (saveError()) {
+            <p class="small text-danger mb-0 mt-1" role="alert">{{ saveError() }}</p>
+          }
+        } @else if (savedAs()) {
+          <p class="small text-success mb-0" role="status">
+            <i class="bi bi-check-circle me-1"></i>
+            Saved as “{{ savedAs() }}”. You will get a notification when a new post matches.
+            <a routerLink="/saved-searches">Manage saved searches</a>
+          </p>
+        } @else {
+          <button class="btn btn-outline-primary btn-sm" type="button" (click)="openSave()">
+            <i class="bi bi-bell me-1"></i>
+            Save this search
+          </button>
+          <span class="small text-muted ms-2">Get notified when a new post matches.</span>
+        }
+      </div>
+    }
   </section>
 
   <!-- Items list -->
@@ -88,7 +143,17 @@
           }
         </h5>
 
-        <p class="text-muted small mb-0">{{ filteredItems().length }} items available</p>
+        <p class="text-muted small mb-0">
+          @if (isLoading()) {
+            Searching…
+          } @else {
+            {{ meta()?.total ?? items().length }} items
+            {{ hasFilters() ? 'match this search' : 'available' }}
+            @if (filters().q) {
+              for “{{ filters().q }}”
+            }
+          }
+        </p>
       </div>
 
       <button class="btn btn-outline-secondary btn-sm">
@@ -102,17 +167,41 @@
         {{ loadError() }}
         <button class="btn btn-sm btn-outline-danger ms-2" (click)="loadPosts()">Retry</button>
       </div>
-    } @else if (filteredItems().length > 0) {
+    } @else if (isLoading() && items().length === 0) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="text-muted mt-2 mb-0">Loading items...</p>
+      </div>
+    } @else if (items().length > 0) {
       <div class="items-grid">
-        @for (item of filteredItems(); track item.id) {
+        @for (item of items(); track item.id) {
           <app-item-card [item]="item" (edit)="openEdit($event)" />
         }
       </div>
+
+      @if (hasMore()) {
+        <div class="text-center mt-4">
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="isLoadingMore()"
+            (click)="loadMore()"
+          >
+            {{ isLoadingMore() ? 'Loading…' : 'Load more' }}
+          </button>
+        </div>
+      }
     } @else {
       <div class="empty-state">
         <i class="bi bi-search"></i>
         <h6 class="fw-bold mt-3">No items found</h6>
-        <p class="text-muted mb-0">There are currently no items in this category.</p>
+        <p class="text-muted mb-0">
+          {{
+            hasFilters()
+              ? 'Nothing matches this search yet. Save it to hear about new posts.'
+              : 'There are no items yet.'
+          }}
+        </p>
       </div>
     }
   </section>
