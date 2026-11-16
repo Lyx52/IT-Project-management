@@ -12,11 +12,20 @@ use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
+    /**
+     * A real bcrypt hash of a random string nobody knows. Checked against when
+     * the address has no account, so an unknown address costs the same bcrypt
+     * work as a wrong password and response times don't reveal who is signed up.
+     */
+    private const DUMMY_HASH = '$2y$12$8GtKgCIA5UuR0oUOmH9gNugJKyhWevNK6fRp79gAoOq1OB8Sh5dQe';
+
     public function __invoke(LoginRequest $request): JsonResponse
     {
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        $passwordMatches = Hash::check($request->password, $user?->password ?? self::DUMMY_HASH);
+
+        if (! $user || ! $passwordMatches) {
             throw ValidationException::withMessages([
                 'email' => [__('auth.failed')],
             ]);

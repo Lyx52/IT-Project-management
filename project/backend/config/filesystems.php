@@ -33,7 +33,11 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Private files (message attachments, avatars) are never served
+            // over HTTP: nothing generates temporary URLs for them, and the
+            // user data export embeds them instead. Turning on Laravel's
+            // /storage/{path} route would only add attack surface.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
