@@ -20,6 +20,18 @@ class PostImageService
 {
     public const MAX_IMAGES = 5;
 
+    /**
+     * Largest picture accepted, in pixels (24 MP, e.g. 6000×4000). GD holds
+     * about 4 bytes per pixel, twice while rotating, so this keeps decoding
+     * well inside PHP's memory_limit. Without it a small, highly compressed
+     * file claiming huge dimensions (a "decompression bomb") would exhaust
+     * memory on every upload.
+     */
+    public const MAX_PIXELS = 24_000_000;
+
+    /** Longest side accepted, in pixels. */
+    public const MAX_SIDE = 10_000;
+
     private const EXTENSIONS = [
         'image/jpeg' => 'jpg',
         'image/png' => 'png',

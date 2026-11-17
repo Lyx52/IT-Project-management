@@ -79,14 +79,19 @@ class MessageController extends Controller
     {
         $isAuthor = $me->id === $post->user_id;
 
-        // Unapproved posts don't exist for anyone but their author
-        abort_unless($post->isPublic() || $isAuthor, 404);
+        // Unapproved posts, and every post of a banned author, don't exist for
+        // anyone but their author (same rule as the feed and GET /post/{post})
+        abort_unless($isAuthor || ($post->isPublic() && ! $post->user->isBanned()), 404);
 
         if (! $isAuthor) {
             return $post->user;
         }
 
-        abort_unless(is_numeric($userId), 422, 'user_id is required when you are the author of the post.');
+        // Whole positive numbers only: "1e3" or "1.5" pass is_numeric() but
+        // make PostgreSQL fail on the bigint column with a 500
+        $userId = filter_var($userId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        abort_if($userId === false, 422, 'user_id is required when you are the author of the post.');
 
         // The author can only deal with people who have written to them about this post
         $hasWritten = Message::where('post_id', $post->id)

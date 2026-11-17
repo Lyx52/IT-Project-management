@@ -65,6 +65,22 @@ describe('authInterceptor', () => {
     request.flush({ data: USER });
   });
 
+  it('never sends the token to a host other than the API', () => {
+    setup(true);
+
+    http.get('https://tiles.example.com/1/2/3.png').subscribe();
+    http.get(`https://evil.example.com${base}/user`).subscribe();
+
+    for (const url of [
+      'https://tiles.example.com/1/2/3.png',
+      `https://evil.example.com${base}/user`,
+    ]) {
+      const request = httpMock.expectOne(url);
+      expect(request.request.headers.has('Authorization')).toBe(false);
+      request.flush({});
+    }
+  });
+
   it('sends no Authorization header when nobody is signed in', () => {
     setup(false);
 
