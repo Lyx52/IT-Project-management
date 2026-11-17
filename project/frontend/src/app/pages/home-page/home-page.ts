@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { Item } from '../../models/models';
 import { ItemCard } from '../../components/item-card/item-card';
 import { Messenger } from '../../components/messenger/messenger';
@@ -15,6 +15,7 @@ import { CreatePost } from '../../components/create-post/create-post';
 })
 export class HomePageComponent {
   private readonly postService = inject(PostService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
 
   items: Item[] = [];
 
@@ -34,11 +35,13 @@ export class HomePageComponent {
       next: (response) => {
         this.items = response.data as Item[];
         this.isLoading = false;
+        this.changeDetector.markForCheck();
       },
       error: (error) => {
         console.error('Failed to fetch posts:', error);
         this.loadError = 'Failed to load items. Please try again.';
         this.isLoading = false;
+        this.changeDetector.markForCheck();
       },
     });
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { Item } from '../../models/models';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
@@ -17,6 +17,7 @@ type ItemTypeFilter = 'all' | 'lost' | 'found';
 })
 export class ItemsPageComponent implements OnInit {
   private readonly postService = inject(PostService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
 
   items: Item[] = [];
   selectedType: ItemTypeFilter = 'all';
@@ -43,10 +44,12 @@ export class ItemsPageComponent implements OnInit {
     this.postService.getPosts().subscribe({
       next: (response) => {
         this.items = response.data as Item[];
+        this.changeDetector.markForCheck();
       },
       error: (error) => {
         console.error('Failed to fetch posts:', error);
         this.loadError = 'Failed to load items. Please try again.';
+        this.changeDetector.markForCheck();
       },
     });
   }
