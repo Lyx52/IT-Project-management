@@ -38,8 +38,6 @@ describe('HomePageComponent', () => {
   };
 
   beforeEach(() => {
-    localStorage.setItem('cookieShown', 'true');
-
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
@@ -53,7 +51,6 @@ describe('HomePageComponent', () => {
     // The create-post form inside the page asks for categories too
     httpMock.match(`${environment.apiBaseUrl}/category/query`);
     httpMock.verify();
-    localStorage.clear();
   });
 
   it('shows the posts once they arrive instead of staying on "Loading items..."', async () => {
