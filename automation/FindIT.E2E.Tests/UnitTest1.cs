@@ -18,6 +18,7 @@ public class BrowserSmokeTest
     private const string BaseUrl =
         "http://lostandfound.northeurope.cloudapp.azure.com/home";
 
+    // Open Chrome before every test
     [SetUp]
     public void SetUp()
     {
@@ -25,59 +26,86 @@ public class BrowserSmokeTest
         driver.Manage().Window.Maximize();
     }
 
+    // Save screenshot on failure and close Chrome
     [TearDown]
     public void TearDown()
     {
         try
         {
-            // Save screenshot when a test fails
-            if (TestContext.CurrentContext.Result
-                .Outcome.Status == TestStatus.Failed)
+            if (driver != null &&
+                TestContext.CurrentContext.Result.Outcome.Status
+                    == TestStatus.Failed)
             {
-                string folder = Path.Combine(
-                    TestContext.CurrentContext.WorkDirectory,
-                    "TestScreenshots");
+                try
+                {
+                    string folder = Path.Combine(
+                        TestContext.CurrentContext.WorkDirectory,
+                        "TestScreenshots");
 
-                Directory.CreateDirectory(folder);
+                    Directory.CreateDirectory(folder);
 
-                string fileName =
-                    TestContext.CurrentContext.Test.MethodName
-                    + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss")
-                    + ".png";
+                    string testName =
+                        TestContext.CurrentContext.Test.MethodName
+                        ?? "UnknownTest";
 
-                string path = Path.Combine(folder, fileName);
+                    string fileName =
+                        testName + "_" +
+                        DateTime.Now.ToString("yyyyMMdd_HHmmss") +
+                        ".png";
 
-                var screenshot =
-                    ((ITakesScreenshot)driver).GetScreenshot();
+                    string path = Path.Combine(folder, fileName);
 
-                File.WriteAllBytes(path, screenshot.AsByteArray);
+                    var screenshot =
+                        ((ITakesScreenshot)driver).GetScreenshot();
 
-                TestContext.WriteLine(
-                    "Failure screenshot: " + path);
+                    File.WriteAllBytes(
+                        path, screenshot.AsByteArray);
+
+                    TestContext.AddTestAttachment(
+                        path, "Failure screenshot");
+
+                    TestContext.WriteLine(
+                        "Screenshot saved: " + path);
+                }
+                catch (Exception ex)
+                {
+                    TestContext.WriteLine(
+                        "Screenshot failed: " + ex.Message);
+                }
             }
         }
         finally
         {
-            driver.Quit();
-            driver.Dispose();
+            if (driver != null)
+            {
+                try
+                {
+                    driver.Quit();
+                }
+                finally
+                {
+                    driver.Dispose();
+                }
+            }
         }
     }
 
-    // TEST 1 - Chrome browser smoke test
+    // TEST 1: Chrome browser startup
     [Test]
     public void ChromeBrowserStartsSuccessfully()
     {
         driver.Navigate().GoToUrl(
             "data:text/html,<title>FindIT Test</title>");
 
-        Assert.That(driver.Title,
+        Assert.That(
+            driver.Title,
             Is.EqualTo("FindIT Test"));
 
         TestContext.WriteLine(
             "PASS: Chrome browser started successfully.");
     }
 
-    // TEST 2 - FindIT homepage loading test
+    // TEST 2: Verify FindIT homepage
     [Test]
     public void FindITHomePageLoadsSuccessfully()
     {
@@ -86,29 +114,30 @@ public class BrowserSmokeTest
         var wait = new WebDriverWait(
             driver, TimeSpan.FromSeconds(30));
 
-        // Verify visible homepage content
         bool homeLoaded = wait.Until(d =>
         {
-            string text = d.FindElement(
-                By.TagName("body")).Text;
+            string pageText =
+                d.FindElement(By.TagName("body")).Text;
 
-            return text.Contains(
+            return pageText.Contains(
                        "Find what",
                        StringComparison.OrdinalIgnoreCase)
-                   &&
-                   text.Contains(
+                &&
+                   pageText.Contains(
                        "Recent items",
                        StringComparison.OrdinalIgnoreCase);
         });
 
-        Assert.That(homeLoaded, Is.True,
+        Assert.That(
+            homeLoaded,
+            Is.True,
             "FindIT homepage content was not displayed.");
 
         TestContext.WriteLine(
-            "PASS: Homepage heading and recent items section visible.");
+            "PASS: FindIT homepage loaded successfully.");
     }
 
-    // TEST 3 - Recent items loading test
+    // TEST 3: Verify recent items load
     [Test]
     public void RecentItemsLoadSuccessfully()
     {
@@ -117,22 +146,28 @@ public class BrowserSmokeTest
         var wait = new WebDriverWait(
             driver, TimeSpan.FromSeconds(30));
 
-        // Find visible item detail links or buttons
         By itemLocator = By.XPath(
             "//*[self::a or self::button]" +
             "[contains(normalize-space(.), 'View details')]");
 
         bool itemsLoaded = wait.Until(d =>
             d.FindElements(itemLocator)
-             .Any(e => e.Displayed));
+             .Any(element => element.Displayed));
 
-        Assert.That(itemsLoaded, Is.True,
-            "Recent items were not displayed.");
+        Assert.That(
+            itemsLoaded,
+            Is.True,
+            "No recent item cards were displayed.");
 
-        int itemCount = driver.FindElements(itemLocator)
-            .Count(e => e.Displayed);
+        int itemCount = driver
+            .FindElements(itemLocator)
+            .Count(element => element.Displayed);
+
+        Assert.That(
+            itemCount,
+            Is.GreaterThan(0));
 
         TestContext.WriteLine(
-            $"PASS: {itemCount} recent item links loaded.");
+            $"PASS: {itemCount} recent items loaded.");
     }
 }
