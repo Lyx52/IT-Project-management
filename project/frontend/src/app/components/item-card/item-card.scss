@@ -1,3 +1,4 @@
+@use '../../../styles/variables' as *;
 .item-card {
   display: flex;
   flex-direction: column;
@@ -15,7 +16,7 @@
     flex: 1;
   }
 
-  .card-body button {
+  .card-body > .btn {
     margin-top: auto !important;
   }
 }
@@ -86,4 +87,34 @@
   i {
     margin-right: 5px;
   }
+}
+
+.item-status {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eee;
+  color: #555;
+
+  &.status-approved {
+    background: #e7f5ee;
+    color: $found-color;
+  }
+
+  &.status-rejected {
+    background: #fdecea;
+    color: #b42318;
+  }
+
+  &.status-pending {
+    background: #fff6db;
+    color: #8a6100;
+  }
+}
+
+.item-distance {
+  font-size: 12px;
+  color: $text-secondary;
 }

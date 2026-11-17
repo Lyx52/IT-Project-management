@@ -1,4 +1,13 @@
-import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  inject,
+  OnInit,
+  Output,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -10,8 +19,11 @@ import {
 } from '@angular/forms';
 
 import { AuthService } from '../../services/auth';
+import en from '../../../assets/en.json';
+import lv from '../../../assets/lv.json';
 import { PostService } from '../../services/posts.service';
 import { Category } from '../../models/models';
+import * as L from 'leaflet';
 
 function notFutureDate(control: AbstractControl): ValidationErrors | null {
   if (!control.value) {
@@ -37,16 +49,34 @@ function notFutureDate(control: AbstractControl): ValidationErrors | null {
 })
 export class ItemForm implements OnInit {
   private readonly auth = inject(AuthService);
+  texts = en;
   private readonly fb = inject(FormBuilder);
   private readonly postService = inject(PostService);
+
+  readonly selectedCoordinates = signal<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  readonly locationError = signal('');
+
+  private map?: L.Map;
+  private selectedMarker?: L.CircleMarker;
+
+  readonly initialMapCenter = {
+    latitude: 56.9496,
+    longitude: 24.1052,
+  };
 
   @Output() created = new EventEmitter<void>();
 
   readonly isAuthenticated = this.auth.isAuthenticated;
 
-  categories: Category[] = [];
-  isCategoriesLoading = false;
-  categoriesError = '';
+  // Set from HTTP callbacks, so they are signals: components are OnPush by
+  // default and the app runs without zone.js, so plain fields would not redraw
+  readonly categories = signal<Category[]>([]);
+  readonly isCategoriesLoading = signal(false);
+  readonly categoriesError = signal('');
 
   readonly maxImages = 5;
   readonly maxImageSize = 5 * 1024 * 1024;
@@ -69,26 +99,79 @@ export class ItemForm implements OnInit {
 
   selectedImages: File[] = [];
   imageError = '';
-  submitError = '';
-  isSubmitting = false;
+  readonly submitError = signal('');
+  readonly isSubmitting = signal(false);
+
+  @ViewChild('locationMap')
+  set locationMapElement(element: ElementRef<HTMLDivElement> | undefined) {
+    if (!element) {
+      this.map?.remove();
+      this.map = undefined;
+      this.selectedMarker = undefined;
+      return;
+    }
+
+    if (!this.map) {
+      this.initializeLocationMap(element.nativeElement);
+    }
+  }
 
   ngOnInit(): void {
     this.loadCategories();
   }
 
+  ngOnDestroy(): void {
+    this.map?.remove();
+  }
+
+  private initializeLocationMap(element: HTMLDivElement): void {
+    this.map = L.map(element).setView(
+      [this.initialMapCenter.latitude, this.initialMapCenter.longitude],
+      13,
+    );
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(this.map);
+
+    this.map.on('click', (event: L.LeafletMouseEvent) => {
+      const { lat, lng } = event.latlng;
+
+      this.selectedCoordinates.set({
+        latitude: lat,
+        longitude: lng,
+      });
+
+      this.locationError.set('');
+
+      if (this.selectedMarker) {
+        this.selectedMarker.setLatLng(event.latlng);
+      } else {
+        this.selectedMarker = L.circleMarker(event.latlng, {
+          radius: 9,
+          color: '#ffffff',
+          weight: 2,
+          fillColor: '#39976b',
+          fillOpacity: 1,
+        }).addTo(this.map!);
+      }
+    });
+  }
+
   loadCategories(): void {
-    this.isCategoriesLoading = true;
-    this.categoriesError = '';
+    this.isCategoriesLoading.set(true);
+    this.categoriesError.set('');
 
     this.postService.getCategories().subscribe({
       next: (response) => {
-        this.categories = response.data;
-        this.isCategoriesLoading = false;
+        this.categories.set(response.data);
+        this.isCategoriesLoading.set(false);
       },
       error: (error) => {
         console.error('Failed to load categories:', error);
-        this.categoriesError = 'Failed to load categories. Please try again.';
-        this.isCategoriesLoading = false;
+        this.categoriesError.set('Failed to load categories. Please try again.');
+        this.isCategoriesLoading.set(false);
       },
     });
   }
@@ -156,8 +239,13 @@ export class ItemForm implements OnInit {
       return;
     }
 
-    this.submitError = '';
-    this.isSubmitting = true;
+    if (!this.selectedCoordinates()) {
+      this.locationError.set('Please select a location on the map.');
+      return;
+    }
+
+    this.submitError.set('');
+    this.isSubmitting.set(true);
 
     const value = this.form.getRawValue();
     const payload = new FormData();
@@ -167,8 +255,9 @@ export class ItemForm implements OnInit {
     payload.append('title', value.title.trim());
     payload.append('description', value.description.trim());
     payload.append('event_date', value.eventDate);
-    payload.append('latitude', String(this.defaultCoordinates.latitude));
-    payload.append('longitude', String(this.defaultCoordinates.longitude));
+    const coordinates = this.selectedCoordinates()!;
+    payload.append('latitude', String(coordinates.latitude));
+    payload.append('longitude', String(coordinates.longitude));
 
     if (value.locationName.trim()) {
       payload.append('location_name', value.locationName.trim());
@@ -180,7 +269,7 @@ export class ItemForm implements OnInit {
 
     this.postService.createPost(payload).subscribe({
       next: () => {
-        this.isSubmitting = false;
+        this.isSubmitting.set(false);
 
         this.form.reset({
           type: 'lost',
@@ -191,27 +280,35 @@ export class ItemForm implements OnInit {
           locationName: '',
         });
 
+        this.selectedCoordinates.set(null);
+        this.locationError.set('');
+
+        this.selectedMarker?.remove();
+        this.selectedMarker = undefined;
+
         this.selectedImages = [];
         this.created.emit();
       },
       error: (error: HttpErrorResponse) => {
-        this.isSubmitting = false;
+        this.isSubmitting.set(false);
 
         if (error.status === 422 && error.error?.errors) {
           const errors = Object.values(error.error.errors).flat().join(' ');
 
-          this.submitError = errors || 'Please check the form fields.';
+          this.submitError.set(errors || 'Please check the form fields.');
           return;
         }
 
         if (error.status === 403) {
-          this.submitError =
-            error.error?.message ?? 'Your account must have a verified email to create a post.';
+          this.submitError.set(
+            error.error?.message ?? 'Your account must have a verified email to create a post.',
+          );
           return;
         }
 
-        this.submitError =
-          error.error?.message ?? 'Something went wrong while creating the post. Please try again.';
+        this.submitError.set(
+          error.error?.message ?? 'Something went wrong while creating the post. Please try again.',
+        );
       },
     });
   }

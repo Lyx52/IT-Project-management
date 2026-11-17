@@ -12,6 +12,18 @@ class Category extends Model
 {
     public $timestamps = false;
 
+    protected $fillable = ['name'];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'retired_at' => 'datetime',
+        ];
+    }
+
     /**
      * @return HasMany<Post, $this>
      */

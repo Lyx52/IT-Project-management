@@ -1,6 +1,6 @@
 <div class="panel p-3">
-  <h5 class="fw-bold mb-1">Report an item</h5>
-  <p class="text-muted small mb-3">Help someone find their belongings.</p>
+  <h5 class="fw-bold mb-1">{{ texts.ftitle }}</h5>
+  <p class="text-muted small mb-3">{{ texts.fp }}</p>
 
   @if (isAuthenticated()) {
     <form [formGroup]="form" (ngSubmit)="submit()">
@@ -91,9 +91,9 @@
       <div class="mb-3">
         <label class="form-label">Category</label>
 
-        @if (categoriesError) {
+        @if (categoriesError()) {
           <div class="text-danger small mb-2">
-            {{ categoriesError }}
+            {{ categoriesError() }}
           </div>
 
           <button type="button" class="btn btn-outline-secondary btn-sm" (click)="loadCategories()">
@@ -104,17 +104,17 @@
           <select
             class="form-select"
             formControlName="categoryId"
-            [disabled]="isCategoriesLoading || categories.length === 0"
+            [disabled]="isCategoriesLoading() || categories().length === 0"
           >
             <option [ngValue]="0" disabled>
-              @if (isCategoriesLoading) {
+              @if (isCategoriesLoading()) {
                 Loading categories...
               } @else {
                 Select category
               }
             </option>
 
-            @for (category of categories; track category.id) {
+            @for (category of categories(); track category.id) {
               <option [ngValue]="category.id">
                 {{ category.name }}
               </option>
@@ -125,7 +125,7 @@
             <small class="text-danger"> Please select a category. </small>
           }
 
-          @if (!isCategoriesLoading && categories.length === 0) {
+          @if (!isCategoriesLoading() && categories().length === 0) {
             <small class="text-muted"> No categories are currently available. </small>
           }
         }
@@ -150,12 +150,40 @@
       <!-- Location -->
       <div class="mb-3">
         <label class="form-label">Location</label>
+
         <input
           class="form-control"
           formControlName="locationName"
           placeholder="Where was it lost/found?"
           maxlength="150"
         />
+
+        <label class="form-label mt-3">Select location on map</label>
+        <p class="text-muted small mb-2">
+          Click on the map to mark where the item was lost or found.
+        </p>
+
+        <div #locationMap class="location-map"></div>
+
+        @if (selectedCoordinates(); as coordinates) {
+          <div class="text-success small mt-2">
+            <i class="bi bi-geo-alt-fill me-1"></i>
+            Location selected:
+            {{ coordinates.latitude }},
+            {{ coordinates.longitude }}
+          </div>
+        } @else {
+          <div class="text-muted small mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            Please select a location on the map.
+          </div>
+        }
+
+        @if (locationError()) {
+          <div class="text-danger small mt-1">
+            {{ locationError() }}
+          </div>
+        }
       </div>
 
       <!-- Description -->
@@ -180,14 +208,14 @@
         }
       </div>
 
-      @if (submitError) {
+      @if (submitError()) {
         <div class="alert alert-danger py-2 small">
-          {{ submitError }}
+          {{ submitError() }}
         </div>
       }
 
-      <button type="submit" class="btn btn-primary w-100" [disabled]="isSubmitting">
-        @if (isSubmitting) {
+      <button type="submit" class="btn btn-primary w-100" [disabled]="isSubmitting()">
+        @if (isSubmitting()) {
           <span class="spinner-border spinner-border-sm me-2"></span>
           Creating...
         } @else {

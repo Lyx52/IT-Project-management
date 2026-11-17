@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\DB;
  * Deletes expired rows from the database cache table.
  *
  * Laravel's database cache store only removes an expired row when the same key
- * is read again. Math CAPTCHA challenges that were fetched but never answered
- * (App\Services\MathCaptcha) are never read again, so without this they would
+ * is read again. CAPTCHA challenges that were fetched but never answered
+ * (App\Services\CaptchaService) are never read again, so without this they would
  * stay in the table for good. Scheduled daily in routes/console.php.
  */
 class PruneExpiredCacheCommand extends Command

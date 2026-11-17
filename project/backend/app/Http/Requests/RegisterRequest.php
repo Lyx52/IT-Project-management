@@ -26,7 +26,9 @@ class RegisterRequest extends FormRequest
         return [
             'username' => ['required', 'string', 'min:3', 'max:30', 'regex:/^[a-zA-Z0-9_-]+$/', 'unique:users,username'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            // bcrypt ignores everything after 72 bytes, so a longer password
+            // would be weaker than it looks
+            'password' => ['required', 'confirmed', Password::min(8)->max(72)],
             'terms_accepted' => ['required', 'accepted'],
             'privacy_policy_version' => ['required', 'string'],
         ];

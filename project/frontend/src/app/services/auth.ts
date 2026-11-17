@@ -29,6 +29,7 @@ export class AuthService {
 
   readonly user = this.currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this.accessToken() !== null);
+  readonly isAdmin = computed(() => this.currentUser()?.role === 'admin');
 
   /** Shown in the header. */
   readonly displayName = computed(() => this.currentUser()?.username ?? null);
@@ -63,7 +64,7 @@ export class AuthService {
 
   /**
    * Creates an account. The payload must carry a challenge from `captcha()`
-   * and its answer.
+   * and its answer: typed in by the user, or found by CaptchaSolver.
    *
    * Deliberately does not sign the user in and returns no token. When the
    * returned user has `must_verify_email`, a verification e-mail is on its way
@@ -76,7 +77,7 @@ export class AuthService {
       .pipe(map((response) => response.data));
   }
 
-  /** Fetches a new math CAPTCHA for the registration form. */
+  /** Fetches a new CAPTCHA for the registration form, of the server's chosen type. */
   captcha(): Observable<CaptchaChallenge> {
     return this.http.get<CaptchaChallenge>(`${environment.apiBaseUrl}/captcha`);
   }
@@ -139,6 +140,11 @@ export class AuthService {
   /** Sends a new verification e-mail to the signed-in user. */
   resendVerification(): Observable<ResendVerificationResponse> {
     return this.http.post<ResendVerificationResponse>(`${environment.apiBaseUrl}/email/resend`, {});
+  }
+
+  /** Downloads the signed-in user's complete personal-data export as JSON. */
+  exportPersonalData(): Observable<Blob> {
+    return this.http.get(`${environment.apiBaseUrl}/user/export`, { responseType: 'blob' });
   }
 
   /** Forgets the session locally. Also called by the interceptor on a 401. */

@@ -101,17 +101,29 @@ The verification code is still there. To turn it back on, set `EMAIL_VERIFICATIO
 
 While it is off, `email_verified_at` stays `null`: nobody is marked as verified who wasn't. So once it is on again, accounts created in the meantime are asked to verify before posting. The header prompt has a "Resend e-mail" button for that. Clients should decide whether to show the prompt from `must_verify_email` in the user payload, not from `email_verified_at`. Details are in [`config/verification.php`](project/backend/config/verification.php).
 
-### Math CAPTCHA
+### Sign-up CAPTCHA
 
-Sign-up asks a small sum ("What is 7 + 5?") to keep automated registrations out. No external service is involved.
+Sign-up is protected by a CAPTCHA to keep automated registrations out. No external service is involved. `CAPTCHA_TYPE` picks one of three kinds:
 
-1. `GET /api/v1/captcha` returns `captcha_id`, `question` and `expires_in`. The answer stays in the server's cache and is never sent to the browser.
+| `CAPTCHA_TYPE` | The user sees | Answer |
+|---|---|---|
+| `hash` (default) | "Checking your browser…" with a progress bar | Found by the browser itself, nothing to type |
+| `math` | "What is 7 + 5?" | Typed in, never negative |
+| `determinant` | A 2×2 matrix | `a·d − b·c`, typed in, can be negative |
+
+To switch, set `CAPTCHA_TYPE` in `project/backend/.env` for dev, or in `.env.production` on the server and then run `deploy/deploy.sh`. Production caches its config at start-up (`php artisan optimize`), so a change there needs the redeploy. The frontend needs no change: the register page shows whatever kind the server sends. An unknown value makes `GET /captcha` fail with a clear error instead of silently picking a type.
+
+How it works for every type:
+
+1. `GET /api/v1/captcha` returns `captcha_id`, `type` and `expires_in`, plus `question` (math), `question` and `matrix` (determinant), or `algorithm`, `salt`, `challenge` and `max_number` (hash). The answer stays in the server's cache and is never sent to the browser.
 2. `POST /api/v1/register` sends `captcha_id` and `captcha_answer` with the other fields. The `captcha` middleware checks them before anything else, so without a solved CAPTCHA the endpoint doesn't reveal whether an e-mail address or username is taken.
-3. Every challenge allows **one** attempt, right or wrong, and expires after 5 minutes (`CAPTCHA_TTL_SECONDS`, see [`config/captcha.php`](project/backend/config/captcha.php)). After any failed registration the form fetches a new question.
+3. Every challenge allows **one** attempt, right or wrong, and expires after 5 minutes (`CAPTCHA_TTL_SECONDS`). After any failed registration, the form fetches a new one.
+
+**The hash puzzle.** `challenge` is `SHA-256(salt + n)` for a secret whole number `n` between 0 and `max_number`. The register page starts solving as soon as it opens: a Web Worker tries `n = 0, 1, 2, …` until the hash matches, so the form stays responsive and the puzzle is usually solved before the user has finished typing. If the user clicks "Create account" first, the form waits and is sent once the puzzle is solved. Because `n` is never above `max_number`, the work is bounded: at most `max_number + 1` hashes, half that on average. The default of 3,000,000 (`CAPTCHA_MAX_NUMBER`) takes about 1 s at worst on a current laptop and 10–30 s on a slow phone. If you change it, keep the slow-phone worst case under a minute. The other settings are in [`config/captcha.php`](project/backend/config/captcha.php).
 
 `GET /captcha` is limited to 30 requests per minute per IP and `POST /register` to 5. Unanswered challenges are deleted from the `cache` table by `app:prune-expired-cache`, which the scheduler runs daily at 00:30 UTC.
 
-This stops generic spam bots, not a bot written for this site: anyone can read the question as easily as a person can.
+None of the three stops a bot written for this site. `math` and `determinant` can be read by a program as easily as by a person. `hash` doesn't tell a person from a program either, but it makes every sign-up cost CPU time, which together with the rate limits makes mass registration slow and expensive.
 
 ## Production (Azure VM)
 

@@ -1,3 +1,4 @@
+@use '../../../styles/variables' as *;
 .brand-orange {
   color: #f07836;
 }
@@ -15,7 +16,71 @@
   letter-spacing: -1px;
 }
 
+.navbar-toggler {
+  padding: 0.25rem 0.5rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #333333;
+
+  &:focus {
+    box-shadow: 0 0 0 0.2rem rgb(240 120 54 / 25%);
+  }
+}
+
+// Folded-out links below lg: a full-width list under the brand row
+@media (max-width: 991.98px) {
+  .navbar-collapse.show {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #dee2e6;
+  }
+
+  .navbar-nav .nav-link {
+    padding: 0.6rem 0.25rem;
+  }
+}
+
+// Narrow phones: drop the icons beside the account buttons so the row fits
+@media (max-width: 380px) {
+  .navbar-brand {
+    font-size: 1.4rem !important;
+    margin-right: 0.5rem;
+  }
+
+  .current-user .bi-person-circle,
+  a.btn .bi-person-circle {
+    display: none;
+  }
+}
+
 .current-user {
   font-size: 13px;
   color: #333333;
+  border: 1px solid transparent;
+
+  &:hover,
+  &[aria-expanded='true'] {
+    border-color: #dee2e6;
+    background-color: #f8f9fa;
+  }
+}
+
+// Bootstrap's dropdown CSS without its JS: anchored under the username,
+// right-aligned so it never runs off the edge of the screen
+.user-menu {
+  position: relative;
+
+  .dropdown-menu {
+    top: calc(100% + 0.25rem);
+    right: 0;
+    left: auto;
+    min-width: 12rem;
+    font-size: 14px;
+  }
+
+  .dropdown-item:hover,
+  .dropdown-item:focus {
+    color: #f07836;
+  }
 }
