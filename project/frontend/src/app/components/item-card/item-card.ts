@@ -18,6 +18,16 @@ export class ItemCard {
   texts = en;
 
   imageFailed = false;
+  reasonOpen = false;
+
+  /** Rejected posts with a reason turn the status pill into a button. */
+  get hasReason(): boolean {
+    return this.item.status === 'rejected' && !!this.item.rejection_reason;
+  }
+
+  toggleReason(): void {
+    this.reasonOpen = !this.reasonOpen;
+  }
 
   /** "350 m" or "1.4 km", for suggested matches. */
   get distance(): string | null {
