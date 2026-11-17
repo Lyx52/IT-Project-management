@@ -1,4 +1,13 @@
-import { Component, EventEmitter, inject, OnInit, Output, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  inject,
+  OnInit,
+  Output,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -14,6 +23,7 @@ import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
 import { PostService } from '../../services/posts.service';
 import { Category } from '../../models/models';
+import * as L from 'leaflet';
 
 function notFutureDate(control: AbstractControl): ValidationErrors | null {
   if (!control.value) {
@@ -42,6 +52,21 @@ export class ItemForm implements OnInit {
   texts = en;
   private readonly fb = inject(FormBuilder);
   private readonly postService = inject(PostService);
+
+  readonly selectedCoordinates = signal<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  readonly locationError = signal('');
+
+  private map?: L.Map;
+  private selectedMarker?: L.CircleMarker;
+
+  readonly initialMapCenter = {
+    latitude: 56.9496,
+    longitude: 24.1052,
+  };
 
   @Output() created = new EventEmitter<void>();
 
@@ -77,8 +102,61 @@ export class ItemForm implements OnInit {
   readonly submitError = signal('');
   readonly isSubmitting = signal(false);
 
+  @ViewChild('locationMap')
+  set locationMapElement(element: ElementRef<HTMLDivElement> | undefined) {
+    if (!element) {
+      this.map?.remove();
+      this.map = undefined;
+      this.selectedMarker = undefined;
+      return;
+    }
+
+    if (!this.map) {
+      this.initializeLocationMap(element.nativeElement);
+    }
+  }
+
   ngOnInit(): void {
     this.loadCategories();
+  }
+
+  ngOnDestroy(): void {
+    this.map?.remove();
+  }
+
+  private initializeLocationMap(element: HTMLDivElement): void {
+    this.map = L.map(element).setView(
+      [this.initialMapCenter.latitude, this.initialMapCenter.longitude],
+      13,
+    );
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(this.map);
+
+    this.map.on('click', (event: L.LeafletMouseEvent) => {
+      const { lat, lng } = event.latlng;
+
+      this.selectedCoordinates.set({
+        latitude: lat,
+        longitude: lng,
+      });
+
+      this.locationError.set('');
+
+      if (this.selectedMarker) {
+        this.selectedMarker.setLatLng(event.latlng);
+      } else {
+        this.selectedMarker = L.circleMarker(event.latlng, {
+          radius: 9,
+          color: '#ffffff',
+          weight: 2,
+          fillColor: '#39976b',
+          fillOpacity: 1,
+        }).addTo(this.map!);
+      }
+    });
   }
 
   loadCategories(): void {
@@ -161,6 +239,11 @@ export class ItemForm implements OnInit {
       return;
     }
 
+    if (!this.selectedCoordinates()) {
+      this.locationError.set('Please select a location on the map.');
+      return;
+    }
+
     this.submitError.set('');
     this.isSubmitting.set(true);
 
@@ -172,8 +255,9 @@ export class ItemForm implements OnInit {
     payload.append('title', value.title.trim());
     payload.append('description', value.description.trim());
     payload.append('event_date', value.eventDate);
-    payload.append('latitude', String(this.defaultCoordinates.latitude));
-    payload.append('longitude', String(this.defaultCoordinates.longitude));
+    const coordinates = this.selectedCoordinates()!;
+    payload.append('latitude', String(coordinates.latitude));
+    payload.append('longitude', String(coordinates.longitude));
 
     if (value.locationName.trim()) {
       payload.append('location_name', value.locationName.trim());
@@ -195,6 +279,12 @@ export class ItemForm implements OnInit {
           eventDate: '',
           locationName: '',
         });
+
+        this.selectedCoordinates.set(null);
+        this.locationError.set('');
+
+        this.selectedMarker?.remove();
+        this.selectedMarker = undefined;
 
         this.selectedImages = [];
         this.created.emit();
