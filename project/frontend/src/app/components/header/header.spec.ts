@@ -65,12 +65,69 @@ describe('Header', () => {
     expect(text()).not.toContain('Log out');
   });
 
-  it('shows the username of the signed-in user', () => {
+  const userButton = () =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.current-user')!;
+
+  const click = (target: HTMLElement) => {
+    target.click();
+    fixture.detectChanges();
+  };
+
+  it('shows the username of the signed-in user, with the account actions tucked away', () => {
     setup(true);
 
     expect(text()).toContain('jane_doe');
-    expect(text()).toContain('Log out');
     expect(text()).not.toContain('Sign up');
+    expect(text()).not.toContain('Log out');
+    expect(text()).not.toContain('Download my data');
+    expect(userButton().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('opens the account menu from the username', () => {
+    setup(true);
+
+    click(userButton());
+
+    expect(userButton().getAttribute('aria-expanded')).toBe('true');
+    expect(text()).toContain('Download my data');
+    expect(text()).toContain('Log out');
+
+    click(userButton());
+
+    expect(text()).not.toContain('Log out');
+  });
+
+  it('folds the page links out on small screens and away again once one is picked', () => {
+    setup(false);
+    // The test router has no routes, so following a link would reject
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+
+    const el = fixture.nativeElement as HTMLElement;
+    const toggler = el.querySelector<HTMLButtonElement>('.navbar-toggler')!;
+    const nav = el.querySelector<HTMLElement>('#main-nav')!;
+
+    expect(nav.classList).not.toContain('show');
+    expect(toggler.getAttribute('aria-expanded')).toBe('false');
+
+    click(toggler);
+    expect(nav.classList).toContain('show');
+    expect(toggler.getAttribute('aria-expanded')).toBe('true');
+
+    click(nav.querySelector<HTMLAnchorElement>('a.nav-link')!);
+    expect(nav.classList).not.toContain('show');
+  });
+
+  it('closes the account menu on an outside click or Escape', () => {
+    setup(true);
+
+    click(userButton());
+    click(document.body);
+    expect(text()).not.toContain('Log out');
+
+    click(userButton());
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(text()).not.toContain('Log out');
   });
 
   it('signs out and returns to the feed', () => {
