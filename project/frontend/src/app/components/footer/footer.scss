@@ -1,0 +1,19 @@
+@use '../../../styles/variables' as *;
+
+footer {
+  width: 100%;
+  border-top: 1px solid $border-color;
+  display: flex;
+  align-items: center;
+}
+.term {
+  color: $text-primary;
+  text-decoration: none;
+  font-size: $font-size-base;
+  margin-left: 95%;
+
+  &:hover,
+  &.active {
+    color: $primary;
+  }
+}

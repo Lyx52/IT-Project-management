@@ -1,0 +1,382 @@
+<app-header />
+
+<main class="container-fluid px-3 px-lg-4 py-4 py-lg-5">
+  <div class="auth-wrapper mx-auto">
+    @if (registeredUser(); as user) {
+      @if (user.must_verify_email) {
+        <!-- Success, verification on: the account is unverified and nobody is signed in -->
+        <div class="panel p-4 p-lg-5 text-center">
+          <div class="success-icon mx-auto mb-3">
+            <i class="bi bi-envelope-check"></i>
+          </div>
+
+          <h4 class="fw-bold mb-2">Check your e-mail</h4>
+
+          <p class="text-muted mb-1">We sent a verification link to</p>
+
+          <p class="fw-semibold mb-3">{{ user.email }}</p>
+
+          <p class="text-muted small mb-4">
+            Open the link to verify your account. You are not signed in yet: verify your e-mail
+            first, then sign in to post items and reply to others.
+          </p>
+
+          <a class="btn btn-primary w-100" routerLink="/login">Go to sign in</a>
+
+          <a class="btn btn-link w-100 mt-2 text-muted" routerLink="/home">Back to home</a>
+        </div>
+      } @else {
+        <!-- Success, verification off: the account is ready, sign in now -->
+        <div class="panel p-4 p-lg-5 text-center">
+          <div class="success-icon mx-auto mb-3">
+            <i class="bi bi-person-check"></i>
+          </div>
+
+          <h4 class="fw-bold mb-2">Your account is ready</h4>
+
+          <p class="text-muted mb-1">Welcome, {{ user.username }}.</p>
+
+          <p class="text-muted small mb-4">
+            You are not signed in yet. Sign in with {{ user.email }} and your password to post items
+            and reply to others.
+          </p>
+
+          <a class="btn btn-primary w-100" routerLink="/login">Sign in</a>
+
+          <a class="btn btn-link w-100 mt-2 text-muted" routerLink="/home">Back to home</a>
+        </div>
+      }
+    } @else {
+      <div class="panel p-4 p-lg-5">
+        <h4 class="fw-bold mb-1">Create your account</h4>
+        <p class="text-muted small mb-4">
+          Join FindIT to report lost items and help return found ones.
+        </p>
+
+        @if (formError()) {
+          <div class="alert alert-danger py-2 small" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ formError() }}
+          </div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <fieldset [disabled]="submitting()">
+            <!-- Username -->
+            <div class="mb-3">
+              <label class="form-label" for="username">Username</label>
+              <input
+                id="username"
+                class="form-control"
+                formControlName="username"
+                type="text"
+                autocomplete="username"
+                placeholder="e.g. jane_doe"
+                [class.is-invalid]="error('username')"
+                [attr.aria-invalid]="error('username') ? 'true' : null"
+                [attr.aria-describedby]="error('username') ? 'username-error' : 'username-hint'"
+              />
+              @if (error('username')) {
+                <div class="invalid-feedback d-block" id="username-error">
+                  {{ error('username') }}
+                </div>
+              } @else {
+                <div class="form-text" id="username-hint">
+                  3 to 30 characters. Letters, numbers, underscores and hyphens.
+                </div>
+              }
+            </div>
+
+            <!-- E-mail -->
+            <div class="mb-3">
+              <label class="form-label" for="email">E-mail</label>
+              <input
+                id="email"
+                class="form-control"
+                formControlName="email"
+                type="email"
+                autocomplete="email"
+                placeholder="you@example.com"
+                [class.is-invalid]="error('email')"
+                [attr.aria-invalid]="error('email') ? 'true' : null"
+                [attr.aria-describedby]="error('email') ? 'email-error' : null"
+              />
+              @if (error('email')) {
+                <div class="invalid-feedback d-block" id="email-error">{{ error('email') }}</div>
+              }
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label class="form-label" for="password">Password</label>
+              <div class="input-group">
+                <input
+                  id="password"
+                  class="form-control"
+                  formControlName="password"
+                  [type]="passwordVisible() ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  placeholder="At least 8 characters"
+                  [class.is-invalid]="error('password')"
+                  [attr.aria-invalid]="error('password') ? 'true' : null"
+                  [attr.aria-describedby]="error('password') ? 'password-error' : 'password-hint'"
+                />
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  (click)="togglePasswordVisibility()"
+                  [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+                  [attr.aria-pressed]="passwordVisible()"
+                >
+                  <i
+                    class="bi"
+                    [class.bi-eye]="!passwordVisible()"
+                    [class.bi-eye-slash]="passwordVisible()"
+                  ></i>
+                </button>
+              </div>
+              @if (error('password')) {
+                <div class="invalid-feedback d-block" id="password-error">
+                  {{ error('password') }}
+                </div>
+              } @else {
+                <div class="form-text" id="password-hint">At least 8 characters.</div>
+              }
+            </div>
+
+            <!-- Confirm password -->
+            <div class="mb-3">
+              <label class="form-label" for="passwordConfirmation">Confirm password</label>
+              <input
+                id="passwordConfirmation"
+                class="form-control"
+                formControlName="passwordConfirmation"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Repeat your password"
+                [class.is-invalid]="error('passwordConfirmation')"
+                [attr.aria-invalid]="error('passwordConfirmation') ? 'true' : null"
+                [attr.aria-describedby]="
+                  error('passwordConfirmation') ? 'passwordConfirmation-error' : null
+                "
+              />
+              @if (error('passwordConfirmation')) {
+                <div class="invalid-feedback d-block" id="passwordConfirmation-error">
+                  {{ error('passwordConfirmation') }}
+                </div>
+              }
+            </div>
+
+            <!-- Consent -->
+            <div class="mb-4">
+              <div class="form-check">
+                <input
+                  id="termsAccepted"
+                  class="form-check-input"
+                  formControlName="termsAccepted"
+                  type="checkbox"
+                  [class.is-invalid]="error('termsAccepted')"
+                  [attr.aria-invalid]="error('termsAccepted') ? 'true' : null"
+                  [attr.aria-describedby]="error('termsAccepted') ? 'termsAccepted-error' : null"
+                />
+                <label class="form-check-label small" for="termsAccepted">
+                  I accept the <a class="fw-semibold" (click)="openTerms()">Terms of Service</a> and
+                  the <a class="fw-semibold" (click)="openPrivacy()">Privacy Policy</a>.
+                </label>
+              </div>
+              @if (error('termsAccepted')) {
+                <div class="invalid-feedback d-block" id="termsAccepted-error">
+                  {{ error('termsAccepted') }}
+                </div>
+              }
+            </div>
+
+            <!--
+              CAPTCHA, of the type the server's CAPTCHA_TYPE picks: a question
+              the user answers (math, determinant), or a hash puzzle the
+              browser solves in a Web Worker while the user fills in the form.
+            -->
+            <div class="mb-4">
+              <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                @if (asksUser()) {
+                  <label class="form-label mb-0" for="captchaAnswer">Security question</label>
+                  <button
+                    class="btn btn-sm btn-link text-muted p-0 text-decoration-none"
+                    type="button"
+                    (click)="newCaptcha()"
+                    [disabled]="captchaStatus() === 'loading'"
+                    aria-controls="captcha-question"
+                  >
+                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>New question
+                  </button>
+                } @else {
+                  <span class="form-label mb-0" id="captcha-label">Security check</span>
+                }
+              </div>
+
+              @if (asksUser()) {
+                <div class="captcha-row d-flex align-items-center gap-2">
+                  <div
+                    class="captcha-question mb-0 flex-grow-1"
+                    id="captcha-question"
+                    aria-live="polite"
+                  >
+                    @switch (captchaStatus()) {
+                      @case ('loading') {
+                        <span
+                          class="spinner-border spinner-border-sm me-2"
+                          aria-hidden="true"
+                        ></span>
+                        <span class="text-muted">Loading question...</span>
+                      }
+                      @case ('error') {
+                        <span class="text-danger small">{{ captchaError() }}</span>
+                      }
+                      @default {
+                        @if (matrix(); as m) {
+                          <span class="me-2">Determinant of</span>
+                          <span
+                            class="matrix"
+                            role="img"
+                            [attr.aria-label]="
+                              'matrix with rows ' +
+                              m[0][0] +
+                              ' ' +
+                              m[0][1] +
+                              ' and ' +
+                              m[1][0] +
+                              ' ' +
+                              m[1][1]
+                            "
+                          >
+                            <span>{{ m[0][0] }}</span
+                            ><span>{{ m[0][1] }}</span> <span>{{ m[1][0] }}</span
+                            ><span>{{ m[1][1] }}</span>
+                          </span>
+                          <span class="ms-2">= ?</span>
+                        } @else if (captcha(); as challenge) {
+                          @if (challenge.type === 'math') {
+                            {{ challenge.question }}
+                          }
+                        }
+                      }
+                    }
+                  </div>
+                  <input
+                    id="captchaAnswer"
+                    class="form-control captcha-answer"
+                    formControlName="captchaAnswer"
+                    type="text"
+                    [attr.inputmode]="captchaType() === 'determinant' ? 'text' : 'numeric'"
+                    autocomplete="off"
+                    placeholder="Answer"
+                    [class.is-invalid]="error('captchaAnswer')"
+                    [attr.aria-invalid]="error('captchaAnswer') ? 'true' : null"
+                    [attr.aria-describedby]="
+                      error('captchaAnswer')
+                        ? 'captcha-question captchaAnswer-error'
+                        : 'captcha-question captchaAnswer-hint'
+                    "
+                  />
+                </div>
+                @if (error('captchaAnswer')) {
+                  <div class="invalid-feedback d-block" id="captchaAnswer-error">
+                    {{ error('captchaAnswer') }}
+                  </div>
+                } @else {
+                  <div class="form-text" id="captchaAnswer-hint">
+                    @if (matrix()) {
+                      For rows (a b) and (c d) the determinant is a·d − b·c, and can be negative.
+                    } @else {
+                      Helps us keep automated sign-ups out.
+                    }
+                  </div>
+                }
+              } @else {
+                <div
+                  class="captcha-status d-flex align-items-center gap-2"
+                  [class.is-solved]="captchaStatus() === 'solved'"
+                  [class.is-failed]="captchaStatus() === 'error'"
+                >
+                  <span
+                    class="flex-grow-1"
+                    role="status"
+                    aria-labelledby="captcha-label captcha-text"
+                  >
+                    @switch (captchaStatus()) {
+                      @case ('solved') {
+                        <i class="bi bi-shield-check text-success me-2" aria-hidden="true"></i>
+                        <span id="captcha-text">Your browser passed the check.</span>
+                      }
+                      @case ('error') {
+                        <i
+                          class="bi bi-exclamation-triangle text-danger me-2"
+                          aria-hidden="true"
+                        ></i>
+                        <span class="text-danger" id="captcha-text">{{ captchaError() }}</span>
+                      }
+                      @default {
+                        <span
+                          class="spinner-border spinner-border-sm me-2"
+                          aria-hidden="true"
+                        ></span>
+                        <span id="captcha-text">Checking your browser...</span>
+                      }
+                    }
+                  </span>
+
+                  @if (captchaStatus() === 'error') {
+                    <button
+                      class="btn btn-sm btn-link text-muted p-0 text-decoration-none"
+                      type="button"
+                      (click)="newCaptcha()"
+                    >
+                      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Try again
+                    </button>
+                  } @else if (captchaStatus() === 'solving') {
+                    <span class="text-muted small" aria-hidden="true">{{ captchaPercent() }}%</span>
+                  }
+                </div>
+
+                @if (captchaStatus() === 'solving') {
+                  <div
+                    class="progress captcha-progress mt-1"
+                    role="progressbar"
+                    aria-label="Security check progress"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    [attr.aria-valuenow]="captchaPercent()"
+                  >
+                    <div class="progress-bar" [style.width.%]="captchaPercent()"></div>
+                  </div>
+                }
+
+                <div class="form-text">
+                  Your browser solves a small puzzle to keep automated sign-ups out. It runs while
+                  you fill in the form and takes from a moment to under a minute on slow devices.
+                </div>
+              }
+            </div>
+
+            <button class="btn btn-primary w-100" type="submit" [attr.aria-busy]="submitting()">
+              @if (awaitingCaptcha()) {
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                Finishing the security check...
+              } @else if (submitting()) {
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                Creating account...
+              } @else {
+                Create account
+              }
+            </button>
+          </fieldset>
+        </form>
+
+        <p class="text-muted small text-center mb-0 mt-3">
+          Already have an account?
+          <a class="link-orange fw-semibold" routerLink="/login">Sign in</a>
+        </p>
+      </div>
+    }
+  </div>
+</main>

@@ -1,0 +1,31 @@
+@if (visible()) {
+  <div class="page-container pt-3">
+    <div class="verify-notice d-flex flex-wrap align-items-center gap-2" role="status">
+      <i class="bi bi-envelope-exclamation"></i>
+
+      <span class="flex-grow-1">
+        @if (message()) {
+          {{ message() }}
+        } @else {
+          Your e-mail address is not verified yet. Verify it to report items and reply to others.
+        }
+      </span>
+
+      @if (state() !== 'sent') {
+        <button
+          class="btn btn-sm btn-verify"
+          type="button"
+          (click)="resend()"
+          [disabled]="state() === 'sending'"
+        >
+          @if (state() === 'sending') {
+            <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            Sending...
+          } @else {
+            Resend e-mail
+          }
+        </button>
+      }
+    </div>
+  </div>
+}

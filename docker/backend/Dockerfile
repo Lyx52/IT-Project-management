@@ -4,8 +4,9 @@ ARG UID=1000
 ARG GID=1000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git unzip zip libpq-dev libzip-dev libicu-dev libonig-dev \
-    && docker-php-ext-install pdo_pgsql pgsql zip intl bcmath mbstring pcntl \
+        git unzip zip libpq-dev libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libwebp-dev \
+    && docker-php-ext-configure gd --with-jpeg --with-webp \
+    && docker-php-ext-install exif gd pdo_pgsql pgsql zip intl bcmath mbstring pcntl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer

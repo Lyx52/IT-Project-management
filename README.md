@@ -78,17 +78,52 @@ docker compose up -d
 docker compose exec backend php artisan db:seed
 ```
 
-The seeder creates `testuser` / `test@example.com` (password `password`). `User::factory()->admin()` creates an admin.
+The seeder creates `testuser` / `test@example.com` and the admin `admin` / `admin@example.com`, both with password `password`. `User::factory()->admin()` creates an admin in tests.
 
 ### Notes for backend
 
-- `App\Models\User` still lists `name` as fillable. It needs to be updated to `username`, `role`, `terms_accepted_at` and `privacy_policy_version`. There is no `name` or `remember_token` column any more.
+- `App\Models\User` still lists `name` as fillable. It needs to be updated to `username`, `terms_accepted_at` and `privacy_policy_version`. There is no `name` or `remember_token` column any more.
+- Never make `role` (or `banned_at`) fillable. Otherwise anyone could register with `"role": "admin"`. Set it explicitly in the admin-only endpoint (`$user->forceFill(['role' => 'admin'])`). A test fails if `role` becomes mass assignable.
 - When installing Sanctum (`php artisan install:api`), delete the `personal_access_tokens` migration it publishes. The table already exists here.
 - Encrypt `messages.body` with the `encrypted` cast in the model.
 - The database can't check "a message needs a body or at least one attachment" (it spans two tables), so the message FormRequest must. Create the message and its attachments in one transaction.
 - Set `message_attachments.mime_type` from the stored file (`$file->getMimeType()`, which reads the content), not from the client's `Content-Type` header.
 - Deleting a message row doesn't remove its files from disk. Delete them in the model's `deleting` event or in the prune job.
 - Schema changes go through new migrations.
+
+## Registration
+
+### E-mail verification (turned off)
+
+The project has no mail domain yet, so e-mail verification is **off**. New accounts get no verification e-mail and can sign in and post right away.
+
+The verification code is still there. To turn it back on, set `EMAIL_VERIFICATION_ENABLED=true` (`.env` for dev, `.env.production` on the server, then `deploy/deploy.sh`). Mail has to work first (`MAIL_MAILER=resend`, `RESEND_API_KEY`, a `MAIL_FROM_ADDRESS` on a domain verified in Resend).
+
+While it is off, `email_verified_at` stays `null`: nobody is marked as verified who wasn't. So once it is on again, accounts created in the meantime are asked to verify before posting. The header prompt has a "Resend e-mail" button for that. Clients should decide whether to show the prompt from `must_verify_email` in the user payload, not from `email_verified_at`. Details are in [`config/verification.php`](project/backend/config/verification.php).
+
+### Sign-up CAPTCHA
+
+Sign-up is protected by a CAPTCHA to keep automated registrations out. No external service is involved. `CAPTCHA_TYPE` picks one of three kinds:
+
+| `CAPTCHA_TYPE` | The user sees | Answer |
+|---|---|---|
+| `hash` (default) | "Checking your browser…" with a progress bar | Found by the browser itself, nothing to type |
+| `math` | "What is 7 + 5?" | Typed in, never negative |
+| `determinant` | A 2×2 matrix | `a·d − b·c`, typed in, can be negative |
+
+To switch, set `CAPTCHA_TYPE` in `project/backend/.env` for dev, or in `.env.production` on the server and then run `deploy/deploy.sh`. Production caches its config at start-up (`php artisan optimize`), so a change there needs the redeploy. The frontend needs no change: the register page shows whatever kind the server sends. An unknown value makes `GET /captcha` fail with a clear error instead of silently picking a type.
+
+How it works for every type:
+
+1. `GET /api/v1/captcha` returns `captcha_id`, `type` and `expires_in`, plus `question` (math), `question` and `matrix` (determinant), or `algorithm`, `salt`, `challenge` and `max_number` (hash). The answer stays in the server's cache and is never sent to the browser.
+2. `POST /api/v1/register` sends `captcha_id` and `captcha_answer` with the other fields. The `captcha` middleware checks them before anything else, so without a solved CAPTCHA the endpoint doesn't reveal whether an e-mail address or username is taken.
+3. Every challenge allows **one** attempt, right or wrong, and expires after 5 minutes (`CAPTCHA_TTL_SECONDS`). After any failed registration, the form fetches a new one.
+
+**The hash puzzle.** `challenge` is `SHA-256(salt + n)` for a secret whole number `n` between 0 and `max_number`. The register page starts solving as soon as it opens: a Web Worker tries `n = 0, 1, 2, …` until the hash matches, so the form stays responsive and the puzzle is usually solved before the user has finished typing. If the user clicks "Create account" first, the form waits and is sent once the puzzle is solved. Because `n` is never above `max_number`, the work is bounded: at most `max_number + 1` hashes, half that on average. The default of 3,000,000 (`CAPTCHA_MAX_NUMBER`) takes about 1 s at worst on a current laptop and 10–30 s on a slow phone. If you change it, keep the slow-phone worst case under a minute. The other settings are in [`config/captcha.php`](project/backend/config/captcha.php).
+
+`GET /captcha` is limited to 30 requests per minute per IP and `POST /register` to 5. Unanswered challenges are deleted from the `cache` table by `app:prune-expired-cache`, which the scheduler runs daily at 00:30 UTC.
+
+None of the three stops a bot written for this site. `math` and `determinant` can be read by a program as easily as by a person. `hash` doesn't tell a person from a program either, but it makes every sign-up cost CPU time, which together with the rate limits makes mass registration slow and expensive.
 
 ## Production (Azure VM)
 
@@ -99,15 +134,32 @@ The seeder creates `testuser` / `test@example.com` (password `password`). `User:
 | `proxy` | Caddy. The only container with public ports (80, 443). Gets and renews the Let's Encrypt certificate, redirects HTTP to HTTPS, serves the built Angular app and forwards `/api`, `/sanctum`, `/storage` and `/up` to the backend |
 | `backend` | Laravel on FrankenPHP, plain HTTP on port 8080, reachable only from the proxy |
 | `db` | Postgres on an internal Docker network with no published port and no internet access |
+| `backup` | Daily `pg_dump` to Oracle Cloud Object Storage, kept 7 days. No ports. See [Backups](#backups) |
+| `scheduler` | Laravel's scheduler (`php artisan schedule:work`, jobs in `routes/console.php`), e.g. the daily purge of deleted accounts. Same image as `backend`, no ports |
 
 On the server (repo cloned to `/opt/IT-Project-management`):
 
 ```bash
 deploy/init-env.sh <hostname> <email>   # once: writes .env.production with random secrets
 deploy/deploy.sh                        # every deploy: pull, build, migrate, restart
+deploy/create-admin.sh <user> <email>   # once, after the first deploy: initial admin
 ```
 
 `deploy.sh` runs `php artisan migrate --force` before switching to the new containers. If a migration fails, the deploy stops and the old version keeps running. Pushes to `main` deploy automatically through `.github/workflows/deploy.yml` once the repository variable `DEPLOY_ENABLED` is `true` and the `DEPLOY_*` secrets are set.
+
+### First admin account
+
+A fresh database has no admin, and production never runs the seeder. After the first deploy, create the initial admin on the server:
+
+```bash
+deploy/create-admin.sh <username> <email>
+```
+
+It asks for the password at a hidden prompt (at least 12 characters), so the password never ends up in git, `.env.production`, logs or your shell history.
+
+It only works for a person in a shell on the server. It refuses to run without an interactive terminal (CI, cron, piped input, `ssh host cmd` without `-t`) and when Docker points at a remote daemon (`DOCKER_HOST`, docker context). The website can't trigger it: there is no route for it, and the Laravel command refuses to run outside an interactive CLI.
+
+This is only for bootstrapping. It refuses to run while an active admin exists. Further admins are managed from the website. If every admin is banned or deleted, running it again creates a new one.
 
 Useful commands on the server:
 
@@ -117,7 +169,87 @@ dc ps                                   # db must show no host port
 dc logs -f backend
 dc exec backend php artisan migrate:status
 dc exec db psql -U app app              # DB access only from the server itself
-dc exec db pg_dump -U app app > backup-$(date +%F).sql
+dc exec backup backup now               # extra backup to Oracle right away (see Backups)
 ```
 
 Never add a `ports:` entry to `db`. Docker-published ports bypass `ufw`, so the Azure firewall (NSG) and the missing port are what keep the database private.
+
+### Backups
+
+The `backup` container runs `pg_dump` every day at 02:00 UTC (`BACKUP_AT` in `.env.production` to change it) and uploads the dump to the Oracle Cloud Object Storage bucket `db-backups`, so it's off the VM's disk. A lifecycle rule on the bucket deletes each backup after 7 days. Versioning is off, so deleted means gone. Storage is within Oracle's Always Free tier (20 GB; a dump is well under 1 MB today).
+
+The server's URL (`BACKUP_UPLOAD_URL`, a pre-authenticated request) can only **write** backups. It can't list, read or delete them, and the bucket is private (`NoPublicAccess`). Backup names end in a random suffix, so they can't be guessed and overwritten either. Reading them goes through the OCI CLI (Cloud Shell in the Oracle console).
+
+What is **not** in the backup:
+- **`APP_KEY`.** Message bodies are encrypted with it. A restored database without the original key has unreadable messages. Keep a copy of `.env.production` in the team's password manager.
+- **Uploaded files** (the `app-storage` volume: avatars, post images, attachments).
+
+#### Setup (once)
+
+1. In the Oracle Cloud console, open **Cloud Shell** (the `>_` icon, top right). The OCI CLI there is already logged in.
+2. Get the script into Cloud Shell: Cloud Shell menu (gear icon) → **Upload** → `deploy/backup-storage.sh`, or `git clone` the repo.
+3. Run it:
+   ```bash
+   bash backup-storage.sh setup
+   ```
+   It creates the bucket, a policy that lets Object Storage delete old backups, the 7-day delete rule and the write-only URL. At the end it prints a `BACKUP_UPLOAD_URL=https://...` line.
+4. On the server, add that line to `.env.production` (replace the empty `BACKUP_UPLOAD_URL=` line if there is one), then:
+   ```bash
+   deploy/deploy.sh                        # starts the backup container
+   dc exec backup backup now               # first backup, don't wait for 02:00
+   dc ps backup                            # should say (healthy)
+   ```
+5. In Cloud Shell, check it arrived: `bash backup-storage.sh list`.
+
+The URL expires after a year. Running `setup` again makes a new one, and the old one stops working. Put a reminder in the calendar.
+
+#### Checking
+
+`dc ps backup` shows `unhealthy` when no backup succeeded in the last 26 hours or the last one failed (3 attempts, 10 minutes apart). `dc logs backup` says why. `deploy.sh` warns on every deploy if `BACKUP_UPLOAD_URL` is missing. In the console, the bucket is under Storage → Buckets → `db-backups`.
+
+#### Test restore
+
+Do this after setup and whenever the backup setup changes. It doesn't touch the live database.
+
+1. In Cloud Shell, get a download link for the newest backup (valid 1 hour):
+   ```bash
+   bash backup-storage.sh url                    # or: bash backup-storage.sh url app-20261107T020000Z-1a2b3c4d.dump
+   ```
+2. On the server, restore it into a temporary database named `restore_test_<timestamp>`:
+   ```bash
+   deploy/restore-db.sh 'https://objectstorage.<region>.oraclecloud.com/p/.../o/app-...dump'
+   ```
+   The script checks the file is a valid dump, restores it as the `app` user in a single transaction, and prints row counts per table next to the live database's, plus the newest migration in each. Then it drops the temporary restore database, so no extra copy of personal data stays around.
+3. Counts close to live (live has changed since the backup) and the same latest migration mean the backup is good. Add a row below.
+
+| Date | Who | Backup | Where | Result |
+|------|-----|--------|-------|--------|
+| 2026-11-07 | Kan6de | `app-20261107T101120Z-ad6414e7.dump` | Local copy of the prod stack, storage emulated (not Oracle) | OK: 25 users restored (live had 24 after a purge), latest migration matched. Live restore (`--live`) also tested |
+
+#### Restoring after a failure
+
+1. If the VM is gone: set up a new one, clone the repo to `/opt/IT-Project-management`, put the saved `.env.production` back (same `APP_KEY`, same `BACKUP_UPLOAD_URL`) and run `deploy/deploy.sh`.
+2. Get a download link as in step 1 above. Pick an older backup with `list` if the newest is already broken.
+3. On the server:
+   ```bash
+   deploy/restore-db.sh --live '<url>'
+   ```
+   It restores into a new database first, so the live data is only touched once that worked. After you type the database name to confirm, it stops the backend, renames the current database to `app_before_restore_<time>`, puts the restored one in its place, runs any newer migrations and starts everything again. Drop the old database with the command it prints once the site looks right.
+
+Anything written after the backup was made (at most a day) is lost.
+
+#### Retention and account deletion
+
+AC-17 says a deleted account must be gone within 30 days, backups included. Deleting an account soft-deletes it. The `scheduler` container runs `model:prune` every day at 00:00 UTC, which permanently deletes accounts soft-deleted more than **21 days** ago, together with their posts, messages and uploaded files.
+
+Worst case, the data then still exists for 21 days (waiting for the purge) + 1 day (until the daily purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **30 days**.
+
+The numbers live in [`config/retention.php`](project/backend/config/retention.php):
+
+| Setting | Default | Change it with |
+|---------|---------|----------------|
+| `account_purge_days` | 21 | `ACCOUNT_PURGE_DAYS=` in `.env.production`, then `deploy/deploy.sh` |
+| `backup_retention_days` | 7 | `RETENTION_DAYS` in `deploy/backup-storage.sh` + rerun `setup`; change both |
+| `deleted_account_limit_days` | 30 | AC-17, not meant to change |
+
+`account_purge_days + backup_retention_days + 2` must stay at or below 30. A test (`tests/Feature/UserPruningTest.php`) fails if the defaults break that. So keeping backups longer means purging accounts sooner.

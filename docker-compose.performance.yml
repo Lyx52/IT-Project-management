@@ -1,0 +1,47 @@
+# Local performance stack: production PHP image + optimized autoload, and the
+# production Angular build served as static files by Caddy. No Windows bind
+# mounts, no dev servers.
+services:
+  backend-performance:
+    build:
+      context: .
+      dockerfile: docker/prod/backend/Dockerfile
+    container_name: itpm-backend-performance
+    environment:
+      APP_NAME: FindIT
+      APP_ENV: performance
+      APP_KEY: ${PERFORMANCE_APP_KEY:?Set PERFORMANCE_APP_KEY before starting the performance backend}
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:8002
+      FRONTEND_URL: http://localhost:4201
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: warning
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-app}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      CACHE_STORE: file
+      SESSION_DRIVER: file
+      SESSION_SECURE_COOKIE: "false"
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: log
+      MAIL_FROM_ADDRESS: onboarding@resend.dev
+      EMAIL_VERIFICATION_ENABLED: "false"
+      ACCOUNT_PURGE_DAYS: 21
+    ports:
+      - "127.0.0.1:8002:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend-performance:
+    build:
+      context: .
+      dockerfile: docker/performance/Dockerfile
+    container_name: itpm-frontend-performance
+    ports:
+      - "127.0.0.1:4201:80"
+    depends_on:
+      - backend-performance

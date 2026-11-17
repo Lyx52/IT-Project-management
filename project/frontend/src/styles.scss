@@ -1,1 +1,29 @@
 /* You can add global styles to this file, and also import other style files */
+.page-container {
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+/* Grid of item cards, shared by the post, my-posts and saved-search pages */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 20px;
+}

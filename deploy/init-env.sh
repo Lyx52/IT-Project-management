@@ -26,7 +26,21 @@ DB_USERNAME=app
 DB_PASSWORD=$(openssl rand -hex 24)
 DB_ROOT_PASSWORD=$(openssl rand -hex 24)
 
+# E-mail: for real mail set MAIL_MAILER=resend, a RESEND_API_KEY and a
+# MAIL_FROM_ADDRESS on a domain verified in Resend
 MAIL_MAILER=log
+MAIL_FROM_ADDRESS=
+RESEND_API_KEY=
+# Verification e-mails on sign-up. Needs working mail (above) first.
+EMAIL_VERIFICATION_ENABLED=false
+
+# Sign-up CAPTCHA: math ("What is 7 + 5?"), determinant (of a 2x2 matrix)
+# or hash (a puzzle the browser solves by itself). See config/captcha.php.
+CAPTCHA_TYPE=hash
+
+# Daily database backups (see Backups in README.md). Paste the BACKUP_UPLOAD_URL
+# line printed by deploy/backup-storage.sh setup here.
+BACKUP_UPLOAD_URL=
 EOF
 
 echo "Wrote .env.production for https://$1"

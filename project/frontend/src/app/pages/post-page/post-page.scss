@@ -1,0 +1,53 @@
+@use '../../../styles/variables' as *;
+
+.post {
+  max-width: 900px;
+  overflow: hidden;
+}
+
+.post-images {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  background: #f0f0f0;
+
+  img {
+    height: 320px;
+    max-width: 100%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+}
+
+.post-type {
+  font-size: 11px;
+  font-weight: bold;
+  padding: 5px 9px;
+  border-radius: 5px;
+
+  &.lost {
+    background: #fff1e9;
+    color: $lost-color;
+  }
+
+  &.found {
+    background: #e7f5ee;
+    color: $found-color;
+  }
+}
+
+.post-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.post-description {
+  white-space: pre-line;
+}
+
+@media (max-width: 576px) {
+  .post-images img {
+    height: 220px;
+  }
+}

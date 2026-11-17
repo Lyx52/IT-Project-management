@@ -1,0 +1,75 @@
+<app-header />
+
+<main class="page-container py-4">
+  <!-- Page heading -->
+  <section class="page-heading mb-4">
+    <div class="map-search">
+      <i class="bi bi-search"></i>
+
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Search city or street..."
+        [(ngModel)]="searchQuery"
+        (keyup.enter)="searchLocation()"
+      />
+
+      <button
+        class="btn btn-primary"
+        (click)="searchLocation()"
+        [disabled]="isSearching || !searchQuery.trim()"
+      >
+        {{ isSearching ? 'Searching...' : texts.searchbutton }}
+      </button>
+    </div>
+  </section>
+
+  @if (searchError) {
+    <div class="search-error">
+      <i class="bi bi-exclamation-circle-fill"></i>
+      <span>{{ searchError }}</span>
+    </div>
+  }
+
+  <!-- Map -->
+  <section class="map-container mb-4">
+    <div class="map-toolbar">
+      <span>
+        <i class="bi bi-geo-alt me-1"></i>
+        Riga, Latvia
+      </span>
+
+      <button class="btn btn-light btn-sm">
+        <i class="bi bi-crosshair me-1"></i>
+        My location
+      </button>
+    </div>
+
+    <div id="map" class="map-placeholder"></div>
+  </section>
+
+  <!-- Nearby Items -->
+  <section class="items-section">
+    <div class="items-section-header">
+      <div>
+        <h5 class="fw-bold mb-1">{{ texts.nearbyItems }}</h5>
+        <p class="text-muted small mb-0">{{ nearbyItems.length }} {{ texts.itemsOnMap }}</p>
+      </div>
+    </div>
+
+    @if (nearbyItems.length > 0) {
+      <div class="items-grid">
+        @for (item of nearbyItems; track item.id) {
+          <app-item-card [item]="item" />
+        }
+      </div>
+    } @else {
+      <div class="empty-state">
+        <i class="bi bi-geo-alt"></i>
+        <h6 class="fw-bold mt-3">No nearby items</h6>
+        <p class="text-muted mb-0">There are currently no items in this area.</p>
+      </div>
+    }
+  </section>
+</main>
+<app-footer (showTriggered)="openTerms()" />

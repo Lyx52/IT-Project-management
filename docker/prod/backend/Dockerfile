@@ -3,7 +3,7 @@
 
 FROM dunglas/frankenphp:1-php8.4-bookworm
 
-RUN install-php-extensions pdo_pgsql pgsql intl zip bcmath pcntl opcache \
+RUN install-php-extensions gd exif pdo_pgsql pgsql intl zip bcmath pcntl opcache \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer

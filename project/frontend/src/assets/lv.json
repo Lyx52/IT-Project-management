@@ -1,0 +1,61 @@
+{
+  "Terms": "Pakalpojuma noteikumi",
+  "subtitle": "Terms of Service section subtitle",
+  "text": "place for the terms of service text here. This is a placeholder text that should be replaced with the actual terms of service content.",
+  "termsText": "placeholder",
+  "version": "0.0.1",
+
+  "cookieTitle": "Cookie Notice",
+  "cookieText": "This website uses cookies to ensure you get the best experience on our website. By continuing to use this site, you consent to our use of cookies.",
+  "closeButton": "Close",
+
+  "hometitle": "Find what you've lost.",
+  "searchp": "One place for lost and found items.",
+  "subtitlehome": "Recent items",
+  "subp": "Browse recently reported items.",
+  "filttitle": "Filter:",
+
+  "searchbutton": "Search",
+  "select1": "All categories",
+  "select2": "Accessories",
+  "select3": "Electronics",
+  "select4": "Documents",
+  "resfilter": "Reset filters",
+  "availableitems": "items available",
+  "noItemsFound": "No items found",
+  "noavailableitems": "There are currently no items in this category.",
+
+  "maptitle": "Explore the map",
+  "maptext": "Find lost and found items around your area.",
+  "nearbyItems": "Nearby items",
+  "itemsOnMap": "items on the map",
+  "myLocation": "My location",
+  "lost": "Lost",
+  "found": "Found",
+
+  "logo1": "Find",
+  "logo2": "IT",
+  "sign": "Sign in",
+  "li1": "Home",
+  "li2": "Items",
+  "li3": "Map",
+
+  "card-button": "View details",
+
+  "ftitle": "Report an item",
+  "fp": "Help someone find their belongings.",
+  "picturep": "Upload item photo",
+  "pictures": "Click to browse",
+  "itname": "Item name",
+  "label": "Category",
+  "option1": "Select category",
+  "option2": "Clothing",
+  "option3": "Other",
+  "date": "Date",
+  "location": "Location",
+  "description": "Description",
+  "submit": "Submit",
+
+  "mtitle": "Messenger",
+  "mtext": "Select a conversation to start chatting."
+}

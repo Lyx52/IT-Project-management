@@ -1,0 +1,14 @@
+@if (visible()) {
+  <div class="cookie-notice" role="region" aria-labelledby="cookie-notice-title">
+    <h2 id="cookie-notice-title" class="cookie-notice-title">{{ texts.cookieTitle }}</h2>
+    <p class="cookie-notice-text">{{ texts.cookieText }}</p>
+    <button
+      type="button"
+      class="cookie-notice-close"
+      (click)="closeCookieNotice()"
+      aria-label="Close cookie notice"
+    >
+      {{ texts.closeButton }}
+    </button>
+  </div>
+}

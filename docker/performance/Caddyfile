@@ -1,0 +1,22 @@
+{
+	auto_https off
+	admin off
+}
+
+# Production-like entry point for PB-53: static Angular build + /api proxy,
+# same layout as docker/prod/proxy/Caddyfile but without TLS and pointed at
+# the backend-performance service.
+:80 {
+	encode zstd gzip
+
+	@backend path /api/* /sanctum/* /storage/* /up
+	handle @backend {
+		reverse_proxy backend-performance:8080
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
