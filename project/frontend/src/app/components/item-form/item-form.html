@@ -150,12 +150,40 @@
       <!-- Location -->
       <div class="mb-3">
         <label class="form-label">Location</label>
+
         <input
           class="form-control"
           formControlName="locationName"
           placeholder="Where was it lost/found?"
           maxlength="150"
         />
+
+        <label class="form-label mt-3">Select location on map</label>
+        <p class="text-muted small mb-2">
+          Click on the map to mark where the item was lost or found.
+        </p>
+
+        <div #locationMap class="location-map"></div>
+
+        @if (selectedCoordinates(); as coordinates) {
+          <div class="text-success small mt-2">
+            <i class="bi bi-geo-alt-fill me-1"></i>
+            Location selected:
+            {{ coordinates.latitude }},
+            {{ coordinates.longitude }}
+          </div>
+        } @else {
+          <div class="text-muted small mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            Please select a location on the map.
+          </div>
+        }
+
+        @if (locationError()) {
+          <div class="text-danger small mt-1">
+            {{ locationError() }}
+          </div>
+        }
       </div>
 
       <!-- Description -->
