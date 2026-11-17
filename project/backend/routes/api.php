@@ -28,7 +28,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/register', RegisterController::class)
         ->middleware(['throttle:5,1', 'captcha']);
     Route::post('/login', LoginController::class)
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:login');
     // Protected Auth Routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', LogoutController::class);

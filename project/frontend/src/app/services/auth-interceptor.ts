@@ -2,6 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { AuthService } from './auth';
 
 /**
@@ -24,13 +25,24 @@ const NO_REDIRECT = ['/login', '/register', '/logout', '/user'];
 const matches = (url: string, paths: string[]): boolean =>
   paths.some((path) => new URL(url, 'http://localhost').pathname.endsWith(path));
 
+/**
+ * Whether the request goes to our own API. The token is only ever sent there:
+ * a request to any other host (map tiles, a geocoder, a CDN) must never carry
+ * it, or that host could act as the signed-in user.
+ */
+const isApiRequest = (url: string): boolean => {
+  const base = environment.apiBaseUrl;
+
+  return url === base || url.startsWith(`${base}/`) || url.startsWith(`${base}?`);
+};
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
   const token = auth.token();
   const request =
-    token && !matches(req.url, NO_TOKEN)
+    token && isApiRequest(req.url) && !matches(req.url, NO_TOKEN)
       ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
       : req;
 
