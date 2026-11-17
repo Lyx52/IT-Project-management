@@ -1,4 +1,13 @@
-import { Component, ElementRef, EventEmitter, inject, OnInit, Output, signal, ViewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  inject,
+  OnInit,
+  Output,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -107,7 +116,6 @@ export class ItemForm implements OnInit {
     }
   }
 
-
   ngOnInit(): void {
     this.loadCategories();
   }
@@ -119,12 +127,11 @@ export class ItemForm implements OnInit {
   private initializeLocationMap(element: HTMLDivElement): void {
     this.map = L.map(element).setView(
       [this.initialMapCenter.latitude, this.initialMapCenter.longitude],
-      13
+      13,
     );
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(this.map);
 
