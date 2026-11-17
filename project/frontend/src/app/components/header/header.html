@@ -10,24 +10,43 @@
       @if (isAuthenticated()) {
         <app-notification-bell />
 
-        <span class="current-user d-flex align-items-center">
-          <i class="bi bi-person-circle me-1"></i>
-          <span class="fw-semibold">{{ displayName() }}</span>
-        </span>
+        <div class="user-menu dropdown">
+          <button
+            class="current-user btn btn-sm d-flex align-items-center"
+            type="button"
+            aria-haspopup="true"
+            aria-controls="user-menu-dropdown"
+            [attr.aria-expanded]="isMenuOpen()"
+            (click)="toggleMenu()"
+          >
+            <i class="bi bi-person-circle me-1"></i>
+            <span class="fw-semibold">{{ displayName() }}</span>
+            <i class="bi ms-1" [class]="isMenuOpen() ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
 
-        <button
-          class="btn btn-outline-primary btn-sm"
-          type="button"
-          [disabled]="isExportingData()"
-          (click)="downloadPersonalData()"
-        >
-          <i class="bi bi-download me-1"></i>
-          {{ isExportingData() ? 'Preparing…' : 'Download my data' }}
-        </button>
-
-        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="logout()">
-          Log out
-        </button>
+          @if (isMenuOpen()) {
+            <ul id="user-menu-dropdown" class="dropdown-menu show">
+              <li>
+                <button
+                  class="dropdown-item"
+                  type="button"
+                  [disabled]="isExportingData()"
+                  (click)="downloadPersonalData()"
+                >
+                  <i class="bi bi-download me-2"></i>
+                  {{ isExportingData() ? 'Preparing…' : 'Download my data' }}
+                </button>
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <button class="dropdown-item" type="button" (click)="logout()">
+                  <i class="bi bi-box-arrow-right me-2"></i>
+                  Log out
+                </button>
+              </li>
+            </ul>
+          }
+        </div>
       } @else {
         <a class="btn btn-outline-secondary btn-sm" routerLink="/login">
           <i class="bi bi-person-circle me-1"></i>
@@ -36,6 +55,18 @@
 
         <a class="btn btn-primary btn-sm" routerLink="/register">Sign up</a>
       }
+
+      <!-- Below lg the page links fold away behind this button -->
+      <button
+        class="navbar-toggler"
+        type="button"
+        aria-controls="main-nav"
+        [attr.aria-expanded]="isNavOpen()"
+        [attr.aria-label]="isNavOpen() ? 'Close navigation' : 'Open navigation'"
+        (click)="toggleNav()"
+      >
+        <i class="bi" [class]="isNavOpen() ? 'bi-x-lg' : 'bi-list'"></i>
+      </button>
     </div>
 
     @if (exportError()) {
@@ -45,8 +76,8 @@
     }
 
     <!-- Navigation -->
-    <div class="collapse navbar-collapse order-lg-2">
-      <ul class="navbar-nav mx-auto gap-lg-3">
+    <div id="main-nav" class="collapse navbar-collapse order-lg-2" [class.show]="isNavOpen()">
+      <ul class="navbar-nav mx-auto gap-lg-3" (click)="closeNav()">
         <li class="nav-item">
           <a
             class="nav-link"

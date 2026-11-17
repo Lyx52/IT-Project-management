@@ -7,7 +7,6 @@ import { Messenger } from '../../components/messenger/messenger';
 import { Header } from '../../components/header/header';
 import { MOCK_ITEMS } from '../../models/mock-items';
 import { Footer } from '../../components/footer/footer';
-import { CookieNotice } from '../../components/cookie/cookie-notice';
 import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
 import { PostService } from '../../services/posts.service';
@@ -16,7 +15,7 @@ import { CreatePost } from '../../components/create-post/create-post';
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemForm, ItemCard, Messenger, Header, Footer, CookieNotice, CreatePost],
+  imports: [ItemForm, ItemCard, Messenger, Header, Footer, CreatePost],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })
@@ -29,20 +28,10 @@ export class HomePageComponent {
   readonly isLoading = signal(false);
   readonly loadError = signal('');
 
-  cookieVisible = false;
   texts = en;
 
   ngOnInit() {
     this.loadPosts();
-    const alreadyShown = localStorage.getItem('cookieShown');
-
-    if (!alreadyShown) {
-      this.cookieVisible = true;
-      localStorage.setItem('cookieShown', 'true');
-    }
-  }
-  hidecookie(): void {
-    this.cookieVisible = false;
   }
   isCreatePostOpen = false;
   isMessengerOpen = false;
