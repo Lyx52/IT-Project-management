@@ -21,7 +21,6 @@ import { CreatePost } from '../../components/create-post/create-post';
 })
 export class HomePageComponent {
   private readonly postService = inject(PostService);
-  private readonly changeDetector = inject(ChangeDetectorRef);
 
   // Signals, so the page redraws when the posts arrive (components are OnPush
   // by default and the app runs without zone.js)
