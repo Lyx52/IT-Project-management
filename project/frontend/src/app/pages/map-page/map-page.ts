@@ -1,4 +1,3 @@
-
 import { AfterViewInit, ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription, timeout, finalize } from 'rxjs';
@@ -17,7 +16,6 @@ import { MOCK_ITEMS } from '../../models/mock-items';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { FormsModule, NgModel } from '@angular/forms';
 import { inject } from '@angular/core';
-
 
 @Component({
   selector: 'app-map-page',
@@ -62,8 +60,7 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
     this.map = L.map('map').setView([56.9496, 24.1052], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(this.map);
 
@@ -87,7 +84,7 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
       },
     });
   }
-  
+
   private addMarkers(): void {
     if (!this.map || !this.markers) {
       return;
@@ -100,16 +97,13 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
         return;
       }
 
-      const marker = L.circleMarker(
-        [item.latitude, item.longitude],
-        {
-          radius: 9,
-          color: '#ffffff',
-          weight: 2,
-          fillColor: item.type === 'lost' ? '#e87942' : '#39976b',
-          fillOpacity: 1,
-        },
-      );
+      const marker = L.circleMarker([item.latitude, item.longitude], {
+        radius: 9,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: item.type === 'lost' ? '#e87942' : '#39976b',
+        fillOpacity: 1,
+      });
 
       marker.bindPopup(this.createPopupContent(item), {
         maxWidth: 280,
@@ -126,8 +120,6 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-
-  
   private createPopupContent(item: Item): HTMLElement {
     const container = document.createElement('div');
     container.style.width = '240px';
@@ -176,8 +168,7 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
     badge.style.fontSize = '11px';
     badge.style.fontWeight = 'bold';
     badge.style.color = 'white';
-    badge.style.background =
-      item.type === 'lost' ? '#e87942' : '#39976b';
+    badge.style.background = item.type === 'lost' ? '#e87942' : '#39976b';
 
     // Title
     const title = document.createElement('h6');
@@ -222,18 +213,10 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
       this.router.navigate(['/post', item.id]);
     });
 
-    container.append(
-      imageContainer,
-      badge,
-      title,
-      description,
-      details,
-      button,
-    );
+    container.append(imageContainer, badge, title, description, details, button);
 
     return container;
   }
-
 
   ngOnDestroy(): void {
     this.postsSubscription?.unsubscribe();
@@ -267,47 +250,35 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
     this.http
       .get<{ lat: string; lon: string; type: string }[]>(
         'https://nominatim.openstreetmap.org/search',
-        { params }
+        { params },
       )
       .pipe(
         timeout(10000),
         finalize(() => {
           this.isSearching = false;
-        })
+        }),
       )
       .subscribe({
         next: (results) => {
           if (results.length === 0) {
-            this.showSearchError(
-              'Location not found. Please enter a valid city or street.'
-            );
+            this.showSearchError('Location not found. Please enter a valid city or street.');
             return;
           }
 
           const location = results[0];
 
-          const zoom =
-            location.type === 'city' || location.type === 'administrative'
-              ? 12
-              : 16;
+          const zoom = location.type === 'city' || location.type === 'administrative' ? 12 : 16;
 
-          this.map?.setView(
-            [Number(location.lat), Number(location.lon)],
-            zoom
-          );
+          this.map?.setView([Number(location.lat), Number(location.lon)], zoom);
 
           this.updateNearbyItems();
         },
 
         error: (error) => {
           if (error.name === 'TimeoutError') {
-            this.showSearchError(
-              'Location search timed out. Please try again.'
-            );
+            this.showSearchError('Location search timed out. Please try again.');
           } else {
-            this.showSearchError(
-              'Unable to search for this location. Please try again.'
-            );
+            this.showSearchError('Unable to search for this location. Please try again.');
           }
         },
       });
@@ -327,19 +298,14 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
         center.lat,
         center.lng,
         item.latitude,
-        item.longitude
+        item.longitude,
       );
 
       return distance <= this.nearbyRadius;
     });
   }
 
-  private calculateDistance(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number {
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const earthRadius = 6371;
 
     const toRadians = (degrees: number) => degrees * (Math.PI / 180);
@@ -369,7 +335,6 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
     }, 3000);
   }
-
 
   openTerms(): void {
     this.router.navigate(['/terms']);
