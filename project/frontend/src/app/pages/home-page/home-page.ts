@@ -5,10 +5,8 @@ import { ItemForm } from '../../components/item-form/item-form';
 import { ItemCard } from '../../components/item-card/item-card';
 import { Messenger } from '../../components/messenger/messenger';
 import { Header } from '../../components/header/header';
-import { MOCK_ITEMS } from '../../models/mock-items';
 import { Footer } from '../../components/footer/footer';
 import en from '../../../assets/en.json';
-import lv from '../../../assets/lv.json';
 import { PostService } from '../../services/posts.service';
 import { CreatePost } from '../../components/create-post/create-post';
 
@@ -27,6 +25,7 @@ export class HomePageComponent {
   readonly items = signal<Item[]>([]);
   readonly isLoading = signal(false);
   readonly loadError = signal('');
+  readonly unreadMessagesCount = signal(0);
 
   texts = en;
 
