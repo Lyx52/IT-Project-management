@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
@@ -35,6 +35,7 @@ export class PostPage {
 
   readonly matches = signal<Item[]>([]);
   readonly matchesState = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  readonly isResolving = signal(false);
 
   readonly isMine = computed(() => {
     const post = this.post();
@@ -118,5 +119,30 @@ export class PostPage {
 
   openTerms(): void {
     this.router.navigate(['/terms']);
+  }
+  closepostevent(): void {
+    const post = this.post();
+
+    if (!post || !this.isMine() || post.status === 'resolved' || this.isResolving()) {
+      return;
+    }
+
+    this.isResolving.set(true);
+
+    this.subscriptions.add(
+      this.postService.closePost(this.postId).subscribe({
+        next: () => {
+          this.post.update((current) => (current ? { ...current, status: 'resolved' } : current));
+          this.isResolving.set(false);
+          alert('Post has been resolved successfully.');
+          this.router.navigate(['/my-posts']);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.isResolving.set(false);
+          console.error('Failed to resolve post:', error);
+          alert('Failed to resolve post. Please try again.');
+        },
+      }),
+    );
   }
 }

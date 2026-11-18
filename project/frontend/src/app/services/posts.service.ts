@@ -76,4 +76,12 @@ export class PostService {
       headers: this.headers,
     });
   }
+  // Inside PostService:
+  closePost(id: number): Observable<void> {
+    return this.http.post<void>(
+      `${environment.apiBaseUrl}/post/${id}/resolve`,
+      {},
+      { headers: this.headers },
+    );
+  }
 }
