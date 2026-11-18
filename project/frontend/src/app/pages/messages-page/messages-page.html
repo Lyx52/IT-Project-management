@@ -1,18 +1,12 @@
-
 <app-header />
 
 <main class="page-container py-4">
-  <button
-    type="button"
-    class="btn btn-link px-0 mb-3"
-    (click)="goBack()"
-  >
+  <button type="button" class="btn btn-link px-0 mb-3" (click)="goBack()">
     <i class="bi bi-arrow-left me-1"></i>
     Back to post
   </button>
 
   <section class="messages-container">
-
     <!-- Conversation header -->
     <div class="messages-header">
       <div class="user-avatar">
@@ -52,10 +46,7 @@
         </div>
       } @else {
         @for (message of messages(); track message.id) {
-          <div
-            class="message-row"
-            [class.mine]="message.isMine"
-          >
+          <div class="message-row" [class.mine]="message.isMine">
             <div class="message-content">
               <div class="message-bubble">
                 {{ message.body }}
@@ -77,13 +68,13 @@
 
     <!-- Message input - sending will be implemented next -->
     @if (sendError()) {
-    <div class="alert alert-danger mx-3 mt-3 mb-0">
+      <div class="alert alert-danger mx-3 mt-3 mb-0">
         {{ sendError() }}
-    </div>
+      </div>
     }
 
     <form class="message-composer" (ngSubmit)="send()">
-    <input
+      <input
         type="text"
         class="form-control"
         placeholder="Write a message..."
@@ -92,21 +83,16 @@
         (ngModelChange)="draft.set($event)"
         [disabled]="isSending()"
         maxlength="5000"
-    />
+      />
 
-    <button
-        type="submit"
-        class="send-button"
-        [disabled]="!draft().trim() || isSending()"
-    >
+      <button type="submit" class="send-button" [disabled]="!draft().trim() || isSending()">
         @if (isSending()) {
-        <span class="spinner-border spinner-border-sm"></span>
+          <span class="spinner-border spinner-border-sm"></span>
         } @else {
-        <i class="bi bi-send-fill"></i>
+          <i class="bi bi-send-fill"></i>
         }
-    </button>
+      </button>
     </form>
-
   </section>
 </main>
 

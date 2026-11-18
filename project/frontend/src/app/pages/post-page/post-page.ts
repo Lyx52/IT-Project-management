@@ -87,7 +87,6 @@ export class PostPage {
     );
   }
 
-
   contact(): void {
     const post = this.post();
 

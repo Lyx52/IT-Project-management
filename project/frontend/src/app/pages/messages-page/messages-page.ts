@@ -1,17 +1,9 @@
-
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { combineLatest, of, timer } from 'rxjs';
-import {
-  catchError,
-  distinctUntilChanged,
-  finalize,
-  map,
-  switchMap,
-  tap,
-} from 'rxjs/operators';
+import { catchError, distinctUntilChanged, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Header } from '../../components/header/header';
@@ -58,27 +50,21 @@ export class MessagesPage {
   readonly sendError = signal('');
 
   constructor() {
-    combineLatest([
-      this.route.paramMap,
-      this.route.queryParamMap,
-    ])
+    combineLatest([this.route.paramMap, this.route.queryParamMap])
       .pipe(
         map(([params, queryParams]) => {
           const postId = Number(params.get('postId'));
           const userId = Number(queryParams.get('userId'));
 
           return {
-            postId:
-              Number.isInteger(postId) && postId > 0 ? postId : 0,
-            userId:
-              Number.isInteger(userId) && userId > 0 ? userId : null,
+            postId: Number.isInteger(postId) && postId > 0 ? postId : 0,
+            userId: Number.isInteger(userId) && userId > 0 ? userId : null,
           };
         }),
 
         distinctUntilChanged(
           (previous, current) =>
-            previous.postId === current.postId &&
-            previous.userId === current.userId,
+            previous.postId === current.postId && previous.userId === current.userId,
         ),
 
         tap(({ postId, userId }) => {
@@ -103,32 +89,26 @@ export class MessagesPage {
           this.isLoading.set(true);
 
           // Load post details once.
-          const post$ = this.postService
-            .getPostById(postId)
-            .pipe(
-              map((response) => response.data),
-              catchError((error) => {
-                console.error('Failed to load post:', error);
-                this.postTitle.set(`Post #${postId}`);
-                return of(null);
-              }),
-            );
+          const post$ = this.postService.getPostById(postId).pipe(
+            map((response) => response.data),
+            catchError((error) => {
+              console.error('Failed to load post:', error);
+              this.postTitle.set(`Post #${postId}`);
+              return of(null);
+            }),
+          );
 
           // Load messages immediately and refresh every 5 seconds.
           const messages$ = timer(0, 5000).pipe(
             switchMap(() =>
-              this.messagesService
-                .getMessages(postId, userId ?? undefined)
-                .pipe(
-                  map((response) => response.data),
-                  catchError((error) => {
-                    console.error('Failed to load messages:', error);
-                    this.loadError.set(
-                      'Failed to load messages. Please try again.',
-                    );
-                    return of(null);
-                  }),
-                ),
+              this.messagesService.getMessages(postId, userId ?? undefined).pipe(
+                map((response) => response.data),
+                catchError((error) => {
+                  console.error('Failed to load messages:', error);
+                  this.loadError.set('Failed to load messages. Please try again.');
+                  return of(null);
+                }),
+              ),
             ),
           );
 
@@ -159,9 +139,7 @@ export class MessagesPage {
           return;
         }
 
-        this.messages.set(
-          messages.map((message) => this.mapMessage(message)),
-        );
+        this.messages.set(messages.map((message) => this.mapMessage(message)));
 
         if (messages.length > 0) {
           this.updateConversationDetails(messages[0]);
@@ -186,10 +164,7 @@ export class MessagesPage {
   private updateConversationDetails(message: Message): void {
     const currentUserId = this.auth.user()?.id;
 
-    const otherUser =
-      message.sender.id === currentUserId
-        ? message.receiver
-        : message.sender;
+    const otherUser = message.sender.id === currentUserId ? message.receiver : message.sender;
 
     this.setOtherUsername(otherUser.username);
   }
@@ -218,22 +193,13 @@ export class MessagesPage {
     this.sendError.set('');
 
     this.messagesService
-      .sendMessage(
-        this.postId(),
-        body,
-        this.userId() ?? undefined,
-      )
-      .pipe(
-        finalize(() => this.isSending.set(false)),
-      )
+      .sendMessage(this.postId(), body, this.userId() ?? undefined)
+      .pipe(finalize(() => this.isSending.set(false)))
       .subscribe({
         next: (response) => {
           const message = response.data;
 
-          this.messages.update((messages) => [
-            ...messages,
-            this.mapMessage(message),
-          ]);
+          this.messages.update((messages) => [...messages, this.mapMessage(message)]);
 
           this.updateConversationDetails(message);
           this.draft.set('');
@@ -241,10 +207,7 @@ export class MessagesPage {
         error: (error) => {
           console.error('Failed to send message:', error);
 
-          this.sendError.set(
-            error.error?.message ||
-              'Failed to send message. Please try again.',
-          );
+          this.sendError.set(error.error?.message || 'Failed to send message. Please try again.');
         },
       });
   }

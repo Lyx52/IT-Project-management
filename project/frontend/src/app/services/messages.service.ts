@@ -1,4 +1,3 @@
-
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -26,24 +25,17 @@ export class MessagesService {
       params = params.set('user_id', userId);
     }
 
-    return this.http.get<Paginated<Message>>(
-      `${environment.apiBaseUrl}/post/${postId}/messages`,
-      {
-        headers: this.headers,
-        params,
-      },
-    );
+    return this.http.get<Paginated<Message>>(`${environment.apiBaseUrl}/post/${postId}/messages`, {
+      headers: this.headers,
+      params,
+    });
   }
 
   /**
    * Send a message about a post.
    * Authors must provide userId to reply to a specific visitor.
    */
-  sendMessage(
-    postId: number,
-    body: string,
-    userId?: number,
-  ): Observable<ApiResponse<Message>> {
+  sendMessage(postId: number, body: string, userId?: number): Observable<ApiResponse<Message>> {
     const payload: { body: string; user_id?: number } = { body };
 
     if (userId !== undefined) {
