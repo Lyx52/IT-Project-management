@@ -180,6 +180,7 @@ Post object (`PostResource`):
 
 - `type`: `lost` | `found`
 - `status`: `pending` | `approved` | `rejected` | `resolved`
+- `rejection_reason`: the moderator's reason (string or `null`). Only present on rejected posts, and only for the author and admins. Cleared when the post is edited and goes back to moderation.
 
 ### GET `/posts`
 

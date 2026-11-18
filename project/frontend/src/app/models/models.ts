@@ -2,6 +2,8 @@ export interface Item {
   id: number;
   type: 'lost' | 'found';
   status: 'pending' | 'approved' | 'rejected' | 'resolved';
+  /** The moderator's reason; only sent to the author and admins of a rejected post. */
+  rejection_reason?: string | null;
   title: string;
   description: string;
 
