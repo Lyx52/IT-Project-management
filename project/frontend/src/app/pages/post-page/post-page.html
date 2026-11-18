@@ -13,6 +13,7 @@
         <p class="text-muted mt-2 mb-0">Loading post...</p>
       </div>
     }
+
     @case ('not-found') {
       <div class="text-center py-5">
         <i class="bi bi-question-circle fs-1 text-muted"></i>
@@ -22,6 +23,7 @@
         </p>
       </div>
     }
+
     @case ('error') {
       <div class="alert alert-danger">
         Failed to load the post. Please try again.
@@ -30,66 +32,137 @@
         </button>
       </div>
     }
+
     @case ('ready') {
       @if (post(); as post) {
         <article class="post card">
+          <!-- Images -->
           @if (post.images.length > 0) {
             <div class="post-images">
               @for (image of post.images; track image.id) {
-                <img [src]="image.url" [alt]="post.title" />
+                <img [src]="image.url" [alt]="post.title" loading="lazy" />
               }
+            </div>
+          } @else {
+            <div class="post-no-image">
+              <i class="bi bi-image"></i>
+              <span>No images available</span>
             </div>
           }
 
           <div class="card-body p-4">
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <!-- Header -->
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
               <span class="post-type" [class]="post.type">
                 {{ post.type === 'lost' ? 'LOST' : 'FOUND' }}
               </span>
-              <span class="text-muted small">{{ post.category.name }}</span>
+
+              <span class="category-label">
+                {{ post.category.name }}
+              </span>
+
               @if (isMine() && post.status !== 'approved') {
-                <span class="badge text-bg-light text-capitalize">{{ post.status }}</span>
+                <span class="badge text-bg-light text-capitalize">
+                  {{ post.status }}
+                </span>
               }
             </div>
 
+            <!-- Title and description -->
             <h1 class="h3 fw-bold mb-3">{{ post.title }}</h1>
 
-            <div class="post-info text-muted small mb-3">
-              <span>
-                <i class="bi bi-geo-alt me-1"></i>
-                {{ post.location_name || 'Location not specified' }}
-              </span>
-              <span>
-                <i class="bi bi-calendar3 me-1"></i>
-                {{ post.type === 'lost' ? 'Lost on' : 'Found on' }}
-                {{ post.event_date | date: 'd MMM yyyy' }}
-              </span>
-              <span>
-                <i class="bi bi-person me-1"></i>
-                Posted by {{ post.user.username }} on {{ post.created_at | date: 'd MMM yyyy' }}
-              </span>
+            <div class="post-description">
+              {{ post.description }}
             </div>
 
-            <p class="post-description mb-0">{{ post.description }}</p>
-            <button class="btn btn-outline-primary btn-sm mt-3" (click)="closepostevent()">
+            <hr class="my-4" />
+
+            <!-- Details -->
+            <section class="post-details">
+              <h2 class="h6 fw-bold mb-3">Item details</h2>
+
+              <div class="details-grid">
+                <div class="detail-item">
+                  <i class="bi bi-geo-alt"></i>
+                  <div>
+                    <span class="detail-label">Location</span>
+                    <span class="detail-value">
+                      {{ post.location_name || 'Not specified' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="detail-item">
+                  <i class="bi bi-calendar3"></i>
+                  <div>
+                    <span class="detail-label">
+                      {{ post.type === 'lost' ? 'Lost on' : 'Found on' }}
+                    </span>
+                    <span class="detail-value">
+                      {{ post.event_date | date: 'd MMM yyyy' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="detail-item">
+                  <i class="bi bi-person"></i>
+                  <div>
+                    <span class="detail-label">Posted by</span>
+                    <span class="detail-value">
+                      {{ post.user.username }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="detail-item">
+                  <i class="bi bi-clock"></i>
+                  <div>
+                    <span class="detail-label">Published</span>
+                    <span class="detail-value">
+                      {{ post.created_at | date: 'd MMM yyyy' }}
+                    </span>
+                  </div>
+                </div>
+                <button class="btn btn-outline-primary btn-sm mt-3" (click)="closepostevent()">
               Resolve this post
             </button>
+              </div>
+            </section>
+
+            <!-- Contact -->
+            @if (!isMine()) {
+              <div class="contact-section mt-4">
+                <div>
+                  <h2 class="h6 fw-bold mb-1">Interested in this item?</h2>
+                  <p class="text-muted small mb-0">Contact the person who posted this item.</p>
+                </div>
+
+                <button class="contact-button" type="button" (click)="contact()">
+                  <i class="bi bi-chat-dots me-2"></i>
+                  Contact
+                </button>
+              </div>
+            }
           </div>
         </article>
 
+        <!-- Possible matches -->
         @if (isMine()) {
           <section class="mt-5" aria-labelledby="matches-title">
             <h2 id="matches-title" class="h5 fw-bold mb-1">Possible matches</h2>
+
             <p class="text-muted small">
-              {{ post.type === 'lost' ? 'Found' : 'Lost' }} posts in {{ post.category.name }}, dated
-              within 7 days of yours and less than 2 km away, closest first.
+              {{ post.type === 'lost' ? 'Found' : 'Lost' }}
+              posts in {{ post.category.name }}, dated within 7 days of yours and less than 2 km
+              away, closest first.
             </p>
 
             @switch (matchesState()) {
               @case ('loading') {
                 <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                <span class="text-muted small ms-2">Looking for matches...</span>
+                <span class="text-muted small ms-2"> Looking for matches... </span>
               }
+
               @case ('error') {
                 <div class="alert alert-warning">
                   Could not load possible matches.
@@ -102,6 +175,7 @@
                   </button>
                 </div>
               }
+
               @case ('ready') {
                 @if (matches().length > 0) {
                   <div class="card-grid">
@@ -111,8 +185,8 @@
                   </div>
                 } @else {
                   <p class="text-muted mb-0">
-                    No possible matches yet. New posts are checked every time you open this page.
-                    You can also <a routerLink="/items">save a search</a> to get a notification.
+                    No possible matches yet. You can also
+                    <a routerLink="/items">browse other items</a>.
                   </p>
                 }
               }
