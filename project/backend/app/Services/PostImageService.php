@@ -72,7 +72,10 @@ class PostImageService
         Storage::disk('public')->deleteDirectory(self::directory($post));
     }
 
-    private function stripMetadata(UploadedFile $file, string $mime): string
+    /**
+     * Re-encodes an image, dropping all metadata (EXIF, GPS, ...).
+     */
+    public function stripMetadata(UploadedFile $file, string $mime): string
     {
         $image = @imagecreatefromstring((string) file_get_contents($file->getRealPath()));
 

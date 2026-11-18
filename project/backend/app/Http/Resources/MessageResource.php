@@ -25,6 +25,14 @@ class MessageResource extends JsonResource
             'body' => $this->body,
             'sender' => ['id' => $this->sender->id, 'username' => $this->sender->username],
             'receiver' => ['id' => $this->receiver->id, 'username' => $this->receiver->username],
+            'attachments' => $this->whenLoaded('attachments', fn () => $this->attachments->map(fn ($attachment) => [
+                'id' => $attachment->id,
+                'type' => $attachment->isVideo() ? 'video' : 'image',
+                'mime_type' => $attachment->mime_type,
+                'size' => $attachment->size,
+                // Expires, see MessageAttachment::temporaryUrl()
+                'url' => $attachment->temporaryUrl(),
+            ])->values()),
             'read_at' => $this->read_at,
             'created_at' => $this->created_at,
         ];
