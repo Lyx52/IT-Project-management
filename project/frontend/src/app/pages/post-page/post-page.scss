@@ -46,6 +46,34 @@
   white-space: pre-line;
 }
 
+.mt-3 {
+  position: fixed;
+  top: 60vh;
+  right: clamp(12px, 3vw, 32px);
+  z-index: 1000;
+  max-width: calc(100vw - 24px);
+  padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 18px);
+  border: 2px solid #2563eb;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+
+  &:hover {
+    background-color: #2563eb;
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+}
+
 @media (max-width: 576px) {
   .post-images img {
     height: 220px;
