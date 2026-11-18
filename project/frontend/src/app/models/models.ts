@@ -140,3 +140,29 @@ export type AppNotification = {
 export interface NotificationPage extends Paginated<AppNotification> {
   meta: PageMeta & { unread_count: number };
 }
+
+export interface Message {
+  id: number;
+  post_id: number;
+  body: string;
+  sender: {
+    id: number;
+    username: string;
+  };
+  receiver: {
+    id: number;
+    username: string;
+  };
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface MessageUser {
+  id: number;
+  username: string;
+}
+
+export interface SendMessageRequest {
+  body: string;
+  user_id?: number;
+}
