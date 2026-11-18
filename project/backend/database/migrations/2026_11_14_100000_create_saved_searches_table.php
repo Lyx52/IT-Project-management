@@ -28,10 +28,10 @@ return new class extends Migration
             $table->index(['type', 'category_id']);
         });
 
-if (DB::connection()->getDriverName() === 'pgsql') {
-    DB::statement("ALTER TABLE saved_searches ADD CONSTRAINT saved_searches_type_check CHECK (type IN ('lost', 'found'))");
-} elseif (DB::connection()->getDriverName() === 'sqlite') {
-    DB::unprepared(<<<'SQL'
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE saved_searches ADD CONSTRAINT saved_searches_type_check CHECK (type IN ('lost', 'found'))");
+        } elseif (DB::connection()->getDriverName() === 'sqlite') {
+            DB::unprepared(<<<'SQL'
         CREATE TRIGGER saved_searches_type_check_insert
         BEFORE INSERT ON saved_searches
         WHEN NEW.type IS NOT NULL AND NEW.type NOT IN ('lost', 'found')
@@ -40,7 +40,7 @@ if (DB::connection()->getDriverName() === 'pgsql') {
         END;
         SQL);
 
-    DB::unprepared(<<<'SQL'
+            DB::unprepared(<<<'SQL'
         CREATE TRIGGER saved_searches_type_check_update
         BEFORE UPDATE OF type ON saved_searches
         WHEN NEW.type IS NOT NULL AND NEW.type NOT IN ('lost', 'found')
@@ -48,7 +48,7 @@ if (DB::connection()->getDriverName() === 'pgsql') {
             SELECT RAISE(ABORT, 'saved_searches.type must be lost or found');
         END;
         SQL);
-}
+        }
         // Which posts each saved search has already sent a notification for.
         // An edited post goes back to moderation and is approved again, this
         // keeps that from notifying twice.
