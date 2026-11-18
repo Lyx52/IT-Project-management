@@ -10,14 +10,15 @@ import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import { MessagesService } from '../../services/messages.service';
 import { PostService } from '../../services/posts.service';
-import { Message } from '../../models/models';
+import { Message, MessageAttachment } from '../../models/models';
 import { AuthService } from '../../services/auth';
 
 interface DisplayMessage {
   id: number;
-  body: string;
+  body: string | null;
   time: string;
   isMine: boolean;
+  attachments: MessageAttachment[];
 }
 
 @Component({
@@ -158,6 +159,7 @@ export class MessagesPage {
       body: message.body,
       time: message.created_at,
       isMine: message.sender.id === currentUserId,
+      attachments: message.attachments ?? [],
     };
   }
 

@@ -155,6 +155,7 @@ export interface Message {
   };
   read_at: string | null;
   created_at: string;
+  attachments: MessageAttachment[];
 }
 
 export interface MessageUser {
@@ -165,4 +166,25 @@ export interface MessageUser {
 export interface SendMessageRequest {
   body: string;
   user_id?: number;
+}
+
+export interface MessageAttachment {
+  id: number;
+  type: 'image' | 'video';
+  mime_type: string;
+  size: number;
+  url: string;
+}
+
+export interface Conversation {
+  post_id: number;
+  post_title: string;
+  other_user: MessageUser;
+  last_message: {
+    id: number;
+    body: string | null;
+    created_at: string;
+    sender_id: number;
+  };
+  unread_count: number;
 }
