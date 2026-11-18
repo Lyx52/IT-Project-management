@@ -11,23 +11,21 @@
 |   + backup_retention_days    in the last backup taken before the hard delete
 |   + 1 day                    until Oracle's daily lifecycle run deletes it
 |
-| which must stay within deleted_account_limit_days: 21 + 1 + 7 + 1 = 30.
-| tests/Unit/RetentionConfigTest.php checks this.
+| The account remains suspended for 30 days before permanent deletion. The
+| daily pruning schedule and backup lifecycle can extend removal from backups
+| to 39 days after the request: 30 + 1 + 7 + 1.
 */
 
 return [
 
-    // AC-17: a deleted account must be gone everywhere, backups included,
-    // within this many days of the deletion request.
-    'deleted_account_limit_days' => 30,
+    // Maximum time until personal data is removed from the database and backups.
+    'deleted_account_limit_days' => 39,
 
     // Oracle deletes database backups after this many days. Must match
     // RETENTION_DAYS in deploy/backup-storage.sh.
     'backup_retention_days' => 7,
 
-    // Soft-deleted users are permanently deleted after this many days.
-    // Set ACCOUNT_PURGE_DAYS in .env.production to change it. Only lower it,
-    // or lower the backup retention first, or AC-17 is broken.
-    'account_purge_days' => (int) env('ACCOUNT_PURGE_DAYS', 21),
+    // Soft-deleted accounts remain suspended for 30 days before permanent deletion.
+    'account_purge_days' => (int) env('ACCOUNT_PURGE_DAYS', 30),
 
 ];

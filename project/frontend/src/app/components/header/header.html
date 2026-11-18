@@ -37,6 +37,17 @@
                   {{ isExportingData() ? 'Preparing…' : 'Download my data' }}
                 </button>
               </li>
+              <li>
+                <button
+                  class="dropdown-item text-danger"
+                  type="button"
+                  [disabled]="isDeletingAccount()"
+                  (click)="requestAccountDeletion()"
+                >
+                  <i class="bi bi-person-x me-2"></i>
+                  {{ isDeletingAccount() ? 'Requesting…' : 'Delete my account' }}
+                </button>
+              </li>
               <li><hr class="dropdown-divider" /></li>
               <li>
                 <button class="dropdown-item" type="button" (click)="logout()">
@@ -72,6 +83,12 @@
     @if (exportError()) {
       <span class="download-error small text-danger order-lg-4" role="alert">
         {{ exportError() }}
+      </span>
+    }
+
+    @if (accountError()) {
+      <span class="small text-danger order-lg-4" role="alert">
+        {{ accountError() }}
       </span>
     }
 

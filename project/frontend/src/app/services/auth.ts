@@ -147,6 +147,14 @@ export class AuthService {
     return this.http.get(`${environment.apiBaseUrl}/user/export`, { responseType: 'blob' });
   }
 
+  /** Suspends the account for its grace period, revokes tokens, and clears this session. */
+  deleteAccount(): Observable<void> {
+    return this.http.delete(`${environment.apiBaseUrl}/user`).pipe(
+      tap(() => this.clear()),
+      map(() => undefined),
+    );
+  }
+
   /** Forgets the session locally. Also called by the interceptor on a 401. */
   clear(): void {
     this.accessToken.set(null);

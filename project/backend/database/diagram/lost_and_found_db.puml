@@ -196,8 +196,8 @@ note as gdpr
     saved at registration
   • Right of access / portability: GET /api/me/export
     returns all of the user's data as JSON
-  • Right to erasure: DELETE /api/me → soft delete,
-    tokens revoked, then hard delete after 30 days
+  • Right to erasure: DELETE /api/v1/user → suspend and soft delete,
+    tokens revoked immediately, then hard delete after 30 days
     (Prunable); cascades remove posts, images,
     messages; reports keep no reporter
   • Retention (Prunable, daily schedule):

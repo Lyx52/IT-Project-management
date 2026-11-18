@@ -27,6 +27,8 @@ export class Header {
   readonly displayName = this.auth.displayName;
   readonly isExportingData = signal(false);
   readonly exportError = signal<string | null>(null);
+  readonly isDeletingAccount = signal(false);
+  readonly accountError = signal<string | null>(null);
 
   /** The page links on small screens, where they fold behind the toggler. */
   readonly isNavOpen = signal(false);
@@ -87,5 +89,25 @@ export class Header {
     // The service clears the session even if the request fails, so the feed is
     // always the right place to land.
     this.auth.logout().subscribe(() => this.router.navigate(['/home']));
+  }
+
+  requestAccountDeletion(): void {
+    const confirmed = window.confirm(
+      'Your account will be suspended immediately. You will not be able to sign in during the 30-day grace period. After 30 days, your account, posts, images and messages will be permanently deleted. Continue?',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeletingAccount.set(true);
+    this.accountError.set(null);
+    this.auth.deleteAccount().subscribe({
+      next: () => this.router.navigate(['/home']),
+      error: () => {
+        this.isDeletingAccount.set(false);
+        this.accountError.set('Could not request account deletion. Please try again.');
+      },
+    });
   }
 }
