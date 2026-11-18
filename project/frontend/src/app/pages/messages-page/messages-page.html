@@ -1,0 +1,113 @@
+
+<app-header />
+
+<main class="page-container py-4">
+  <button
+    type="button"
+    class="btn btn-link px-0 mb-3"
+    (click)="goBack()"
+  >
+    <i class="bi bi-arrow-left me-1"></i>
+    Back to post
+  </button>
+
+  <section class="messages-container">
+
+    <!-- Conversation header -->
+    <div class="messages-header">
+      <div class="user-avatar">
+        {{ otherInitials() }}
+      </div>
+
+      <div class="conversation-heading">
+        <h1>{{ otherUsername() }}</h1>
+        <p>
+          <i class="bi bi-box-seam me-1"></i>
+          About: {{ postTitle() }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Post reference -->
+    <div class="post-reference">
+      <i class="bi bi-info-circle"></i>
+      <span>
+        Conversation about
+        <strong>{{ postTitle() }}</strong>
+      </span>
+      <a [routerLink]="['/post', postId()]">View post</a>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-body">
+      @if (isLoading()) {
+        <div class="empty-messages">
+          <i class="bi bi-arrow-repeat"></i>
+          <p>Loading messages...</p>
+        </div>
+      } @else if (loadError()) {
+        <div class="empty-messages">
+          <i class="bi bi-exclamation-circle"></i>
+          <p>{{ loadError() }}</p>
+        </div>
+      } @else {
+        @for (message of messages(); track message.id) {
+          <div
+            class="message-row"
+            [class.mine]="message.isMine"
+          >
+            <div class="message-content">
+              <div class="message-bubble">
+                {{ message.body }}
+              </div>
+
+              <span class="message-time">
+                {{ message.time | date: 'HH:mm' }}
+              </span>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-messages">
+            <i class="bi bi-chat-square-text"></i>
+            <p>No messages yet.</p>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Message input - sending will be implemented next -->
+    @if (sendError()) {
+    <div class="alert alert-danger mx-3 mt-3 mb-0">
+        {{ sendError() }}
+    </div>
+    }
+
+    <form class="message-composer" (ngSubmit)="send()">
+    <input
+        type="text"
+        class="form-control"
+        placeholder="Write a message..."
+        name="message"
+        [ngModel]="draft()"
+        (ngModelChange)="draft.set($event)"
+        [disabled]="isSending()"
+        maxlength="5000"
+    />
+
+    <button
+        type="submit"
+        class="send-button"
+        [disabled]="!draft().trim() || isSending()"
+    >
+        @if (isSending()) {
+        <span class="spinner-border spinner-border-sm"></span>
+        } @else {
+        <i class="bi bi-send-fill"></i>
+        }
+    </button>
+    </form>
+
+  </section>
+</main>
+
+<app-footer (showTriggered)="openTerms()" />

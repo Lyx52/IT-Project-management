@@ -75,6 +75,15 @@ export const routes: Routes = [
     canActivate: [adminGuard],
   },
   {
+    path: 'messages/:postId',
+    title: 'Messages – FindIT',
+    loadComponent: () =>
+      import('./pages/messages-page/messages-page').then(
+        (m) => m.MessagesPage,
+      ),
+    canActivate: [authGuard],
+  },
+  {
     path: '**',
     redirectTo: 'home',
   },
