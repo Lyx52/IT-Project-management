@@ -8,12 +8,75 @@ use App\Http\Resources\MessageResource;
 use App\Models\Message;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\MessageAttachmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class MessageController extends Controller
 {
+    /**
+     * List conversations
+     *
+     * Every conversation the signed-in user is in, one entry per post and
+     * other person, most recent first. `last_message` is the newest message
+     * in it (`body` is `null` when it only carries photos or videos) and
+     * `unread_count` the messages from the other person that haven't been
+     * read yet. Conversations about posts the user can no longer see are left
+     * out.
+     */
+    public function conversations(Request $request): JsonResponse
+    {
+        $me = $request->user();
+
+        $rows = Message::query()
+            ->whereNotNull('post_id')
+            ->where(fn ($q) => $q->where('sender_id', $me->id)->orWhere('receiver_id', $me->id))
+            ->selectRaw(
+                'post_id, MAX(id) AS last_id, SUM(CASE WHEN receiver_id = ? AND read_at IS NULL THEN 1 ELSE 0 END) AS unread',
+                [$me->id],
+            )
+            ->groupByRaw('post_id, CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END', [$me->id])
+            ->orderByDesc('last_id')
+            ->get();
+
+        $last = Message::query()
+            ->whereIn('id', $rows->pluck('last_id'))
+            ->with(['post.user', 'sender', 'receiver'])
+            ->get()
+            ->keyBy('id');
+
+        $data = $rows->map(function ($row) use ($last, $me) {
+            $message = $last->get($row->last_id);
+            $post = $message?->post;
+
+            // Same rule as everywhere else: unapproved posts and banned
+            // authors' posts only exist for the author
+            if (! $post || ! ($post->user_id === $me->id || ($post->isPublic() && ! $post->user->isBanned()))) {
+                return null;
+            }
+
+            $other = $message->sender_id === $me->id ? $message->receiver : $message->sender;
+
+            return [
+                'post_id' => $post->id,
+                'post_title' => $post->title,
+                'other_user' => ['id' => $other->id, 'username' => $other->username],
+                'last_message' => [
+                    'id' => $message->id,
+                    'body' => $message->body,
+                    'created_at' => $message->created_at,
+                    'sender_id' => $message->sender_id,
+                ],
+                'unread_count' => (int) $row->unread,
+            ];
+        })->filter()->values();
+
+        return response()->json(['data' => $data]);
+    }
+
     /**
      * Get a conversation
      *
@@ -32,7 +95,7 @@ class MessageController extends Controller
             ->where(fn ($q) => $q
                 ->where(fn ($q) => $q->where('sender_id', $me->id)->where('receiver_id', $other->id))
                 ->orWhere(fn ($q) => $q->where('sender_id', $other->id)->where('receiver_id', $me->id)))
-            ->with(['sender', 'receiver'])
+            ->with(['sender', 'receiver', 'attachments'])
             ->orderBy('id')
             ->paginate(50);
 
@@ -52,22 +115,37 @@ class MessageController extends Controller
      * visitor writes to the post's author. The author can only answer a
      * visitor who has already written (pass that visitor as `user_id`).
      * Responses never include e-mail addresses.
+     *
+     * Send as `multipart/form-data` to attach up to 3 photos or short videos
+     * (`attachments[]`): jpg/png/webp up to 5 MB, mp4/webm/mov up to 20 MB.
+     * The type is checked from the file's content. They are kept on the
+     * private disk and reachable only through the expiring `url` of each
+     * attachment. A message needs a `body`, attachments, or both.
      */
-    public function store(StoreMessageRequest $request, Post $post): JsonResponse
+    public function store(StoreMessageRequest $request, Post $post, MessageAttachmentService $attachments): JsonResponse
     {
         $me = $request->user();
         abort_if($me->isBanned(), 403, 'This account has been banned.');
 
         $other = $this->counterpart($post, $me, $request->validated('user_id'), forSending: true);
 
-        $message = Message::create([
-            'sender_id' => $me->id,
-            'receiver_id' => $other->id,
-            'post_id' => $post->id,
-            'body' => $request->validated('body'),
-        ]);
+        try {
+            $message = DB::transaction(function () use ($request, $me, $other, $post, $attachments) {
+                $message = Message::create([
+                    'sender_id' => $me->id,
+                    'receiver_id' => $other->id,
+                    'post_id' => $post->id,
+                    'body' => $request->validated('body'),
+                ]);
+                $attachments->attach($message, $request->file('attachments', []));
 
-        return (new MessageResource($message->load(['sender', 'receiver'])))
+                return $message;
+            });
+        } catch (RuntimeException) {
+            abort(422, 'One of the files could not be processed.');
+        }
+
+        return (new MessageResource($message->load(['sender', 'receiver', 'attachments'])))
             ->response()
             ->setStatusCode(201);
     }
