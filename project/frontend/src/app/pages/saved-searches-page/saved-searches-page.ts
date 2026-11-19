@@ -5,6 +5,7 @@ import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
 import { SavedSearch } from '../../models/models';
 import { SavedSearchService } from '../../services/saved-searches.service';
+import { Messenger } from '../../components/messenger/messenger';
 
 /**
  * The user's saved searches. Each one notifies the user about newly approved
@@ -12,8 +13,9 @@ import { SavedSearchService } from '../../services/saved-searches.service';
  */
 @Component({
   selector: 'app-saved-searches-page',
-  imports: [Header, Footer, RouterLink],
+  imports: [Header, Footer, RouterLink, Messenger],
   templateUrl: './saved-searches-page.html',
+  styleUrl: './saved-searches-page.scss',
 })
 export class SavedSearchesPage {
   private readonly savedSearches = inject(SavedSearchService);
@@ -33,6 +35,14 @@ export class SavedSearchesPage {
 
   constructor() {
     this.load();
+  }
+
+  readonly unreadMessagesCount = signal(0);
+
+  isMessengerOpen = false;
+
+  toggleMessenger(): void {
+    this.isMessengerOpen = !this.isMessengerOpen;
   }
 
   load(): void {

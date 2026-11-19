@@ -5,12 +5,14 @@ import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
 import { Item, PageMeta } from '../../models/models';
 import { PostService } from '../../services/posts.service';
+import { Messenger } from '../../components/messenger/messenger';
 
 /** The signed-in user's posts in every status, each linking to its possible matches. */
 @Component({
   selector: 'app-my-posts-page',
-  imports: [Header, Footer, ItemCard, RouterLink],
+  imports: [Header, Footer, ItemCard, RouterLink, Messenger],
   templateUrl: './my-posts-page.html',
+  styleUrl: './my-posts-page.scss',
 })
 export class MyPostsPage {
   private readonly postService = inject(PostService);
@@ -29,6 +31,14 @@ export class MyPostsPage {
 
   constructor() {
     this.load();
+  }
+
+  readonly unreadMessagesCount = signal(0);
+
+  isMessengerOpen = false;
+
+  toggleMessenger(): void {
+    this.isMessengerOpen = !this.isMessengerOpen;
   }
 
   load(): void {

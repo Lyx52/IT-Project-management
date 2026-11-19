@@ -8,7 +8,7 @@
       <p class="text-muted mb-0">Browse lost and found items.</p>
     </div>
 
-    <form class="search-box" role="search" (submit)="$event.preventDefault(); search()">
+    <div class="search-box" role="search">
       <i class="bi bi-search"></i>
       <input
         type="search"
@@ -17,10 +17,9 @@
         aria-label="Search for an item"
         maxlength="100"
         [value]="searchText()"
-        (input)="searchText.set($any($event.target).value)"
+        (input)="onSearchInput($any($event.target).value)"
       />
-      <button class="btn btn-primary" type="submit">{{ texts.searchbutton }}</button>
-    </form>
+    </div>
   </section>
 
   <!-- Filters -->
@@ -33,6 +32,7 @@
 
       <div class="items-switch">
         <button
+          type="button"
           class="switch-button"
           [class.active]="selectedType() === 'all'"
           (click)="selectType('all')"
@@ -41,6 +41,7 @@
         </button>
 
         <button
+          type="button"
           class="switch-button lost"
           [class.active]="selectedType() === 'lost'"
           (click)="selectType('lost')"
@@ -50,6 +51,7 @@
         </button>
 
         <button
+          type="button"
           class="switch-button found"
           [class.active]="selectedType() === 'found'"
           (click)="selectType('found')"
@@ -67,18 +69,33 @@
         [value]="selectedCategoryId() ?? ''"
         (change)="selectCategory($any($event.target).value)"
       >
-        <option value="" [selected]="selectedCategoryId() === null">All categories</option>
+        <option value="">All categories</option>
         @for (category of categories(); track category.id) {
-          <option [value]="category.id" [selected]="category.id === selectedCategoryId()">
+          <option [value]="category.id">
             {{ category.name }}
           </option>
         }
       </select>
 
-      <input type="date" class="form-control" />
-      <input type="date" class="form-control" />
+      <input
+        type="date"
+        class="form-control"
+        aria-label="From date"
+        [value]="dateFrom()"
+        (change)="dateFrom.set($any($event.target).value)"
+      />
 
-      <button class="btn btn-outline-secondary" (click)="resetFilters()">Reset filters</button>
+      <input
+        type="date"
+        class="form-control"
+        aria-label="To date"
+        [value]="dateTo()"
+        (change)="dateTo.set($any($event.target).value)"
+      />
+
+      <button type="button" class="btn btn-outline-secondary" (click)="resetFilters()">
+        Reset filters
+      </button>
     </div>
 
     <!-- Save this search -->
@@ -95,7 +112,8 @@
             class="d-flex flex-wrap align-items-center gap-2"
             (submit)="$event.preventDefault(); submitSave()"
           >
-            <label class="small fw-semibold" for="saved-search-name">Name this search</label>
+            <label class="small fw-semibold" for="saved-search-name"> Name this search </label>
+
             <input
               id="saved-search-name"
               class="form-control form-control-sm w-auto flex-grow-1"
@@ -104,13 +122,18 @@
               [value]="saveName()"
               (input)="saveName.set($any($event.target).value)"
             />
+
             <button class="btn btn-primary btn-sm" type="submit" [disabled]="isSaving()">
               {{ isSaving() ? 'Saving…' : 'Save' }}
             </button>
+
             <button class="btn btn-link btn-sm" type="button" (click)="closeSave()">Cancel</button>
           </form>
+
           @if (saveError()) {
-            <p class="small text-danger mb-0 mt-1" role="alert">{{ saveError() }}</p>
+            <p class="small text-danger mb-0 mt-1" role="alert">
+              {{ saveError() }}
+            </p>
           }
         } @else if (savedAs()) {
           <p class="small text-success mb-0" role="status">
@@ -123,7 +146,8 @@
             <i class="bi bi-bell me-1"></i>
             Save this search
           </button>
-          <span class="small text-muted ms-2">Get notified when a new post matches.</span>
+
+          <span class="small text-muted ms-2"> Get notified when a new post matches. </span>
         }
       </div>
     }
@@ -147,8 +171,9 @@
           @if (isLoading()) {
             Searching…
           } @else {
-            {{ meta()?.total ?? items().length }} items
+            {{ filteredItems().length }} items
             {{ hasFilters() ? 'match this search' : 'available' }}
+
             @if (filters().q) {
               for “{{ filters().q }}”
             }
@@ -156,25 +181,27 @@
         </p>
       </div>
 
-      <button class="btn btn-outline-secondary btn-sm">
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="toggleSortOrder()">
         <i class="bi bi-sort-down me-1"></i>
-        Newest first
+        {{ sortOrder() === 'newest' ? 'Newest first' : 'Oldest first' }}
       </button>
     </div>
 
     @if (loadError()) {
       <div class="alert alert-danger">
         {{ loadError() }}
-        <button class="btn btn-sm btn-outline-danger ms-2" (click)="loadPosts()">Retry</button>
+        <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="loadPosts()">
+          Retry
+        </button>
       </div>
     } @else if (isLoading() && items().length === 0) {
       <div class="text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
         <p class="text-muted mt-2 mb-0">Loading items...</p>
       </div>
-    } @else if (items().length > 0) {
+    } @else if (filteredItems().length > 0) {
       <div class="items-grid">
-        @for (item of items(); track item.id) {
+        @for (item of filteredItems(); track item.id) {
           <app-item-card [item]="item" (edit)="openEdit($event)" />
         }
       </div>
@@ -208,7 +235,12 @@
 </main>
 
 <!-- Create post button -->
-<button class="create-post-button" (click)="openCreatePost()" aria-label="Create a post">
+<button
+  type="button"
+  class="create-post-button"
+  (click)="openCreatePost()"
+  aria-label="Create a post"
+>
   <i class="bi bi-plus-lg"></i>
   <span>Create post</span>
 </button>
@@ -272,6 +304,7 @@
 
 <!-- Messenger button -->
 <button
+  type="button"
   class="messenger-button"
   [class.active]="isMessengerOpen"
   (click)="toggleMessenger()"
@@ -286,4 +319,5 @@
     <app-messenger />
   </div>
 }
+
 <app-footer (showTriggered)="openTerms()" />
