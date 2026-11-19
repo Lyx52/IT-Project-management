@@ -175,7 +175,7 @@
     } @else if (items().length > 0) {
       <div class="items-grid">
         @for (item of items(); track item.id) {
-          <app-item-card [item]="item" />
+          <app-item-card [item]="item" (edit)="openEdit($event)" />
         }
       </div>
 
@@ -239,6 +239,32 @@
 
       <div class="modal-body-custom">
         <app-item-form (created)="onPostCreated()" />
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Edit post modal -->
+@if (editingItem()) {
+  <div class="modal-backdrop-custom" (click)="closeEdit()">
+    <div
+      class="create-post-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="editPostTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header-custom">
+        <div>
+          <h5 id="editPostTitle" class="fw-bold mb-1">Edit post</h5>
+          <p class="text-muted small mb-0">Correct a mistake in your post.</p>
+        </div>
+
+        <button type="button" class="btn-close" (click)="closeEdit()" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body-custom">
+        <app-item-form [post]="editingItem()" (created)="onPostEdited()" />
       </div>
     </div>
   </div>
