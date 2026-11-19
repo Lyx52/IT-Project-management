@@ -10,6 +10,7 @@ import { ItemCard } from '../../components/item-card/item-card';
 import { Item } from '../../models/models';
 import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
+import { Messenger } from '../../components/messenger/messenger';
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
 
@@ -20,7 +21,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
  */
 @Component({
   selector: 'app-post-page',
-  imports: [Header, Footer, ItemCard, RouterLink, DatePipe],
+  imports: [Header, Footer, ItemCard, RouterLink, DatePipe, Messenger],
   templateUrl: './post-page.html',
   styleUrl: './post-page.scss',
 })
@@ -52,6 +53,14 @@ export class PostPage {
       this.postId = Number(params.get('id'));
       this.load();
     });
+  }
+
+  readonly unreadMessagesCount = signal(0);
+
+  isMessengerOpen = false;
+
+  toggleMessenger(): void {
+    this.isMessengerOpen = !this.isMessengerOpen;
   }
 
   load(): void {
