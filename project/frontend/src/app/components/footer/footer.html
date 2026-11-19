@@ -1,3 +1,6 @@
-<footer>
-  <a class="term" (click)="showTerms()">{{ texts.Terms }}</a>
+<footer class="site-footer">
+  <nav class="site-footer__links" aria-label="Legal">
+    <a routerLink="/terms" routerLinkActive="active">{{ texts.Terms }}</a>
+    <a routerLink="/privacy" routerLinkActive="active">{{ texts.ptitle }}</a>
+  </nav>
 </footer>

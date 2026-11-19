@@ -225,9 +225,6 @@ export class MessagesPage {
     this.router.navigate(['/post', this.postId()]);
   }
 
-  openTerms(): void {
-    this.router.navigate(['/terms']);
-  }
   collapsesafety(): void {
     this.collapsed.set(false);
   }

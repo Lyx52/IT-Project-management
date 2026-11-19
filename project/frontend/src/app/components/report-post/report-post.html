@@ -1,0 +1,82 @@
+@if (isReported()) {
+  <span class="reported-note" title="You have reported this post">
+    <i class="bi bi-flag-fill me-1"></i>
+    Reported
+  </span>
+} @else {
+  <button
+    class="btn btn-sm report-trigger"
+    type="button"
+    (click)="open()"
+    aria-label="Report this post"
+  >
+    <i class="bi bi-flag"></i>
+  </button>
+}
+
+@if (isOpen()) {
+  <div class="report-backdrop" (click)="close()">
+    <div
+      class="report-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reportPostTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="report-header">
+        <h6 id="reportPostTitle" class="fw-bold mb-0">Report this post</h6>
+        <button type="button" class="btn-close" (click)="close()" aria-label="Close"></button>
+      </div>
+
+      <div class="report-body">
+        @if (isAuthenticated()) {
+          @if (submitError()) {
+            <div class="alert alert-danger py-2 small" role="alert">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ submitError() }}
+            </div>
+          }
+
+          <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+            <fieldset [disabled]="isSubmitting()">
+              <label class="form-label" for="report-reason">What is wrong with it?</label>
+              <textarea
+                id="report-reason"
+                class="form-control"
+                rows="3"
+                formControlName="reason"
+                maxlength="500"
+                placeholder="Spam, offensive content, wrong information..."
+                [class.is-invalid]="reasonError()"
+                [attr.aria-invalid]="reasonError() ? 'true' : null"
+                [attr.aria-describedby]="reasonError() ? 'report-reason-error' : null"
+              ></textarea>
+
+              @if (reasonError()) {
+                <div class="invalid-feedback d-block" id="report-reason-error">
+                  {{ reasonError() }}
+                </div>
+              }
+
+              <p class="text-muted small mt-2 mb-3">
+                A moderator will review it. You can report a post once.
+              </p>
+
+              <button class="btn btn-danger w-100" type="submit">
+                @if (isSubmitting()) {
+                  <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                  Sending...
+                } @else {
+                  Send report
+                }
+              </button>
+            </fieldset>
+          </form>
+        } @else {
+          <p class="text-muted small mb-3">You need an account to report a post.</p>
+          <a class="btn btn-primary w-100" routerLink="/login" (click)="close()">Sign in</a>
+        }
+      </div>
+    </div>
+  </div>
+}

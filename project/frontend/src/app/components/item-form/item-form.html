@@ -29,7 +29,7 @@
 
       <!-- Images -->
       <div class="mb-3">
-        <label class="image-upload d-block">
+        <label class="image-upload d-block" [class.is-invalid]="imageError()">
           <input
             type="file"
             class="d-none"
@@ -43,9 +43,9 @@
           <small class="text-muted"> JPG, PNG or WEBP. Up to 5 images, 5 MB each. </small>
         </label>
 
-        @if (selectedImages.length > 0) {
+        @if (selectedImages().length > 0) {
           <div class="selected-images mt-2">
-            @for (image of selectedImages; track image.name + $index) {
+            @for (image of selectedImages(); track image.name + $index) {
               <div class="selected-image">
                 <span class="small">{{ image.name }}</span>
                 <button
@@ -61,38 +61,37 @@
           </div>
         }
 
-        @if (imageError) {
-          <div class="text-danger small mt-1">{{ imageError }}</div>
+        @if (imageError()) {
+          <div class="invalid-feedback d-block" id="item-images-error">{{ imageError() }}</div>
         }
       </div>
 
       <!-- Title -->
       <div class="mb-3">
-        <label class="form-label">Item name</label>
+        <label class="form-label" for="item-title">Item name</label>
         <input
+          id="item-title"
           class="form-control"
           formControlName="title"
           placeholder="e.g. Black backpack"
           maxlength="100"
+          [class.is-invalid]="error('title')"
+          [attr.aria-invalid]="error('title') ? 'true' : null"
+          [attr.aria-describedby]="error('title') ? 'item-title-error' : null"
         />
 
-        @if (form.controls.title.touched && form.controls.title.invalid) {
-          <small class="text-danger">
-            @if (form.controls.title.hasError('required')) {
-              Item name is required.
-            } @else {
-              Maximum 100 characters.
-            }
-          </small>
+        @if (error('title')) {
+          <div class="invalid-feedback d-block" id="item-title-error">{{ error('title') }}</div>
         }
       </div>
 
       <!-- Category -->
       <div class="mb-3">
-        <label class="form-label">Category</label>
+        <label class="form-label" for="item-category">Category</label>
 
         @if (categoriesError()) {
-          <div class="text-danger small mb-2">
+          <div class="alert alert-danger py-2 small mb-2" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
             {{ categoriesError() }}
           </div>
 
@@ -102,9 +101,13 @@
           </button>
         } @else {
           <select
+            id="item-category"
             class="form-select"
             formControlName="categoryId"
             [disabled]="isCategoriesLoading() || categories().length === 0"
+            [class.is-invalid]="error('categoryId')"
+            [attr.aria-invalid]="error('categoryId') ? 'true' : null"
+            [attr.aria-describedby]="error('categoryId') ? 'item-category-error' : null"
           >
             <option [ngValue]="0" disabled>
               @if (isCategoriesLoading()) {
@@ -121,8 +124,10 @@
             }
           </select>
 
-          @if (form.controls.categoryId.touched && form.controls.categoryId.invalid) {
-            <small class="text-danger"> Please select a category. </small>
+          @if (error('categoryId')) {
+            <div class="invalid-feedback d-block" id="item-category-error">
+              {{ error('categoryId') }}
+            </div>
           }
 
           @if (!isCategoriesLoading() && categories().length === 0) {
@@ -133,30 +138,42 @@
 
       <!-- Date -->
       <div class="mb-3">
-        <label class="form-label">Date</label>
-        <input type="date" class="form-control" formControlName="eventDate" [max]="today" />
+        <label class="form-label" for="item-date">Date</label>
+        <input
+          id="item-date"
+          type="date"
+          class="form-control"
+          formControlName="eventDate"
+          [max]="today"
+          [class.is-invalid]="error('eventDate')"
+          [attr.aria-invalid]="error('eventDate') ? 'true' : null"
+          [attr.aria-describedby]="error('eventDate') ? 'item-date-error' : null"
+        />
 
-        @if (form.controls.eventDate.touched && form.controls.eventDate.invalid) {
-          <small class="text-danger">
-            @if (form.controls.eventDate.hasError('required')) {
-              Date is required.
-            } @else {
-              Date cannot be in the future.
-            }
-          </small>
+        @if (error('eventDate')) {
+          <div class="invalid-feedback d-block" id="item-date-error">{{ error('eventDate') }}</div>
         }
       </div>
 
       <!-- Location -->
       <div class="mb-3">
-        <label class="form-label">Location</label>
-
+        <label class="form-label" for="item-location">Location</label>
         <input
+          id="item-location"
           class="form-control"
           formControlName="locationName"
           placeholder="Where was it lost/found?"
           maxlength="150"
+          [class.is-invalid]="error('locationName')"
+          [attr.aria-invalid]="error('locationName') ? 'true' : null"
+          [attr.aria-describedby]="error('locationName') ? 'item-location-error' : null"
         />
+
+        @if (error('locationName')) {
+          <div class="invalid-feedback d-block" id="item-location-error">
+            {{ error('locationName') }}
+          </div>
+        }
 
         <label class="form-label mt-3">Select location on map</label>
         <p class="text-muted small mb-2">
@@ -180,36 +197,35 @@
         }
 
         @if (locationError()) {
-          <div class="text-danger small mt-1">
-            {{ locationError() }}
-          </div>
+          <div class="invalid-feedback d-block">{{ locationError() }}</div>
         }
       </div>
 
       <!-- Description -->
       <div class="mb-3">
-        <label class="form-label">Description</label>
+        <label class="form-label" for="item-description">Description</label>
         <textarea
+          id="item-description"
           class="form-control"
           rows="3"
           formControlName="description"
           placeholder="Describe the item..."
           maxlength="5000"
+          [class.is-invalid]="error('description')"
+          [attr.aria-invalid]="error('description') ? 'true' : null"
+          [attr.aria-describedby]="error('description') ? 'item-description-error' : null"
         ></textarea>
 
-        @if (form.controls.description.touched && form.controls.description.invalid) {
-          <small class="text-danger">
-            @if (form.controls.description.hasError('required')) {
-              Description is required.
-            } @else {
-              Maximum 5000 characters.
-            }
-          </small>
+        @if (error('description')) {
+          <div class="invalid-feedback d-block" id="item-description-error">
+            {{ error('description') }}
+          </div>
         }
       </div>
 
       @if (submitError()) {
-        <div class="alert alert-danger py-2 small">
+        <div class="alert alert-danger py-2 small" role="alert">
+          <i class="bi bi-exclamation-triangle me-1"></i>
           {{ submitError() }}
         </div>
       }

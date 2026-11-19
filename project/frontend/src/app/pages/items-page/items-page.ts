@@ -8,8 +8,8 @@ import { Category, Item, PageMeta, PostFilters } from '../../models/models';
 import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
-import { ItemForm } from '../../components/item-form/item-form';
-import { Messenger } from '../../components/messenger/messenger';
+import { CreatePost } from '../../components/create-post/create-post';
+import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import en from '../../../assets/en.json';
 import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
@@ -40,7 +40,7 @@ export function paramsFromFilters(filters: PostFilters): Record<string, string |
 @Component({
   selector: 'app-items-page',
   standalone: true,
-  imports: [Header, ItemCard, ItemForm, Messenger, Footer, RouterLink],
+  imports: [Header, ItemCard, CreatePost, MessengerLauncher, Footer, RouterLink],
   templateUrl: './items-page.html',
   styleUrl: './items-page.scss',
 })
@@ -88,8 +88,9 @@ export class ItemsPageComponent {
   readonly saveError = signal('');
   readonly savedAs = signal<string | null>(null);
 
-  isCreatePostOpen = false;
-  isMessengerOpen = false;
+  // Signals like the rest of this component's state: these are flipped from
+  // an @Output() raised inside an HTTP callback, which does not mark the view
+  // dirty on its own in a zoneless app.
 
   private loadSubscription?: Subscription;
 
@@ -230,24 +231,7 @@ export class ItemsPageComponent {
   }
 
   onPostCreated(): void {
-    this.closeCreatePost();
     this.loadPosts();
-  }
-
-  openCreatePost(): void {
-    this.isCreatePostOpen = true;
-  }
-
-  closeCreatePost(): void {
-    this.isCreatePostOpen = false;
-  }
-
-  toggleMessenger(): void {
-    this.isMessengerOpen = !this.isMessengerOpen;
-  }
-
-  openTerms() {
-    this.router.navigate(['/terms']);
   }
 
   /** Where to come back to after signing in to save this search. */

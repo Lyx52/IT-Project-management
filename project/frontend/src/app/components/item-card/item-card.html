@@ -66,8 +66,11 @@
       </div>
     </div>
 
-    <a class="btn btn-outline-primary btn-sm w-100 mt-3" [routerLink]="['/post', item.id]">
-      View details
-    </a>
+    <div class="item-actions mt-3">
+      <a class="btn btn-outline-primary btn-sm flex-grow-1" [routerLink]="['/post', item.id]">
+        View details
+      </a>
+      <app-report-post [postId]="item.id" />
+    </div>
   </div>
 </div>

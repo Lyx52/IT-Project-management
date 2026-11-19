@@ -335,8 +335,4 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
     }, 3000);
   }
-
-  openTerms(): void {
-    this.router.navigate(['/terms']);
-  }
 }

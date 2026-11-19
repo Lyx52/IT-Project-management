@@ -97,8 +97,8 @@ export class ItemForm implements OnInit {
     locationName: ['', Validators.maxLength(150)],
   });
 
-  selectedImages: File[] = [];
-  imageError = '';
+  readonly selectedImages = signal<File[]>([]);
+  readonly imageError = signal('');
   readonly submitError = signal('');
   readonly isSubmitting = signal(false);
 
@@ -114,6 +114,44 @@ export class ItemForm implements OnInit {
     if (!this.map) {
       this.initializeLocationMap(element.nativeElement);
     }
+  }
+
+  /**
+   * The message to show under a field, or null to show nothing. Stays quiet
+   * until the field has been touched or edited, so an untouched form is not a
+   * wall of red. Same shape as the register and login pages.
+   */
+  error(name: string): string | null {
+    const control = this.form.get(name);
+
+    if (!control || !(control.touched || control.dirty)) {
+      return null;
+    }
+
+    const errors: ValidationErrors = control.errors ?? {};
+
+    switch (name) {
+      case 'categoryId':
+        if (errors['required'] || errors['min']) return 'Please select a category.';
+        break;
+      case 'title':
+        if (errors['required']) return 'Item name is required.';
+        if (errors['maxlength']) return 'Item name must be 100 characters or fewer.';
+        break;
+      case 'eventDate':
+        if (errors['required']) return 'Date is required.';
+        if (errors['futureDate']) return 'Date cannot be in the future.';
+        break;
+      case 'locationName':
+        if (errors['maxlength']) return 'Location must be 150 characters or fewer.';
+        break;
+      case 'description':
+        if (errors['required']) return 'Description is required.';
+        if (errors['maxlength']) return 'Description must be 5000 characters or fewer.';
+        break;
+    }
+
+    return null;
   }
 
   ngOnInit(): void {
@@ -194,10 +232,10 @@ export class ItemForm implements OnInit {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
 
-    this.imageError = '';
+    this.imageError.set('');
 
     if (files.length > this.maxImages) {
-      this.imageError = `You can upload up to ${this.maxImages} images.`;
+      this.imageError.set(`You can upload up to ${this.maxImages} images.`);
       input.value = '';
       return;
     }
@@ -205,7 +243,7 @@ export class ItemForm implements OnInit {
     const invalidType = files.find((file) => !this.allowedImageTypes.includes(file.type));
 
     if (invalidType) {
-      this.imageError = 'Only JPG, PNG and WEBP images are allowed.';
+      this.imageError.set('Only JPG, PNG and WEBP images are allowed.');
       input.value = '';
       return;
     }
@@ -213,16 +251,16 @@ export class ItemForm implements OnInit {
     const oversizedFile = files.find((file) => file.size > this.maxImageSize);
 
     if (oversizedFile) {
-      this.imageError = 'Each image must be 5 MB or smaller.';
+      this.imageError.set('Each image must be 5 MB or smaller.');
       input.value = '';
       return;
     }
 
-    this.selectedImages = files;
+    this.selectedImages.set(files);
   }
 
   removeImage(index: number): void {
-    this.selectedImages = this.selectedImages.filter((_, imageIndex) => imageIndex !== index);
+    this.selectedImages.update((images) => images.filter((_, imageIndex) => imageIndex !== index));
   }
 
   submit(): void {
@@ -235,7 +273,7 @@ export class ItemForm implements OnInit {
       return;
     }
 
-    if (this.imageError) {
+    if (this.imageError()) {
       return;
     }
 
@@ -263,7 +301,7 @@ export class ItemForm implements OnInit {
       payload.append('location_name', value.locationName.trim());
     }
 
-    for (const image of this.selectedImages) {
+    for (const image of this.selectedImages()) {
       payload.append('images[]', image);
     }
 
@@ -286,7 +324,7 @@ export class ItemForm implements OnInit {
         this.selectedMarker?.remove();
         this.selectedMarker = undefined;
 
-        this.selectedImages = [];
+        this.selectedImages.set([]);
         this.created.emit();
       },
       error: (error: HttpErrorResponse) => {

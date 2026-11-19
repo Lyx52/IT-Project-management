@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Header } from '../../components/header/header';
+import { environment } from '../../../environments/environment';
 import en from '../../../assets/en.json';
-import lv from '../../../assets/lv.json';
 
 @Component({
   selector: 'app-privacy',
@@ -14,9 +14,10 @@ import lv from '../../../assets/lv.json';
 export class PrivacyComponent {
   privacy = en;
 
-  constructor(private router: Router) {}
-
-  acceptprivacy(): void {
-    this.router.navigate(['/']);
-  }
+  /**
+   * The same version the registration form sends as `privacy_policy_version`
+   * and the backend stores on the account, so the page cannot advertise a
+   * version nobody has accepted.
+   */
+  readonly version = environment.privacyPolicyVersion;
 }

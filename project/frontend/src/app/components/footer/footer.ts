@@ -1,17 +1,13 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import en from '../../../assets/en.json';
-import lv from '../../../assets/lv.json';
 
 @Component({
   selector: 'app-footer',
+  imports: [RouterLink, RouterLinkActive],
   templateUrl: './footer.html',
   styleUrl: './footer.scss',
 })
 export class Footer {
   texts = en;
-  @Output() showTriggered = new EventEmitter<void>();
-
-  showTerms() {
-    this.showTriggered.emit();
-  }
 }

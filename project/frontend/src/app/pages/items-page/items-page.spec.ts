@@ -118,10 +118,33 @@ describe('ItemsPageComponent', () => {
   };
 
   afterEach(() => {
-    // The header's bell asks for notifications when someone is signed in
+    // Signed in, the header's bell asks for notifications and the messenger
+    // launcher polls conversations to keep its unread badge current. Both are
+    // covered by their own specs.
     httpMock.match(`${API}/notifications`);
+    httpMock.match(`${API}/messages/conversations`);
     httpMock.verify();
     localStorage.clear();
+  });
+
+  it('hides the messenger from a signed-out visitor', async () => {
+    await open();
+    expectSearch({}).flush(page([item(1)]));
+    await settle();
+
+    // The messenger is a personal inbox, not a call to action: a visitor who
+    // wants to reach a poster uses Contact on the post, which prompts sign-in.
+    expect(query('.messenger-button')).toBeNull();
+    expect(query('app-messenger')).toBeNull();
+  });
+
+  it('offers the messenger once signed in', async () => {
+    signIn();
+    await open();
+    expectSearch({}).flush(page([item(1)]));
+    await settle();
+
+    expect(query('.messenger-button')).not.toBeNull();
   });
 
   it('shows the whole feed with the total and the categories', async () => {

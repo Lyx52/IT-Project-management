@@ -1,14 +1,19 @@
 @if (visible()) {
-  <div class="cookie-notice" role="region" aria-labelledby="cookie-notice-title">
-    <h2 id="cookie-notice-title" class="cookie-notice-title">{{ texts.cookieTitle }}</h2>
-    <p class="cookie-notice-text">{{ texts.cookieText }}</p>
-    <button
-      type="button"
-      class="cookie-notice-close"
-      (click)="closeCookieNotice()"
-      aria-label="Close cookie notice"
-    >
-      {{ texts.closeButton }}
-    </button>
-  </div>
+  <aside class="cookie-notice" role="region" aria-labelledby="cookie-notice-title">
+    <div class="cookie-notice-body">
+      <i class="bi bi-shield-check cookie-notice-icon" aria-hidden="true"></i>
+
+      <div class="cookie-notice-copy">
+        <h2 id="cookie-notice-title" class="cookie-notice-title">{{ texts.cookieTitle }}</h2>
+        <p class="cookie-notice-text">
+          {{ texts.cookieText }}
+          <a class="cookie-notice-link" routerLink="/privacy">{{ texts.cookieLink }}</a>
+        </p>
+      </div>
+
+      <button type="button" class="cookie-notice-close" (click)="closeCookieNotice()">
+        {{ texts.closeButton }}
+      </button>
+    </div>
+  </aside>
 }

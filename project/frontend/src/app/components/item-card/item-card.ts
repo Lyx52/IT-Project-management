@@ -4,10 +4,11 @@ import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { ReportPost } from '../report-post/report-post';
 
 @Component({
   selector: 'app-item-card',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, ReportPost],
   templateUrl: './item-card.html',
   styleUrl: './item-card.scss',
 })

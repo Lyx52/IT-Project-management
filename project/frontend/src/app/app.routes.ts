@@ -1,12 +1,11 @@
 import { Routes } from '@angular/router';
+import { adminGuard } from './guards/admin-guard';
+import { authGuard } from './guards/auth-guard';
 import { HomePageComponent } from './pages/home-page/home-page';
 import { ItemsPageComponent } from './pages/items-page/items-page';
 import { MapPageComponent } from './pages/map-page/map-page';
 import { LoginPageComponent } from './pages/login-page/login-page';
 import { RegisterPageComponent } from './pages/register-page/register-page';
-import { AdminStatisticsPage } from './pages/admin-statistics-page/admin-statistics-page';
-import { adminGuard } from './guards/admin-guard';
-import { authGuard } from './guards/auth-guard';
 import { Terms } from './pages/terms/terms';
 import { PrivacyComponent } from './pages/privacy-policy/privacy';
 
@@ -70,8 +69,11 @@ export const routes: Routes = [
     component: RegisterPageComponent,
   },
   {
-    path: 'admin/statistics',
-    component: AdminStatisticsPage,
+    path: 'admin',
+    title: 'Moderation – FindIT',
+    // Lazy, like the other signed-in pages: the panel pulls in five tab
+    // components that no visitor and no ordinary user ever loads.
+    loadComponent: () => import('./pages/admin-page/admin-page').then((m) => m.AdminPageComponent),
     canActivate: [adminGuard],
   },
   {

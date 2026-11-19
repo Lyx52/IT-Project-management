@@ -1,8 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { CreatePost } from '../../components/create-post/create-post';
 import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
+import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import { SavedSearch } from '../../models/models';
 import { SavedSearchService } from '../../services/saved-searches.service';
 
@@ -12,12 +14,11 @@ import { SavedSearchService } from '../../services/saved-searches.service';
  */
 @Component({
   selector: 'app-saved-searches-page',
-  imports: [Header, Footer, RouterLink],
+  imports: [Header, Footer, CreatePost, MessengerLauncher, RouterLink],
   templateUrl: './saved-searches-page.html',
 })
 export class SavedSearchesPage {
   private readonly savedSearches = inject(SavedSearchService);
-  private readonly router = inject(Router);
 
   readonly searches = signal<SavedSearch[]>([]);
   readonly isLoading = signal(true);
@@ -34,6 +35,9 @@ export class SavedSearchesPage {
   constructor() {
     this.load();
   }
+
+  /** Nothing on this page changes when a post is created; the list stays put. */
+  onPostCreated(): void {}
 
   load(): void {
     this.isLoading.set(true);
@@ -151,9 +155,5 @@ export class SavedSearchesPage {
         });
       },
     });
-  }
-
-  openTerms(): void {
-    this.router.navigate(['/terms']);
   }
 }
