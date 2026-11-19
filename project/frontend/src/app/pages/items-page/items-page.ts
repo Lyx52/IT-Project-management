@@ -93,6 +93,8 @@ export class ItemsPageComponent {
   readonly saveError = signal('');
   readonly savedAs = signal<string | null>(null);
 
+  readonly editingItem = signal<Item | null>(null);
+
   isCreatePostOpen = false;
   isMessengerOpen = false;
 
@@ -287,6 +289,19 @@ export class ItemsPageComponent {
 
   closeCreatePost(): void {
     this.isCreatePostOpen = false;
+  }
+
+  openEdit(item: Item): void {
+    this.editingItem.set(item);
+  }
+
+  closeEdit(): void {
+    this.editingItem.set(null);
+  }
+
+  onPostEdited(): void {
+    this.closeEdit();
+    this.loadPosts();
   }
 
   toggleMessenger(): void {

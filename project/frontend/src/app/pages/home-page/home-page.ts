@@ -35,6 +35,7 @@ export class HomePageComponent {
   ngOnInit() {
     this.loadPosts();
   }
+  readonly editingItem = signal<Item | null>(null);
 
   isCreatePostOpen = false;
   isMessengerOpen = false;
@@ -72,6 +73,19 @@ export class HomePageComponent {
   }
 
   onPostCreated(): void {
+    this.loadPosts();
+  }
+
+  openEdit(item: Item): void {
+    this.editingItem.set(item);
+  }
+
+  closeEdit(): void {
+    this.editingItem.set(null);
+  }
+
+  onPostEdited(): void {
+    this.closeEdit();
     this.loadPosts();
   }
 
