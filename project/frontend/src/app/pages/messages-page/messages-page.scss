@@ -196,3 +196,34 @@
     padding: 12px 16px;
   }
 }
+
+.message-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.message-image,
+.message-video {
+  display: block;
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.message-image {
+  cursor: pointer;
+}
+
+.message-video {
+  width: 100%;
+  background: #000;
+}
+
+.message-row.mine {
+  .message-attachments {
+    align-items: flex-end;
+  }
+}

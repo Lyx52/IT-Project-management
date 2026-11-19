@@ -48,9 +48,34 @@
         @for (message of messages(); track message.id) {
           <div class="message-row" [class.mine]="message.isMine">
             <div class="message-content">
-              <div class="message-bubble">
-                {{ message.body }}
-              </div>
+              @if (message.body) {
+                <div class="message-bubble">
+                  {{ message.body }}
+                </div>
+              }
+
+              @if (message.attachments.length > 0) {
+                <div class="message-attachments">
+                  @for (attachment of message.attachments; track attachment.id) {
+                    @if (attachment.type === 'image') {
+                      <a [href]="attachment.url" target="_blank" rel="noopener noreferrer">
+                        <img
+                          [src]="attachment.url"
+                          [alt]="'Message attachment ' + attachment.id"
+                          class="message-image"
+                        />
+                      </a>
+                    } @else if (attachment.type === 'video') {
+                      <video
+                        [src]="attachment.url"
+                        class="message-video"
+                        controls
+                        preload="metadata"
+                      ></video>
+                    }
+                  }
+                </div>
+              }
 
               <span class="message-time">
                 {{ message.time | date: 'HH:mm' }}
@@ -82,7 +107,7 @@
         [ngModel]="draft()"
         (ngModelChange)="draft.set($event)"
         [disabled]="isSending()"
-        maxlength="5000"
+        maxlength="2000"
       />
 
       <button type="submit" class="send-button" [disabled]="!draft().trim() || isSending()">

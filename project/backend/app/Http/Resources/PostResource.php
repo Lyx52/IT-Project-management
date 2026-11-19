@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\PostStatus;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -11,6 +12,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class PostResource extends JsonResource
 {
+    private function canSeeRejectionReason(Request $request): bool
+    {
+        $user = $request->user('sanctum');
+
+        return $this->status === PostStatus::Rejected
+            && $user !== null
+            && ($user->id === $this->user_id || $user->isAdmin());
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -27,6 +37,8 @@ class PostResource extends JsonResource
             'location_name' => $this->location_name,
             'event_date' => $this->event_date->format('Y-m-d'),
             'resolved_at' => $this->resolved_at,
+            // The moderator's reason, for the author and admins only
+            'rejection_reason' => $this->when($this->canSeeRejectionReason($request), $this->rejection_reason),
             'images' => $this->images->map(fn ($image) => [
                 'id' => $image->id,
                 'url' => $image->url(),
