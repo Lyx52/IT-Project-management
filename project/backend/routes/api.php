@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
+use App\Http\Controllers\Api\V1\MessageAttachmentController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\MyPostsController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -43,6 +44,13 @@ Route::prefix('v1')->group(function () {
         ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
 
+    // The link in each message attachment: signed and expiring, because an
+    // <img>/<video> tag can't send the bearer token
+    Route::get('/message-attachments/{attachment}', [MessageAttachmentController::class, 'show'])
+        ->whereNumber('attachment')
+        ->middleware(['signed', 'throttle:120,1'])
+        ->name('message-attachments.show');
+
     Route::get('/category/query', [CategoryController::class, 'query']);
 
     Route::get('/posts', [PostController::class, 'index']);
@@ -57,6 +65,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/post/{post}/matches', [PostController::class, 'matches'])->whereNumber('post');
         Route::post('/post/{post}', [PostController::class, 'update'])->whereNumber('post');
         Route::post('/post/{post}/resolve', [PostController::class, 'resolve'])->whereNumber('post');
+        Route::get('/messages/conversations', [MessageController::class, 'conversations']);
         Route::get('/post/{post}/messages', [MessageController::class, 'index'])->whereNumber('post');
         Route::post('/post/{post}/messages', [MessageController::class, 'store'])
             ->whereNumber('post')

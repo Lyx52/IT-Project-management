@@ -65,6 +65,8 @@
 <app-create-post (created)="onPostCreated()" />
 
 <!-- Messenger floating button -->
+
+<!-- Messenger floating button -->
 <button
   class="messenger-button"
   [class.active]="isMessengerOpen"
@@ -72,12 +74,17 @@
   aria-label="Open messenger"
 >
   <i [class]="isMessengerOpen ? 'bi bi-x-lg' : 'bi bi-chat-dots-fill'"></i>
+
+  @if (unreadMessagesCount() > 0) {
+    <span class="messenger-unread-badge">
+      {{ unreadMessagesCount() > 99 ? '99+' : unreadMessagesCount() }}
+    </span>
+  }
 </button>
 
 <!-- Messenger popup -->
-@if (isMessengerOpen) {
-  <div class="messenger-popup">
-    <app-messenger />
-  </div>
-}
+<div class="messenger-popup" [hidden]="!isMessengerOpen">
+  <app-messenger (unreadCountChange)="unreadMessagesCount.set($event)" />
+</div>
+
 <app-footer (showTriggered)="openTerms()" />

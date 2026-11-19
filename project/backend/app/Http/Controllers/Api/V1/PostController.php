@@ -133,6 +133,7 @@ class PostController extends Controller
 
         if ($post->isDirty()) {
             $post->status = PostStatus::Pending;
+            $post->rejection_reason = null;
             $post->save();
         }
 

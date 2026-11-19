@@ -1,4 +1,5 @@
 @use '../../../styles/variables' as *;
+
 .messenger-panel {
   background: white;
   border: 1px solid #e8e8e8;
@@ -10,18 +11,38 @@
   padding: 16px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   border-bottom: 1px solid #eee;
 }
 
+.conversations-list {
+  max-height: 450px;
+  overflow-y: auto;
+}
+
 .conversation {
+  width: 100%;
   display: flex;
+  align-items: center;
   gap: 10px;
   padding: 14px;
+  border: none;
   border-bottom: 1px solid #f0f0f0;
+  background: white;
+  text-align: left;
   cursor: pointer;
 
   &:hover {
     background: #fafafa;
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
+  &.unread {
+    background: #fffaf6;
   }
 }
 
@@ -40,6 +61,7 @@
 }
 
 .conversation-info {
+  flex: 1;
   min-width: 0;
 
   strong {
@@ -50,12 +72,49 @@
     font-size: 11px;
     color: #858585;
     margin: 3px 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
+.conversation-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.post-title {
+  display: block;
+  font-size: 11px;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unread-badge {
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f07836;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+}
+
 .empty-chat {
-  padding: 25px 12px;
+  padding: 30px 12px;
   text-align: center;
   color: #aaa;
   font-size: 12px;
+
+  p {
+    margin: 8px 0 0;
+  }
 }

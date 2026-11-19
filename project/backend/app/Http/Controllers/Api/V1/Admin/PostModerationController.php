@@ -64,6 +64,7 @@ class PostModerationController extends Controller
         }
 
         $post->status = PostStatus::Approved;
+        $post->rejection_reason = null;
         $post->reviewed_by = $request->user()->id;
         $post->reviewed_at = now();
         $post->save();
@@ -96,6 +97,7 @@ class PostModerationController extends Controller
         ]);
 
         $post->status = PostStatus::Rejected;
+        $post->rejection_reason = $validated['reason'] ?? null;
         $post->reviewed_by = $request->user()->id;
         $post->reviewed_at = now();
         $post->save();

@@ -4,35 +4,67 @@
       <i class="bi bi-chat-dots me-2"></i>
       {{ texts.mtitle }}
     </h6>
-    <span class="badge bg-success">2</span>
+
+    <span class="badge bg-secondary">
+      {{ conversations().length }}
+    </span>
   </div>
 
-  <div class="conversation">
-    <div class="avatar">JD</div>
-    <div class="conversation-info">
-      <strong>John Doe</strong>
-      <p>Hi! I think I found your bag.</p>
-    </div>
-  </div>
+  <div class="conversations-list">
+    @if (isLoading()) {
+      <div class="empty-chat">
+        <span class="spinner-border spinner-border-sm"></span>
+        <p>Loading conversations...</p>
+      </div>
+    } @else if (loadError()) {
+      <div class="empty-chat">
+        <i class="bi bi-exclamation-circle fs-4"></i>
+        <p>{{ loadError() }}</p>
+      </div>
+    } @else if (conversations().length === 0) {
+      <div class="empty-chat">
+        <i class="bi bi-chat-square-text fs-3"></i>
+        <p>{{ texts.mtext }}</p>
+      </div>
+    } @else {
+      @for (
+        conversation of conversations();
+        track conversation.post_id + '-' + conversation.other_user.id
+      ) {
+        <button
+          type="button"
+          class="conversation"
+          [class.unread]="conversation.unread_count > 0"
+          [disabled]="openingPostId() !== null"
+          (click)="openConversation(conversation)"
+        >
+          <div class="avatar">
+            {{ initials(conversation.other_user.username) }}
+          </div>
 
-  <div class="conversation">
-    <div class="avatar">AM</div>
-    <div class="conversation-info">
-      <strong>Anna Miller</strong>
-      <p>Thank you for your help!</p>
-    </div>
-  </div>
+          <div class="conversation-info">
+            <div class="conversation-top">
+              <strong>{{ conversation.other_user.username }}</strong>
 
-  <div class="conversation">
-    <div class="avatar">MK</div>
-    <div class="conversation-info">
-      <strong>Michael King</strong>
-      <p>Where did you find it?</p>
-    </div>
-  </div>
+              @if (conversation.unread_count > 0) {
+                <span class="unread-badge">
+                  {{ conversation.unread_count }}
+                </span>
+              }
+            </div>
 
-  <div class="empty-chat">
-    <i class="bi bi-chat-square-text fs-3"></i>
-    <p>{{ texts.mtext }}</p>
+            <span class="post-title">
+              {{ conversation.post_title }}
+            </span>
+
+            <p>{{ preview(conversation) }}</p>
+          </div>
+
+          @if (openingPostId() === conversation.post_id) {
+            <span class="spinner-border spinner-border-sm"></span>
+          }
+        </button>
+      }
+    }
   </div>
 </div>

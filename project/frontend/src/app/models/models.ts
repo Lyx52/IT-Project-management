@@ -2,6 +2,8 @@ export interface Item {
   id: number;
   type: 'lost' | 'found';
   status: 'pending' | 'approved' | 'rejected' | 'resolved';
+  /** The moderator's reason; only sent to the author and admins of a rejected post. */
+  rejection_reason?: string | null;
   title: string;
   description: string;
 
@@ -137,4 +139,52 @@ export type AppNotification = {
 
 export interface NotificationPage extends Paginated<AppNotification> {
   meta: PageMeta & { unread_count: number };
+}
+
+export interface Message {
+  id: number;
+  post_id: number;
+  body: string;
+  sender: {
+    id: number;
+    username: string;
+  };
+  receiver: {
+    id: number;
+    username: string;
+  };
+  read_at: string | null;
+  created_at: string;
+  attachments: MessageAttachment[];
+}
+
+export interface MessageUser {
+  id: number;
+  username: string;
+}
+
+export interface SendMessageRequest {
+  body: string;
+  user_id?: number;
+}
+
+export interface MessageAttachment {
+  id: number;
+  type: 'image' | 'video';
+  mime_type: string;
+  size: number;
+  url: string;
+}
+
+export interface Conversation {
+  post_id: number;
+  post_title: string;
+  other_user: MessageUser;
+  last_message: {
+    id: number;
+    body: string | null;
+    created_at: string;
+    sender_id: number;
+  };
+  unread_count: number;
 }

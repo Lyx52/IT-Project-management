@@ -19,12 +19,34 @@
     <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
       <span class="item-category mb-0">{{ item.category.name }}</span>
       @if (showStatus) {
-        <span class="item-status" [class]="'status-' + item.status">{{ item.status }}</span>
+        @if (hasReason) {
+          <button
+            type="button"
+            class="item-status status-rejected clickable"
+            [attr.aria-expanded]="reasonOpen"
+            (click)="toggleReason()"
+          >
+            {{ item.status }}
+            <i
+              class="bi"
+              [class.bi-chevron-down]="!reasonOpen"
+              [class.bi-chevron-up]="reasonOpen"
+            ></i>
+          </button>
+        } @else {
+          <span class="item-status" [class]="'status-' + item.status">{{ item.status }}</span>
+        }
       }
       @if (distance) {
         <span class="item-distance"><i class="bi bi-signpost-2"></i> {{ distance }} away</span>
       }
     </div>
+
+    @if (showStatus && hasReason && reasonOpen) {
+      <div class="rejection-reason" role="note">
+        <strong>Reason:</strong> {{ item.rejection_reason }}
+      </div>
+    }
 
     <h6 class="fw-bold mb-1">{{ item.title }}</h6>
 
