@@ -6,8 +6,10 @@ import { combineLatest, of, timer } from 'rxjs';
 import { catchError, distinctUntilChanged, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import { safetyTips } from '../../components/safetytips/safety-tips';
 import { Header } from '../../components/header/header';
+import { CreatePost } from '../../components/create-post/create-post';
 import { Footer } from '../../components/footer/footer';
 import { MessagesService } from '../../services/messages.service';
 import { PostService } from '../../services/posts.service';
@@ -25,7 +27,16 @@ interface DisplayMessage {
 @Component({
   selector: 'app-messages-page',
   standalone: true,
-  imports: [Header, Footer, RouterLink, DatePipe, FormsModule, safetyTips],
+  imports: [
+    Header,
+    Footer,
+    RouterLink,
+    DatePipe,
+    FormsModule,
+    safetyTips,
+    CreatePost,
+    MessengerLauncher,
+  ],
   templateUrl: './messages-page.html',
   styleUrl: './messages-page.scss',
 })
@@ -51,11 +62,11 @@ export class MessagesPage {
   readonly isSending = signal(false);
   readonly sendError = signal('');
 
-  collapsed = signal(false);
+  /** Nothing on this page changes: a new post starts in moderation. */
+  onPostCreated(): void {}
 
-  ngOnInit() {
-    this.collapsed.set(true);
-  }
+  /** Whether the safety tips are on screen for this conversation. */
+  readonly showSafetyTips = signal(false);
 
   constructor() {
     combineLatest([this.route.paramMap, this.route.queryParamMap])
@@ -77,6 +88,7 @@ export class MessagesPage {
 
         tap(({ postId, userId }) => {
           this.postId.set(postId);
+          this.showSafetyTips.set(!MessagesPage.hiddenTipsFor().includes(postId));
           this.userId.set(userId);
 
           this.messages.set([]);
@@ -225,7 +237,41 @@ export class MessagesPage {
     this.router.navigate(['/post', this.postId()]);
   }
 
-  collapsesafety(): void {
-    this.collapsed.set(false);
+  /**
+   * Hides the tips for this conversation only, remembered across reloads. A
+   * different conversation means meeting someone new, so they come back.
+   */
+  hideSafetyTips(): void {
+    this.showSafetyTips.set(false);
+
+    const hidden = MessagesPage.hiddenTipsFor();
+
+    if (!hidden.includes(this.postId())) {
+      MessagesPage.storeHiddenTips([...hidden, this.postId()].slice(-50));
+    }
+  }
+
+  private static readonly TIPS_KEY = 'findit.safety-tips-hidden';
+
+  private static hiddenTipsFor(): number[] {
+    try {
+      const raw = localStorage.getItem(MessagesPage.TIPS_KEY);
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+
+      return Array.isArray(parsed)
+        ? parsed.filter((id): id is number => typeof id === 'number')
+        : [];
+    } catch {
+      // Storage blocked or corrupt: show the tips, which is the safe default
+      return [];
+    }
+  }
+
+  private static storeHiddenTips(ids: number[]): void {
+    try {
+      localStorage.setItem(MessagesPage.TIPS_KEY, JSON.stringify(ids));
+    } catch {
+      // Not fatal: the tips stay hidden for this visit only
+    }
   }
 }

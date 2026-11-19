@@ -7,6 +7,7 @@ import { Header } from '../../components/header/header';
 import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import { SavedSearch } from '../../models/models';
 import { SavedSearchService } from '../../services/saved-searches.service';
+import { relativeTime } from '../../utils/relative-time';
 
 /**
  * The user's saved searches. Each one notifies the user about newly approved
@@ -16,6 +17,7 @@ import { SavedSearchService } from '../../services/saved-searches.service';
   selector: 'app-saved-searches-page',
   imports: [Header, Footer, CreatePost, MessengerLauncher, RouterLink],
   templateUrl: './saved-searches-page.html',
+  styleUrl: './saved-searches-page.scss',
 })
 export class SavedSearchesPage {
   private readonly savedSearches = inject(SavedSearchService);
@@ -34,6 +36,32 @@ export class SavedSearchesPage {
 
   constructor() {
     this.load();
+  }
+
+  /** "Saved 3 days ago", from created_at, which was going unused. */
+  readonly relativeTime = relativeTime;
+
+  /**
+   * What the search actually watches, as separate chips. As one grey sentence
+   * the filters were the least readable part of the row, despite being the
+   * whole point of a saved search.
+   */
+  chips(search: SavedSearch): { label: string; kind: 'query' | 'type' | 'category' }[] {
+    const chips: { label: string; kind: 'query' | 'type' | 'category' }[] = [];
+
+    if (search.q) {
+      chips.push({ label: `“${search.q}”`, kind: 'query' });
+    }
+
+    if (search.type) {
+      chips.push({ label: search.type, kind: 'type' });
+    }
+
+    if (search.category) {
+      chips.push({ label: search.category.name, kind: 'category' });
+    }
+
+    return chips;
   }
 
   /** Nothing on this page changes when a post is created; the list stays put. */

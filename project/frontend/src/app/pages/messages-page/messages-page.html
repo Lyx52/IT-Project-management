@@ -1,12 +1,12 @@
 <app-header />
 
 <main class="page-container py-4">
-  <button type="button" class="btn btn-link px-0 mb-3" (click)="goBack()">
-    <i class="bi bi-arrow-left me-1"></i>
-    Back to post
+  <button type="button" class="back-link" (click)="goBack()">
+    <i class="bi bi-arrow-left"></i>
+    <span>Back to post</span>
   </button>
 
-  <div class="messages-layout">
+  <div class="messages-layout" [class.no-tips]="!showSafetyTips()">
     <section class="messages-container">
       <!-- Conversation header -->
       <div class="messages-header">
@@ -120,12 +120,15 @@
       </form>
     </section>
 
-    @if (collapsed()) {
-      <aside class="tips-sidebar">
-        <app-safety-tips (collapseRequested)="collapsesafety()" />
-      </aside>
+    @if (showSafetyTips()) {
+      <div class="tips-sidebar">
+        <app-safety-tips (collapseRequested)="hideSafetyTips()" />
+      </div>
     }
   </div>
 </main>
+
+<app-create-post (created)="onPostCreated()" />
+<app-messenger-launcher />
 
 <app-footer />

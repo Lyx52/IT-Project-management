@@ -104,11 +104,17 @@ describe('ItemsPageComponent', () => {
       (b) => b.textContent?.trim() === label,
     ) as HTMLButtonElement | undefined;
 
-  const typeSearch = (value: string) => {
+  /**
+   * The search box applies itself after a 300 ms debounce; there is no submit
+   * button any more, so the wait is what triggers the request.
+   */
+  const typeSearch = async (value: string) => {
     const input = query<HTMLInputElement>('input[type="search"]');
     input.value = value;
     input.dispatchEvent(new Event('input'));
-    query<HTMLFormElement>('form[role="search"]').dispatchEvent(new Event('submit'));
+
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    await settle();
   };
 
   const chooseCategory = (value: string) => {
@@ -125,6 +131,76 @@ describe('ItemsPageComponent', () => {
     httpMock.match(`${API}/messages/conversations`);
     httpMock.verify();
     localStorage.clear();
+  });
+
+  const setDate = (label: 'From date' | 'To date', value: string) => {
+    const input = query<HTMLInputElement>(`input[aria-label="${label}"]`);
+    input.value = value;
+    input.dispatchEvent(new Event('change'));
+    harness.fixture.detectChanges();
+  };
+
+  it('narrows the list by event date', async () => {
+    await open();
+    expectSearch({}).flush(
+      page([
+        { ...item(1), title: 'Old item', event_date: '2026-10-01' },
+        { ...item(2), title: 'Recent item', event_date: '2026-11-20' },
+      ]),
+    );
+    await settle();
+
+    expect(text()).toContain('Old item');
+    expect(text()).toContain('Recent item');
+
+    setDate('From date', '2026-11-01');
+
+    expect(text()).not.toContain('Old item');
+    expect(text()).toContain('Recent item');
+
+    setDate('To date', '2026-11-10');
+
+    expect(text()).not.toContain('Recent item');
+  });
+
+  it('clears every filter, including the dates and the sort order', async () => {
+    await open('/items?q=car%20keys&type=found&category_id=2');
+    expectSearch({ q: 'car keys', type: 'found', category_id: '2' }).flush(page([item(1)]));
+    await settle();
+
+    setDate('From date', '2026-11-01');
+    component.toggleSortOrder();
+    harness.fixture.detectChanges();
+
+    button('Reset filters')!.click();
+    await settle();
+
+    // The server-side filters go back through a fresh search
+    expectSearch({}).flush(page([item(1)]));
+    await settle();
+
+    expect(component.dateFrom()).toBe('');
+    expect(component.dateTo()).toBe('');
+    expect(component.sortOrder()).toBe('newest');
+    expect(query<HTMLInputElement>('input[type="search"]').value).toBe('');
+  });
+
+  it('counts a date filter as a filter', async () => {
+    await open();
+    expectSearch({}).flush(page([item(1)]));
+    await settle();
+
+    expect(component.hasAnyFilter()).toBe(false);
+
+    setDate('From date', '2026-11-01');
+
+    // The label and empty state follow any filter...
+    expect(component.hasAnyFilter()).toBe(true);
+    expect(text()).toContain('match this search');
+
+    // ...but a saved search cannot store dates, so it must not offer to save
+    // a search that would silently drop them.
+    expect(component.hasFilters()).toBe(false);
   });
 
   it('hides the messenger from a signed-out visitor', async () => {
@@ -154,9 +230,9 @@ describe('ItemsPageComponent', () => {
 
     expect(text()).toContain('2 items available');
     expect(text()).toContain('Item 1');
-    const options = Array.from(query<HTMLSelectElement>('select').options).map((o) =>
-      o.textContent?.trim(),
-    );
+    const options = Array.from(
+      query<HTMLSelectElement>('select[aria-label="Category"]').options,
+    ).map((o) => o.textContent?.trim());
     expect(options).toEqual(['All categories', 'Phones', 'Keys', 'Wallets & Cards']);
   });
 
@@ -166,7 +242,7 @@ describe('ItemsPageComponent', () => {
     await settle();
 
     expect(query<HTMLInputElement>('input[type="search"]').value).toBe('car keys');
-    expect(query<HTMLSelectElement>('select').value).toBe('2');
+    expect(query<HTMLSelectElement>('select[aria-label="Category"]').value).toBe('2');
     expect(text()).toContain('1 items match this search');
   });
 
@@ -179,7 +255,7 @@ describe('ItemsPageComponent', () => {
     await open('/items?type=lost');
     expectSearch({ type: 'lost' }).flush(page([]));
 
-    typeSearch('  wallet ');
+    await typeSearch('  wallet ');
     await settle();
 
     expectSearch({ q: 'wallet', type: 'lost' }).flush(page([item(3)]));
@@ -259,7 +335,7 @@ describe('ItemsPageComponent', () => {
       await settle();
 
       const link = query<HTMLAnchorElement>('.save-search a');
-      expect(link.textContent?.trim()).toBe('Sign in');
+      expect(link.textContent?.trim()).toBe('Sign in to save');
       expect(link.getAttribute('href')).toBe('/login?returnUrl=%2Fitems%3Fq%3Dkeys');
     });
 

@@ -1,15 +1,4 @@
 @use '../../../styles/variables' as *;
-.page-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  background: white;
-  padding: 20px;
-  border: 1px solid #e8e8e8;
-  border-radius: 10px;
-}
-
 .search-box {
   display: flex;
   align-items: center;
@@ -237,4 +226,144 @@
   height: 90%;
 
   display: flex;
+}
+
+/* Save this search: one compact line - icon, the reason, the action. */
+
+// Claims the whole row, so the prompt keeps its own line in the filter card no
+// matter which state it is in: naming the search makes the box wider, and
+// without this it would jump up beside the controls and back again.
+.save-search-row {
+  flex-basis: 100%;
+}
+
+.save-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  // Hugs its content rather than spanning the row: it is a small prompt, not a
+  // section header.
+  width: fit-content;
+  max-width: 100%;
+  padding: 7px 12px;
+  background: #fff6f0;
+  border: 1px solid #f6d9c7;
+  border-radius: $border-radius;
+}
+
+.save-search-icon {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1;
+  color: $primary;
+
+  &.saved {
+    color: $found-color;
+  }
+}
+
+.save-search-text {
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.3;
+  color: $text-secondary;
+}
+
+.save-search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  input {
+    flex: 1 1 180px;
+    max-width: 280px;
+  }
+}
+
+.save-search-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: #b42318;
+}
+
+// The brand colour, not Bootstrap's blue, which read as a different product.
+.save-search-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border: 1px solid $primary;
+  border-radius: 6px;
+  background: $primary;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus-visible {
+    background: #d9652a;
+    border-color: #d9652a;
+    color: #ffffff;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+  }
+}
+
+.save-search-cancel {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+  background: $surface;
+  color: $text-secondary;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus-visible {
+    border-color: $primary;
+    color: $primary;
+  }
+}
+
+@media (max-width: 36rem) {
+  // Stacked on a phone, so the box spans the width and its contents centre
+  // rather than hugging the left edge.
+  .save-search {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .save-search-text {
+    flex-basis: 100%;
+    text-align: center;
+  }
+
+  // Full width on a phone: an easy tap target spanning the card.
+  .save-search-action,
+  .save-search-cancel {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  // The naming form is the exception: there the input should take the room.
+  .save-search-form {
+    width: 100%;
+    justify-content: center;
+
+    input {
+      flex: 1 1 100%;
+      max-width: none;
+    }
+  }
 }

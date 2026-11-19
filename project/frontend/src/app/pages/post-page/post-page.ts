@@ -8,6 +8,7 @@ import { CreatePost } from '../../components/create-post/create-post';
 import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
+import { ItemForm } from '../../components/item-form/item-form';
 import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import { ReportPost } from '../../components/report-post/report-post';
 import { Item } from '../../models/models';
@@ -27,6 +28,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
     Header,
     Footer,
     ItemCard,
+    ItemForm,
     CreatePost,
     MessengerLauncher,
     ReportPost,
@@ -50,6 +52,9 @@ export class PostPage {
 
   readonly matches = signal<Item[]>([]);
   readonly matchesState = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  /** The edit modal, offered to the author of a post that is not resolved. */
+  readonly isEditing = signal(false);
+
   readonly isResolving = signal(false);
   readonly resolveError = signal<string | null>(null);
 
@@ -77,6 +82,7 @@ export class PostPage {
     this.post.set(null);
     this.imageIndex.set(0);
     this.resolveError.set(null);
+    this.isEditing.set(false);
     this.matches.set([]);
     this.matchesState.set('idle');
 
@@ -104,6 +110,29 @@ export class PostPage {
         },
       }),
     );
+  }
+
+  openEdit(): void {
+    const post = this.post();
+
+    if (!post || !this.isMine() || post.status === 'resolved') {
+      return;
+    }
+
+    this.isEditing.set(true);
+  }
+
+  closeEdit(): void {
+    this.isEditing.set(false);
+  }
+
+  /**
+   * Saving sends the post back to moderation, so the page is reloaded rather
+   * than patched: its status, and whether it is public, have both changed.
+   */
+  onPostEdited(): void {
+    this.closeEdit();
+    this.load();
   }
 
   showImage(index: number): void {

@@ -16,12 +16,12 @@ import { MOCK_ITEMS } from '../../models/mock-items';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { FormsModule, NgModel } from '@angular/forms';
 import { inject } from '@angular/core';
-import { Messenger } from '../../components/messenger/messenger';
+import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 
 @Component({
   selector: 'app-map-page',
   standalone: true,
-  imports: [Header, ItemCard, Footer, FormsModule, Messenger],
+  imports: [Header, ItemCard, Footer, FormsModule, MessengerLauncher],
   templateUrl: './map-page.html',
   styleUrl: './map-page.scss',
 })
@@ -46,14 +46,6 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
 
   private readonly http = inject(HttpClient);
-
-  readonly unreadMessagesCount = signal(0);
-
-  isMessengerOpen = false;
-
-  toggleMessenger(): void {
-    this.isMessengerOpen = !this.isMessengerOpen;
-  }
 
   constructor(
     private router: Router,

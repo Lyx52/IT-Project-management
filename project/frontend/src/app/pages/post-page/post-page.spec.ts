@@ -233,7 +233,7 @@ describe('PostPage', () => {
     httpMock.expectOne(`${API}/post/5/matches`).flush({ data: [] });
     await settle();
 
-    (query('.owner-actions button') as HTMLButtonElement).click();
+    (query('.owner-actions .btn-outline-success') as HTMLButtonElement).click();
     httpMock.expectOne(`${API}/post/5/resolve`).flush({});
     await settle();
 
@@ -257,7 +257,7 @@ describe('PostPage', () => {
     httpMock.expectOne(`${API}/post/5/matches`).flush({ data: [] });
     await settle();
 
-    (query('.owner-actions button') as HTMLButtonElement).click();
+    (query('.owner-actions .btn-outline-success') as HTMLButtonElement).click();
     httpMock
       .expectOne(`${API}/post/5/resolve`)
       .flush({ message: 'nope' }, { status: 500, statusText: 'Server Error' });
@@ -322,6 +322,59 @@ describe('PostPage', () => {
     await settle();
 
     expect(query('.rejection-notice')!.textContent).toContain('No reason was given.');
+  });
+
+  it('offers Edit to the author, next to Resolve', async () => {
+    signInAs(1);
+    await open('/post/5');
+    httpMock.expectOne(`${API}/post/5`).flush({ data: post(5) });
+    await settle();
+    httpMock.expectOne(`${API}/post/5/matches`).flush({ data: [] });
+    await settle();
+
+    // Editing moved here from the item card, where it sat on every listing
+    expect(query('.owner-actions')!.textContent).toContain('Edit post');
+    expect(query('.modal-backdrop-custom')).toBeNull();
+  });
+
+  it('hides Edit from everyone but the author', async () => {
+    await open('/post/5');
+    httpMock.expectOne(`${API}/post/5`).flush({ data: post(5) });
+    await settle();
+
+    expect(text()).not.toContain('Edit post');
+  });
+
+  it('does not offer Edit once the post is resolved', async () => {
+    signInAs(1);
+    await open('/post/5');
+    httpMock.expectOne(`${API}/post/5`).flush({ data: post(5, { status: 'resolved' }) });
+    await settle();
+    httpMock.expectOne(`${API}/post/5/matches`).flush({ data: [] });
+    await settle();
+
+    expect(text()).not.toContain('Edit post');
+    expect(query('.resolved-badge')).not.toBeNull();
+  });
+
+  it('opens the edit form in a modal', async () => {
+    signInAs(1);
+    await open('/post/5');
+    httpMock.expectOne(`${API}/post/5`).flush({ data: post(5) });
+    await settle();
+    httpMock.expectOne(`${API}/post/5/matches`).flush({ data: [] });
+    await settle();
+
+    const edit = Array.from(
+      harness.routeNativeElement!.querySelectorAll<HTMLButtonElement>('.owner-actions button'),
+    ).find((b) => b.textContent?.includes('Edit post'))!;
+    edit.click();
+    harness.fixture.detectChanges();
+
+    expect(query('.modal-backdrop-custom')).not.toBeNull();
+    expect(query('app-item-form')).not.toBeNull();
+    // The form asks for the categories it needs to render
+    httpMock.match(`${API}/category/query`);
   });
 
   it('says so when the post does not exist or is not public', async () => {

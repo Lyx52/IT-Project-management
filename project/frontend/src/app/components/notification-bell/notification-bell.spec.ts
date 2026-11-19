@@ -101,16 +101,68 @@ describe('NotificationBell', () => {
     expect(items[1].classList).not.toContain('unread');
   });
 
-  it('opens the post and marks the notification read', async () => {
+  it('links to the post and marks the notification read', async () => {
     await create();
     await openPanel();
-    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
-    (element().querySelector('.bell-item') as HTMLButtonElement).click();
+    const action = element().querySelector('.bell-action') as HTMLAnchorElement;
+
+    // A real link, so it can be middle-clicked or opened in a new tab, rather
+    // than a row that navigates programmatically.
+    expect(action.getAttribute('href')).toBe('/post/12');
+
+    action.click();
 
     httpMock.expectOne(`${API}/notification/${MATCH.id}/read`).flush({ data: MATCH });
-    expect(navigate).toHaveBeenCalledWith(['/post', 12]);
     expect(TestBed.inject(NotificationService).unreadCount()).toBe(0);
+  });
+
+  it('shows the moderator\u2019s reason on a rejected post', async () => {
+    const rejected = {
+      id: 'n3',
+      type: 'post_moderated' as const,
+      read_at: null,
+      created_at: new Date().toISOString(),
+      details: {
+        post_id: 12,
+        post_title: 'Black wallet',
+        status: 'rejected' as const,
+        message: 'Your post was rejected by a moderator.',
+        reason: 'The photo shows someone else\u2019s property.',
+      },
+    };
+
+    await create([rejected], 1);
+    await openPanel([rejected], 1);
+
+    // The reason is in the payload but was never rendered, which left the
+    // notification saying only that the post was refused.
+    const reason = element().querySelector('.bell-reason');
+
+    expect(reason).not.toBeNull();
+    expect(reason!.textContent).toContain('someone else\u2019s property');
+  });
+
+  it('marks unread rows with a dot, not colour alone', async () => {
+    await create();
+    await openPanel();
+
+    const items = element().querySelectorAll('.bell-item');
+
+    expect(items[0].querySelector('.bell-dot')).not.toBeNull();
+    expect(items[1].querySelector('.bell-dot')).toBeNull();
+  });
+
+  it('keeps the panel to notifications only', async () => {
+    await create();
+    await openPanel();
+
+    // Saved searches and My posts live in the account menu in the header; the
+    // panel repeating them just made it longer.
+    const links = Array.from(element().querySelectorAll('a')).map((a) => a.textContent?.trim());
+
+    expect(links.every((text) => text?.startsWith('View details'))).toBe(true);
+    expect(element().textContent).not.toContain('Saved searches');
   });
 
   it('marks everything read at once', async () => {

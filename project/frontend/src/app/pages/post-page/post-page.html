@@ -222,15 +222,22 @@
                 </div>
 
                 @if (post.status !== 'resolved') {
-                  <button
-                    class="btn btn-outline-success"
-                    type="button"
-                    [disabled]="isResolving()"
-                    (click)="closepostevent()"
-                  >
-                    <i class="bi bi-check2-circle me-2"></i>
-                    {{ isResolving() ? 'Resolving...' : 'Mark as resolved' }}
-                  </button>
+                  <div class="owner-buttons">
+                    <button class="btn btn-outline-secondary" type="button" (click)="openEdit()">
+                      <i class="bi bi-pencil me-2"></i>
+                      Edit post
+                    </button>
+
+                    <button
+                      class="btn btn-outline-success"
+                      type="button"
+                      [disabled]="isResolving()"
+                      (click)="closepostevent()"
+                    >
+                      <i class="bi bi-check2-circle me-2"></i>
+                      {{ isResolving() ? 'Resolving...' : 'Mark as resolved' }}
+                    </button>
+                  </div>
                 } @else {
                   <span class="resolved-badge" role="status">
                     <i class="bi bi-check2-circle me-1"></i>
@@ -260,6 +267,37 @@
             }
           </div>
         </article>
+
+        <!-- Edit post modal -->
+        @if (isEditing()) {
+          <div class="modal-backdrop-custom" (click)="closeEdit()">
+            <div
+              class="create-post-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="editPostTitle"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="modal-header-custom">
+                <div>
+                  <h5 id="editPostTitle" class="fw-bold mb-1">Edit post</h5>
+                  <p class="text-muted small mb-0">Correct a mistake in your post.</p>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-close"
+                  (click)="closeEdit()"
+                  aria-label="Close"
+                ></button>
+              </div>
+
+              <div class="modal-body-custom">
+                <app-item-form [post]="post" (created)="onPostEdited()" />
+              </div>
+            </div>
+          </div>
+        }
 
         <!-- Possible matches -->
         @if (isMine()) {

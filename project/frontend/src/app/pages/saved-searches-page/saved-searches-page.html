@@ -1,13 +1,15 @@
 <app-header />
 
 <main class="page-container py-4">
-  <div class="mb-4">
-    <h1 class="h4 fw-bold mb-1">Saved searches</h1>
-    <p class="text-muted mb-0">
-      You get a notification when a newly approved post matches one of these. To add one, search on
-      the <a routerLink="/items">Items</a> page and click “Save this search”.
-    </p>
-  </div>
+  <section class="page-heading saved-head mb-4">
+    <div>
+      <h1 class="h4 fw-bold mb-1">Saved searches</h1>
+      <p class="text-muted mb-0">
+        We notify you when a newly approved post matches one of these. To add one, search on the
+        <a routerLink="/items">Items</a> page and choose “Save this search”.
+      </p>
+    </div>
+  </section>
 
   @if (isLoading()) {
     <div class="text-center py-5">
@@ -22,93 +24,105 @@
       </button>
     </div>
   } @else if (searches().length === 0) {
-    <div class="text-center py-5">
-      <i class="bi bi-bell-slash fs-1 text-muted"></i>
-      <p class="text-muted mt-2">You have no saved searches yet.</p>
-      <a class="btn btn-primary" routerLink="/items">Search items</a>
+    <div class="saved-empty">
+      <i class="bi bi-bell-slash"></i>
+      <p class="fw-semibold mt-3 mb-1">No saved searches yet</p>
+      <p class="text-muted mb-3">Save a search and we will watch for matching posts for you.</p>
+      <a class="saved-btn saved-btn-primary" routerLink="/items">Search items</a>
     </div>
   } @else {
-    <ul class="list-group" style="max-width: 900px">
+    <ul class="saved-list">
       @for (search of searches(); track search.id) {
-        <li class="list-group-item py-3">
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-            @if (editingId() === search.id) {
-              <form
-                class="d-flex flex-wrap align-items-center gap-2 flex-grow-1"
-                (submit)="$event.preventDefault(); saveRename(search)"
-              >
+        <li class="saved-card">
+          @if (editingId() === search.id) {
+            <form class="saved-rename" (submit)="$event.preventDefault(); saveRename(search)">
+              <label class="saved-rename-label" [attr.for]="'rename-' + search.id">
+                Rename “{{ search.name }}”
+              </label>
+
+              <div class="saved-rename-row">
                 <input
                   class="form-control form-control-sm"
-                  style="max-width: 280px"
+                  [id]="'rename-' + search.id"
                   maxlength="50"
-                  aria-label="New name"
                   [value]="editName()"
                   (input)="editName.set($any($event.target).value)"
                 />
+
                 <button
-                  class="btn btn-primary btn-sm"
+                  class="saved-btn saved-btn-primary"
                   type="submit"
                   [disabled]="busyId() === search.id"
                 >
                   Save
                 </button>
-                <button class="btn btn-link btn-sm" type="button" (click)="cancelRename()">
-                  Cancel
-                </button>
-              </form>
-            } @else {
-              <div>
-                <div class="fw-semibold">{{ search.name }}</div>
-                <div class="small text-muted">{{ summary(search) }}</div>
-              </div>
 
-              <div class="d-flex flex-wrap gap-2">
-                <a
-                  class="btn btn-outline-primary btn-sm"
-                  routerLink="/items"
-                  [queryParams]="queryParams(search)"
-                >
-                  <i class="bi bi-search me-1"></i>
-                  Open
-                </a>
-                @if (confirmingDeleteId() === search.id) {
+                <button class="saved-btn" type="button" (click)="cancelRename()">Cancel</button>
+              </div>
+            </form>
+          } @else {
+            <div class="saved-main">
+              <i class="bi bi-bell saved-icon" aria-hidden="true"></i>
+
+              <div class="saved-body">
+                <p class="saved-name">{{ search.name }}</p>
+
+                <div class="saved-chips">
+                  @for (chip of chips(search); track chip.label) {
+                    <span class="saved-chip" [class]="chip.kind">{{ chip.label }}</span>
+                  }
+                </div>
+
+                <p class="saved-meta">Saved {{ relativeTime(search.created_at) }}</p>
+              </div>
+            </div>
+
+            <div class="saved-actions">
+              <a
+                class="saved-btn saved-btn-primary"
+                routerLink="/items"
+                [queryParams]="queryParams(search)"
+              >
+                <i class="bi bi-search" aria-hidden="true"></i>
+                Open
+              </a>
+
+              <button class="saved-btn" type="button" (click)="startRename(search)">Rename</button>
+
+              <button
+                class="saved-btn saved-btn-danger"
+                type="button"
+                [disabled]="busyId() === search.id"
+                (click)="askDelete(search)"
+              >
+                Delete
+              </button>
+            </div>
+
+            @if (confirmingDeleteId() === search.id) {
+              <div class="saved-confirm" role="alert">
+                <span>Delete this saved search? You will stop being notified about it.</span>
+
+                <div class="saved-confirm-actions">
                   <button
-                    class="btn btn-danger btn-sm"
+                    class="saved-btn saved-btn-danger-solid"
                     type="button"
                     [disabled]="busyId() === search.id"
                     (click)="delete(search)"
                   >
-                    Delete “{{ search.name }}”?
+                    Yes, delete
                   </button>
-                  <button
-                    class="btn btn-link btn-sm"
-                    type="button"
-                    (click)="confirmingDeleteId.set(null)"
-                  >
+
+                  <button class="saved-btn" type="button" (click)="confirmingDeleteId.set(null)">
                     Keep
                   </button>
-                } @else {
-                  <button
-                    class="btn btn-outline-secondary btn-sm"
-                    type="button"
-                    (click)="startRename(search)"
-                  >
-                    Rename
-                  </button>
-                  <button
-                    class="btn btn-outline-danger btn-sm"
-                    type="button"
-                    (click)="askDelete(search)"
-                  >
-                    Delete
-                  </button>
-                }
+                </div>
               </div>
             }
-          </div>
+          }
 
           @if (rowError()?.id === search.id) {
-            <p class="small text-danger mb-0 mt-2" role="alert">{{ rowError()?.message }}</p>
+            <p class="saved-error" role="alert">{{ rowError()?.message }}</p>
           }
         </li>
       }

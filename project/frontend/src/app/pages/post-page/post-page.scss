@@ -433,3 +433,47 @@
     transition: none;
   }
 }
+
+/* Edit post modal. Editing lives on this page now, so the modal chrome
+   comes with it. */
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.create-post-modal {
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+
+  display: flex;
+  flex-direction: column;
+
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header-custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  padding: 20px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.modal-body-custom {
+  padding: 20px;
+  overflow-y: auto;
+}

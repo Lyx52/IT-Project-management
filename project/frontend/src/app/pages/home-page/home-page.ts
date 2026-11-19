@@ -1,7 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Item } from '../../models/models';
-import { ItemForm } from '../../components/item-form/item-form';
 import { ItemCard } from '../../components/item-card/item-card';
 import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import { Header } from '../../components/header/header';
@@ -14,7 +13,7 @@ import { CreatePost } from '../../components/create-post/create-post';
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemForm, ItemCard, MessengerLauncher, Header, Footer, CreatePost],
+  imports: [ItemCard, MessengerLauncher, Header, Footer, CreatePost],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })
@@ -39,7 +38,6 @@ export class HomePageComponent {
   ngOnInit() {
     this.loadPosts();
   }
-  readonly editingItem = signal<Item | null>(null);
 
   // Signals like the rest of this component's state: these are flipped from
   // an @Output() raised inside an HTTP callback, which does not mark the view
@@ -79,19 +77,6 @@ export class HomePageComponent {
   }
 
   onPostCreated(): void {
-    this.loadPosts();
-  }
-
-  openEdit(item: Item): void {
-    this.editingItem.set(item);
-  }
-
-  closeEdit(): void {
-    this.editingItem.set(null);
-  }
-
-  onPostEdited(): void {
-    this.closeEdit();
     this.loadPosts();
   }
 

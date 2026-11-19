@@ -1,13 +1,15 @@
 <app-header />
 
 <main class="page-container py-4">
-  <div class="mb-4">
-    <h1 class="h4 fw-bold mb-1">My posts</h1>
-    <p class="text-muted mb-0">
-      Open a post to see posts that might match it. New posts appear in the feed once a moderator
-      approves them.
-    </p>
-  </div>
+  <section class="page-heading mb-4">
+    <div>
+      <h1 class="h4 fw-bold mb-1">My posts</h1>
+      <p class="text-muted mb-0">
+        Open a post to see posts that might match it. New posts appear in the feed once a moderator
+        approves them.
+      </p>
+    </div>
+  </section>
 
   @if (isLoading()) {
     <div class="text-center py-5">

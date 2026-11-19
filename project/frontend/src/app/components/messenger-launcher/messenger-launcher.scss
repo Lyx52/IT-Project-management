@@ -87,7 +87,10 @@
   }
 }
 
-@media (max-width: 480px) {
+// The same breakpoint the create-post button uses: they were moving to their
+// mobile offsets at different widths, so between 481px and 768px one sat 10px
+// lower than the other.
+@media (max-width: 768px) {
   .messenger-button {
     right: 15px;
     bottom: 15px;
