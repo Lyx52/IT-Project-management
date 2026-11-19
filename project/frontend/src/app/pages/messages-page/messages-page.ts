@@ -6,6 +6,7 @@ import { combineLatest, of, timer } from 'rxjs';
 import { catchError, distinctUntilChanged, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import { safetyTips } from '../../components/safetytips/safety-tips';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import { MessagesService } from '../../services/messages.service';
@@ -24,7 +25,7 @@ interface DisplayMessage {
 @Component({
   selector: 'app-messages-page',
   standalone: true,
-  imports: [Header, Footer, RouterLink, DatePipe, FormsModule],
+  imports: [Header, Footer, RouterLink, DatePipe, FormsModule, safetyTips],
   templateUrl: './messages-page.html',
   styleUrl: './messages-page.scss',
 })
@@ -49,6 +50,12 @@ export class MessagesPage {
   readonly draft = signal('');
   readonly isSending = signal(false);
   readonly sendError = signal('');
+
+  collapsed = signal(false);
+
+  ngOnInit() {
+    this.collapsed.set(true);
+  }
 
   constructor() {
     combineLatest([this.route.paramMap, this.route.queryParamMap])
@@ -220,5 +227,8 @@ export class MessagesPage {
 
   openTerms(): void {
     this.router.navigate(['/terms']);
+  }
+  collapsesafety(): void {
+    this.collapsed.set(false);
   }
 }
