@@ -1,0 +1,30 @@
+@use '../../../styles/variables' as *;
+
+.safety-tips-container {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: min(70vh, 32rem);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  padding: 1.25rem;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  background: $surface;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 8%);
+}
+
+.safety-tips-title {
+  margin: 0 0 1rem;
+  color: $text-primary;
+}
+
+.safety-tips-description,
+.safety-tips-list {
+  color: $text-secondary;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.safety-tips-list {
+  padding-left: 1.25rem;
+}
