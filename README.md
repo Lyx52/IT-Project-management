@@ -208,21 +208,17 @@ None of the three types stops a bot written for this site. `math` and `determina
 
 ## Data retention
 
-AC-17 requires a deleted account to be gone within 30 days, backups included.
+Account deletion immediately suspends the account. The account and its related personal data are permanently deleted after 30 days. Daily pruning and the 7-day backup lifecycle mean the final backup containing that data can remain for up to 39 days after the request.
 
-Deleting an account soft-deletes it. Every day at 00:00 UTC the scheduler runs `model:prune`, which permanently deletes accounts soft-deleted more than **21 days** ago, together with their posts, messages and uploaded files. Backups are kept for 7 days.
+The scheduler also removes resolved posts six months after their `resolved_at` date and read notifications 90 days after their `read_at` date. Unread notifications are retained.
 
-Worst case, deleted data still exists for 21 days (waiting for the purge) + 1 day (until the purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **30 days**.
-
-The numbers live in [`config/retention.php`](project/backend/config/retention.php):
+Account retention settings live in [`project/backend/config/retention.php`](project/backend/config/retention.php):
 
 | Setting | Default | Change it with |
 |---------|---------|----------------|
-| `account_purge_days` | 21 | `ACCOUNT_PURGE_DAYS=` in `.env.production`, then `deploy/deploy.sh` |
+| `account_purge_days` | 30 | `ACCOUNT_PURGE_DAYS=` in `.env.production`, then `deploy/deploy.sh` |
 | `backup_retention_days` | 7 | `RETENTION_DAYS` in `deploy/backup-storage.sh` and rerun `setup`. Change both |
-| `deleted_account_limit_days` | 30 | Fixed by AC-17 |
-
-`account_purge_days + backup_retention_days + 2` must stay at or below 30, and `tests/Feature/UserPruningTest.php` fails if the defaults break that. Keeping backups longer therefore means purging accounts sooner.
+| `deleted_account_limit_days` | 39 | 30-day suspension plus daily cleanup and backup lifecycle |
 
 ### Scheduled jobs
 
@@ -233,6 +229,7 @@ Defined in [`routes/console.php`](project/backend/routes/console.php) and run by
 | 00:00 | `model:prune`: permanently deletes accounts past `account_purge_days` |
 | 00:30 | `app:prune-expired-cache`: removes expired cache entries, including unanswered CAPTCHAs |
 | 00:45 | `sanctum:prune-expired`: removes API tokens that expired more than a day ago |
+| 01:00 | `app:prune-old-platform-data`: removes expired resolved posts and read notifications; appends run counts to `storage/logs/platform-data-pruning.log` |
 | 02:00 | Database backup (in the `backup` container, see [Backups](#backups)) |
 
 ## Production
