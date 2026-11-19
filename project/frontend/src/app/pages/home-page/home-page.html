@@ -8,18 +8,18 @@
       <p class="text-muted mb-0">One place for lost and found items.</p>
     </div>
 
-    <form class="search-box" role="search" (submit)="$event.preventDefault(); search(query.value)">
+    <div class="search-box">
       <i class="bi bi-search"></i>
       <input
-        #query
         type="search"
         class="form-control"
         placeholder="Search for an item..."
         aria-label="Search for an item"
         maxlength="100"
+        [value]="searchQuery()"
+        (input)="onSearch($event)"
       />
-      <button class="btn btn-primary" type="submit">Search</button>
-    </form>
+    </div>
   </div>
 
   <!-- Recent items -->
@@ -29,11 +29,6 @@
         <h5 class="fw-bold mb-1">Recent items</h5>
         <p class="text-muted small mb-0">Browse recently reported items.</p>
       </div>
-
-      <button class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-funnel me-1"></i>
-        Filter
-      </button>
     </div>
 
     @if (isLoading()) {
@@ -44,16 +39,23 @@
     } @else if (loadError()) {
       <div class="alert alert-danger">
         {{ loadError() }}
-        <button class="btn btn-sm btn-outline-danger ms-2" (click)="loadPosts()">Retry</button>
+        <button
+          class="btn btn-sm btn-outline-danger ms-2"
+          (click)="loadPosts()"
+        >
+          Retry
+        </button>
       </div>
-    } @else if (items().length === 0) {
+    } @else if (filteredItems().length === 0) {
       <div class="text-center py-5">
         <i class="bi bi-inbox fs-1 text-muted"></i>
-        <p class="text-muted mt-2 mb-0">No items found yet.</p>
+        <p class="text-muted mt-2 mb-0">
+          {{ searchQuery() ? 'No matching items found.' : 'No items found yet.' }}
+        </p>
       </div>
     } @else {
       <div class="items-grid">
-        @for (item of items(); track item.id) {
+        @for (item of filteredItems(); track item.id) {
           <app-item-card [item]="item" />
         }
       </div>
@@ -63,8 +65,6 @@
 
 <!-- Create post component -->
 <app-create-post (created)="onPostCreated()" />
-
-<!-- Messenger floating button -->
 
 <!-- Messenger floating button -->
 <button
@@ -84,7 +84,9 @@
 
 <!-- Messenger popup -->
 <div class="messenger-popup" [hidden]="!isMessengerOpen">
-  <app-messenger (unreadCountChange)="unreadMessagesCount.set($event)" />
+  <app-messenger
+    (unreadCountChange)="unreadMessagesCount.set($event)"
+  />
 </div>
 
 <app-footer (showTriggered)="openTerms()" />

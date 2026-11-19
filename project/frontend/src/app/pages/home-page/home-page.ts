@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Item } from '../../models/models';
 import { ItemForm } from '../../components/item-form/item-form';
@@ -26,12 +26,16 @@ export class HomePageComponent {
   readonly isLoading = signal(false);
   readonly loadError = signal('');
   readonly unreadMessagesCount = signal(0);
+  readonly searchQuery = signal('');
 
   texts = en;
+
+   constructor(private router: Router) {}
 
   ngOnInit() {
     this.loadPosts();
   }
+  
   isCreatePostOpen = false;
   isMessengerOpen = false;
 
@@ -52,6 +56,23 @@ export class HomePageComponent {
     });
   }
 
+  readonly filteredItems = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+
+    if (!query) {
+      return this.items();
+    }
+
+    return this.items().filter((item) =>
+      item.title.toLowerCase().includes(query)
+    );
+  });
+
+  onSearch(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchQuery.set(input.value);
+  }
+
   onPostCreated(): void {
     this.loadPosts();
   }
@@ -59,7 +80,6 @@ export class HomePageComponent {
   toggleMessenger(): void {
     this.isMessengerOpen = !this.isMessengerOpen;
   }
-  constructor(private router: Router) {}
 
   /** The search itself runs on the Items page, which keeps it in the URL. */
   search(query: string): void {
