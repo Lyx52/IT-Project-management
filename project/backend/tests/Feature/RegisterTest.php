@@ -27,8 +27,8 @@ class RegisterTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed>|null $captcha
-     * null solves a fresh challenge
+     * @param  array<string, mixed>|null  $captcha
+     *                                              null solves a fresh challenge
      */
     private function register(
         array $overrides = [],
