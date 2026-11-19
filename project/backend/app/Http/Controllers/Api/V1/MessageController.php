@@ -8,6 +8,7 @@ use App\Http\Resources\MessageResource;
 use App\Models\Message;
 use App\Models\Post;
 use App\Models\User;
+use App\Notifications\NewMessageNotification;
 use App\Services\MessageAttachmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -144,6 +145,8 @@ class MessageController extends Controller
         } catch (RuntimeException) {
             abort(422, 'One of the files could not be processed.');
         }
+
+        $other->notify(new NewMessageNotification($message, $post));
 
         return (new MessageResource($message->load(['sender', 'receiver', 'attachments'])))
             ->response()
