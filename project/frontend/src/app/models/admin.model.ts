@@ -52,6 +52,9 @@ export interface AdminCategory {
   posts_count: number;
 }
 
+/** What a moderator did about a report, which is what its reporter is told. */
+export type ReportOutcome = 'action_taken' | 'dismissed';
+
 /** Aggregates from GET /api/v1/admin/statistics. Contains no personal data. */
 export interface AdminStatistics {
   from: string;

@@ -291,6 +291,39 @@ describe('PostPage', () => {
     expect(query('app-create-post')).not.toBeNull();
   });
 
+  it('tells the author why their post was rejected', async () => {
+    signInAs(1);
+    await open('/post/5');
+    httpMock.expectOne(`${API}/post/5`).flush({
+      data: post(5, {
+        status: 'rejected',
+        rejection_reason: 'Photographs show someone else\u2019s property.',
+      }),
+    });
+    await settle();
+    httpMock.expectOne(`${API}/post/5/matches`).flush({ data: [] });
+    await settle();
+
+    const notice = query('.rejection-notice');
+
+    expect(notice).not.toBeNull();
+    expect(notice!.textContent).toContain('did not publish this post');
+    expect(notice!.textContent).toContain('someone else\u2019s property');
+  });
+
+  it('says so when a rejected post carries no reason', async () => {
+    signInAs(1);
+    await open('/post/5');
+    httpMock
+      .expectOne(`${API}/post/5`)
+      .flush({ data: post(5, { status: 'rejected', rejection_reason: null }) });
+    await settle();
+    httpMock.expectOne(`${API}/post/5/matches`).flush({ data: [] });
+    await settle();
+
+    expect(query('.rejection-notice')!.textContent).toContain('No reason was given.');
+  });
+
   it('says so when the post does not exist or is not public', async () => {
     await open('/post/404');
     httpMock

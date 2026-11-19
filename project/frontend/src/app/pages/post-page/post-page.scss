@@ -325,6 +325,31 @@
   border-radius: $border-radius;
 }
 
+.contact-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rejection-notice {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: #fdecea;
+  border: 1px solid #f5c2c0;
+  border-left: 4px solid #b42318;
+  border-radius: $border-radius;
+  color: #7a271a;
+  font-size: 14px;
+
+  i {
+    flex-shrink: 0;
+    font-size: 18px;
+    color: #b42318;
+  }
+}
+
 .owner-error {
   color: #b42318;
 }

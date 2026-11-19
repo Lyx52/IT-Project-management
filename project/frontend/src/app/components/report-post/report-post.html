@@ -37,41 +37,51 @@
             </div>
           }
 
-          <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-            <fieldset [disabled]="isSubmitting()">
-              <label class="form-label" for="report-reason">What is wrong with it?</label>
-              <textarea
-                id="report-reason"
-                class="form-control"
-                rows="3"
-                formControlName="reason"
-                maxlength="500"
-                placeholder="Spam, offensive content, wrong information..."
-                [class.is-invalid]="reasonError()"
-                [attr.aria-invalid]="reasonError() ? 'true' : null"
-                [attr.aria-describedby]="reasonError() ? 'report-reason-error' : null"
-              ></textarea>
+          <!-- Already reported: the form is pointless, every retry is refused -->
+          @if (isReported()) {
+            <p class="text-muted small mb-3">
+              A moderator has your report and will review it. You can report a post once, whether or
+              not it has been dealt with yet.
+            </p>
 
-              @if (reasonError()) {
-                <div class="invalid-feedback d-block" id="report-reason-error">
-                  {{ reasonError() }}
-                </div>
-              }
+            <button class="btn btn-secondary w-100" type="button" (click)="close()">Close</button>
+          } @else {
+            <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+              <fieldset [disabled]="isSubmitting()">
+                <label class="form-label" for="report-reason">What is wrong with it?</label>
+                <textarea
+                  id="report-reason"
+                  class="form-control"
+                  rows="3"
+                  formControlName="reason"
+                  maxlength="500"
+                  placeholder="Spam, offensive content, wrong information..."
+                  [class.is-invalid]="reasonError()"
+                  [attr.aria-invalid]="reasonError() ? 'true' : null"
+                  [attr.aria-describedby]="reasonError() ? 'report-reason-error' : null"
+                ></textarea>
 
-              <p class="text-muted small mt-2 mb-3">
-                A moderator will review it. You can report a post once.
-              </p>
-
-              <button class="btn btn-danger w-100" type="submit">
-                @if (isSubmitting()) {
-                  <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                  Sending...
-                } @else {
-                  Send report
+                @if (reasonError()) {
+                  <div class="invalid-feedback d-block" id="report-reason-error">
+                    {{ reasonError() }}
+                  </div>
                 }
-              </button>
-            </fieldset>
-          </form>
+
+                <p class="text-muted small mt-2 mb-3">
+                  A moderator will review it. You can report a post once.
+                </p>
+
+                <button class="btn btn-danger w-100" type="submit">
+                  @if (isSubmitting()) {
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                    Sending...
+                  } @else {
+                    Send report
+                  }
+                </button>
+              </fieldset>
+            </form>
+          }
         } @else {
           <p class="text-muted small mb-3">You need an account to report a post.</p>
           <a class="btn btn-primary w-100" routerLink="/login" (click)="close()">Sign in</a>

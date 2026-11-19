@@ -74,6 +74,10 @@ export class NotificationBell {
       return 'bi-search';
     }
 
+    if (notification.type === 'report_reviewed') {
+      return notification.details.outcome === 'action_taken' ? 'bi-flag-fill' : 'bi-flag';
+    }
+
     return notification.details.status === 'approved' ? 'bi-check-circle' : 'bi-x-circle';
   }
 

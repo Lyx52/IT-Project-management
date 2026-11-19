@@ -9,6 +9,7 @@ import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
 import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
+import { ReportPost } from '../../components/report-post/report-post';
 import { Item } from '../../models/models';
 import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
@@ -22,7 +23,16 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
  */
 @Component({
   selector: 'app-post-page',
-  imports: [Header, Footer, ItemCard, CreatePost, MessengerLauncher, RouterLink, DatePipe],
+  imports: [
+    Header,
+    Footer,
+    ItemCard,
+    CreatePost,
+    MessengerLauncher,
+    ReportPost,
+    RouterLink,
+    DatePipe,
+  ],
   templateUrl: './post-page.html',
   styleUrl: './post-page.scss',
 })

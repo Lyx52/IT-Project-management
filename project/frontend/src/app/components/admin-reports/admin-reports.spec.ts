@@ -84,6 +84,31 @@ describe('AdminReports', () => {
     expect(component.busyId()).toBeNull();
   });
 
+  it('tells the server which action it took, so the reporter is told', () => {
+    setup();
+
+    component.hidePost(REPORT);
+    httpMock.expectOne(`${base}/posts/9/takedown`).flush({ data: POST });
+
+    // The server cannot work this out alone: banning the author also hides the
+    // post without changing its status.
+    const close = httpMock.expectOne(`${base}/reports/3/close`);
+
+    expect(close.request.body).toEqual({ outcome: 'action_taken' });
+    close.flush({});
+  });
+
+  it('marks a dismissal as such', () => {
+    setup();
+
+    component.dismiss(REPORT);
+
+    const close = httpMock.expectOne(`${base}/reports/3/close`);
+
+    expect(close.request.body).toEqual({ outcome: 'dismissed' });
+    close.flush({});
+  });
+
   it('bans the author by their user id, then closes the report', () => {
     setup();
 

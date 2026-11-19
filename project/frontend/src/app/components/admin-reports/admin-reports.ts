@@ -4,7 +4,7 @@ import { DatePipe } from '@angular/common';
 import { Observable } from 'rxjs';
 import { AdminService } from '../../services/admin.service';
 import { PostImageStrip } from '../post-image-strip/post-image-strip';
-import { ModerationReport } from '../../models/admin.model';
+import { ModerationReport, ReportOutcome } from '../../models/admin.model';
 
 @Component({
   selector: 'app-admin-reports',
@@ -32,7 +32,7 @@ export class AdminReports {
       return;
     }
 
-    this.run(report.id, this.admin.takedownPost(report.post.id), report.id);
+    this.run(report.id, this.admin.takedownPost(report.post.id), report.id, 'action_taken');
   }
 
   /**
@@ -44,19 +44,24 @@ export class AdminReports {
       return;
     }
 
-    this.run(report.id, this.admin.banUser(report.post.user.id), report.id);
+    this.run(report.id, this.admin.banUser(report.post.user.id), report.id, 'action_taken');
   }
 
   /** Leaves the post alone: the report was unfounded. */
   dismiss(report: ModerationReport): void {
-    this.run(report.id, this.admin.closeReport(report.id));
+    this.run(report.id, this.admin.closeReport(report.id, 'dismissed'));
   }
 
   /**
    * Runs an action, then closes the report when `closeAfter` is given, so one
    * click both acts on the post and clears the queue entry.
    */
-  private run(reportId: number, request: Observable<unknown>, closeAfter?: number): void {
+  private run(
+    reportId: number,
+    request: Observable<unknown>,
+    closeAfter?: number,
+    outcome?: ReportOutcome,
+  ): void {
     this.busyId.set(reportId);
     this.actionError.set(null);
 
@@ -67,7 +72,7 @@ export class AdminReports {
           return;
         }
 
-        this.admin.closeReport(closeAfter).subscribe({
+        this.admin.closeReport(closeAfter, outcome).subscribe({
           next: () => this.finish(),
           error: (error: HttpErrorResponse) => this.fail(error),
         });

@@ -9,6 +9,7 @@ import {
   AdminUser,
   ModerationQueue,
   Paginated,
+  ReportOutcome,
   UserStatusFilter,
 } from '../models/admin.model';
 import { ApiResponse, Item } from '../models/models';
@@ -50,10 +51,16 @@ export class AdminService {
       .pipe(map((response) => response.data));
   }
 
-  /** Marks a report handled so it leaves the queue. 422 if already closed. */
-  closeReport(reportId: number): Observable<void> {
+  /**
+   * Marks a report handled so it leaves the queue. 422 if already closed.
+   *
+   * The outcome is what the reporter is told: banning the author also hides
+   * the post without changing its status, so the server cannot reliably work
+   * this out on its own.
+   */
+  closeReport(reportId: number, outcome?: ReportOutcome): Observable<void> {
     return this.http
-      .post<unknown>(`${this.base}/reports/${reportId}/close`, {})
+      .post<unknown>(`${this.base}/reports/${reportId}/close`, outcome ? { outcome } : {})
       .pipe(map(() => undefined));
   }
 
