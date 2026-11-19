@@ -1,6 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Item } from '../../models/models';
+import { ItemForm } from '../../components/item-form/item-form';
 import { ItemCard } from '../../components/item-card/item-card';
 import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import { Header } from '../../components/header/header';
@@ -13,7 +14,7 @@ import { CreatePost } from '../../components/create-post/create-post';
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemCard, MessengerLauncher, Header, Footer, CreatePost],
+  imports: [ItemForm, ItemCard, MessengerLauncher, Header, Footer, CreatePost],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })
@@ -29,12 +30,17 @@ export class HomePageComponent {
   readonly items = signal<Item[]>([]);
   readonly isLoading = signal(false);
   readonly loadError = signal('');
+  readonly searchQuery = signal('');
 
   texts = en;
+
+  constructor(private router: Router) {}
 
   ngOnInit() {
     this.loadPosts();
   }
+  readonly editingItem = signal<Item | null>(null);
+
   // Signals like the rest of this component's state: these are flipped from
   // an @Output() raised inside an HTTP callback, which does not mark the view
   // dirty on its own in a zoneless app.
@@ -57,11 +63,37 @@ export class HomePageComponent {
     });
   }
 
+  readonly filteredItems = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+
+    if (!query) {
+      return this.items();
+    }
+
+    return this.items().filter((item) => item.title.toLowerCase().includes(query));
+  });
+
+  onSearch(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchQuery.set(input.value);
+  }
+
   onPostCreated(): void {
     this.loadPosts();
   }
 
-  constructor(private router: Router) {}
+  openEdit(item: Item): void {
+    this.editingItem.set(item);
+  }
+
+  closeEdit(): void {
+    this.editingItem.set(null);
+  }
+
+  onPostEdited(): void {
+    this.closeEdit();
+    this.loadPosts();
+  }
 
   /** The search itself runs on the Items page, which keeps it in the URL. */
   search(query: string): void {

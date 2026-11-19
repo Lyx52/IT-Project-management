@@ -2,12 +2,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subject, Subscription } from 'rxjs';
 
 import { Category, Item, PageMeta, PostFilters } from '../../models/models';
 import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
+import { ItemForm } from '../../components/item-form/item-form';
 import { CreatePost } from '../../components/create-post/create-post';
 import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import en from '../../../assets/en.json';
@@ -40,7 +41,7 @@ export function paramsFromFilters(filters: PostFilters): Record<string, string |
 @Component({
   selector: 'app-items-page',
   standalone: true,
-  imports: [Header, ItemCard, CreatePost, MessengerLauncher, Footer, RouterLink],
+  imports: [Header, ItemCard, ItemForm, CreatePost, MessengerLauncher, Footer, RouterLink],
   templateUrl: './items-page.html',
   styleUrl: './items-page.scss',
 })
@@ -51,6 +52,11 @@ export class ItemsPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   texts = en;
+  readonly dateFrom = signal('');
+  readonly dateTo = signal('');
+  readonly sortOrder = signal<'newest' | 'oldest'>('newest');
+
+  private readonly searchInput$ = new Subject<string>();
 
   readonly isAuthenticated = this.auth.isAuthenticated;
 
@@ -88,9 +94,7 @@ export class ItemsPageComponent {
   readonly saveError = signal('');
   readonly savedAs = signal<string | null>(null);
 
-  // Signals like the rest of this component's state: these are flipped from
-  // an @Output() raised inside an HTTP callback, which does not mark the view
-  // dirty on its own in a zoneless app.
+  readonly editingItem = signal<Item | null>(null);
 
   private loadSubscription?: Subscription;
 
@@ -107,7 +111,54 @@ export class ItemsPageComponent {
       this.loadPosts();
     });
 
+    this.searchInput$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe((value) => {
+        this.applyFilters({ q: value.trim() || null });
+      });
+
     this.loadCategories();
+  }
+
+  readonly filteredItems = computed(() => {
+    const from = this.dateFrom();
+    const to = this.dateTo();
+    const order = this.sortOrder();
+
+    return [...this.items()]
+      .filter((item) => {
+        const date = item.event_date?.slice(0, 10);
+
+        if (!date) return !from && !to;
+        if (from && date < from) return false;
+        if (to && date > to) return false;
+
+        return true;
+      })
+      .sort((a, b) => {
+        const comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+
+        return order === 'newest' ? comparison : -comparison;
+      });
+  });
+
+  onSearchInput(value: string): void {
+    this.searchText.set(value);
+    this.searchInput$.next(value);
+  }
+
+  toggleSortOrder(): void {
+    this.sortOrder.update((order) => (order === 'newest' ? 'oldest' : 'newest'));
+  }
+
+  resetFilters(): void {
+    this.searchText.set('');
+    this.dateFrom.set('');
+    this.dateTo.set('');
+    this.sortOrder.set('newest');
+
+    this.searchInput$.next('');
+    this.navigateTo(NO_FILTERS);
   }
 
   loadPosts(): void {
@@ -189,11 +240,6 @@ export class ItemsPageComponent {
     this.applyFilters({ category_id: value === '' ? null : Number(value) });
   }
 
-  resetFilters(): void {
-    this.searchText.set('');
-    this.navigateTo(NO_FILTERS);
-  }
-
   openSave(): void {
     this.saveName.set(this.suggestedName());
     this.saveError.set('');
@@ -231,6 +277,19 @@ export class ItemsPageComponent {
   }
 
   onPostCreated(): void {
+    this.loadPosts();
+  }
+
+  openEdit(item: Item): void {
+    this.editingItem.set(item);
+  }
+
+  closeEdit(): void {
+    this.editingItem.set(null);
+  }
+
+  onPostEdited(): void {
+    this.closeEdit();
     this.loadPosts();
   }
 

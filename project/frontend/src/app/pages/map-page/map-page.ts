@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnDestroy, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription, timeout, finalize } from 'rxjs';
 import * as L from 'leaflet';
@@ -16,11 +16,12 @@ import { MOCK_ITEMS } from '../../models/mock-items';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { FormsModule, NgModel } from '@angular/forms';
 import { inject } from '@angular/core';
+import { Messenger } from '../../components/messenger/messenger';
 
 @Component({
   selector: 'app-map-page',
   standalone: true,
-  imports: [Header, ItemCard, Footer, FormsModule],
+  imports: [Header, ItemCard, Footer, FormsModule, Messenger],
   templateUrl: './map-page.html',
   styleUrl: './map-page.scss',
 })
@@ -45,6 +46,14 @@ export class MapPageComponent implements AfterViewInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
 
   private readonly http = inject(HttpClient);
+
+  readonly unreadMessagesCount = signal(0);
+
+  isMessengerOpen = false;
+
+  toggleMessenger(): void {
+    this.isMessengerOpen = !this.isMessengerOpen;
+  }
 
   constructor(
     private router: Router,

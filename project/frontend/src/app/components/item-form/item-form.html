@@ -1,6 +1,12 @@
 <div class="panel p-3">
-  <h5 class="fw-bold mb-1">{{ texts.ftitle }}</h5>
-  <p class="text-muted small mb-3">{{ texts.fp }}</p>
+  @if (editing) {
+    <p class="text-muted small mb-3">
+      Saving changes sends the post back to moderation before it shows publicly again.
+    </p>
+  } @else {
+    <h5 class="fw-bold mb-1">{{ texts.ftitle }}</h5>
+    <p class="text-muted small mb-3">{{ texts.fp }}</p>
+  }
 
   @if (isAuthenticated()) {
     <form [formGroup]="form" (ngSubmit)="submit()">
@@ -29,6 +35,24 @@
 
       <!-- Images -->
       <div class="mb-3">
+        @if (editing && keptImages().length > 0) {
+          <div class="existing-images mb-2">
+            @for (image of keptImages(); track image.id) {
+              <div class="existing-image">
+                <img [src]="image.url" alt="Current photo" />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-danger"
+                  (click)="removeExistingImage(image.id)"
+                  aria-label="Remove photo"
+                >
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+            }
+          </div>
+        }
+
         <label class="image-upload d-block" [class.is-invalid]="imageError()">
           <input
             type="file"
@@ -39,7 +63,7 @@
           />
 
           <i class="bi bi-cloud-arrow-up fs-2"></i>
-          <p class="mb-0 mt-2">Upload item photos</p>
+          <p class="mb-0 mt-2">{{ editing ? 'Add photos' : 'Upload item photos' }}</p>
           <small class="text-muted"> JPG, PNG or WEBP. Up to 5 images, 5 MB each. </small>
         </label>
 
@@ -233,9 +257,9 @@
       <button type="submit" class="btn btn-primary w-100" [disabled]="isSubmitting()">
         @if (isSubmitting()) {
           <span class="spinner-border spinner-border-sm me-2"></span>
-          Creating...
+          {{ editing ? 'Saving...' : 'Creating...' }}
         } @else {
-          Submit report
+          {{ editing ? 'Save changes' : 'Submit report' }}
         }
       </button>
     </form>

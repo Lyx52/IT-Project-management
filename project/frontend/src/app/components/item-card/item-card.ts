@@ -1,8 +1,9 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { Item } from '../../models/models';
 import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
 import { DatePipe } from '@angular/common';
+import { AuthService } from '../../services/auth';
 import { RouterLink } from '@angular/router';
 import { ReportPost } from '../report-post/report-post';
 
@@ -14,9 +15,18 @@ import { ReportPost } from '../report-post/report-post';
 })
 export class ItemCard {
   @Input({ required: true }) item!: Item;
+  @Output() edit = new EventEmitter<Item>();
   /** For the author's own list, where pending and rejected posts show up too. */
   @Input() showStatus = false;
   texts = en;
+
+  private readonly auth = inject(AuthService);
+
+  /** Only the author can edit, and not once the post is resolved. */
+  get canEdit(): boolean {
+    const user = this.auth.user();
+    return !!user && user.id === this.item.user?.id && this.item.status !== 'resolved';
+  }
 
   imageFailed = false;
   reasonOpen = false;

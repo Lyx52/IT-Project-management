@@ -273,7 +273,16 @@ curl -X POST http://localhost:8001/api/v1/posts \
 
 Partial update: only the fields sent are validated and changed (same rules as create, all optional). Author only (`403` otherwise), not allowed on resolved posts. Any actual change sends the post back to `pending`.
 
-Uses `POST` rather than `PUT`/`PATCH`. Images cannot be changed through this endpoint yet.
+Uses `POST` rather than `PUT`/`PATCH`.
+
+Photos can be changed too. Send as `multipart/form-data`:
+
+| Field | Rules |
+|---|---|
+| `images[]` | new photos to add, same rules as when creating (jpg/png/webp, max 5 MB each) |
+| `remove_images[]` | ids of this post's existing photos to delete. An id that isn't one of this post's photos is `422`. |
+
+A post keeps at most 5 photos after the change (`422` otherwise). Adding or removing a photo counts as a change and sends the post back to `pending`.
 
 **200** `{ "data": Post }`
 

@@ -129,18 +129,37 @@ class PostController extends Controller
      * Partial update, only the fields sent are changed. Author only. Any
      * change sends the post back to moderation (status `pending`).
      * Resolved posts can't be edited.
+     *
+     * Photos: send `images[]` to add new ones (same rules as when creating)
+     * and `remove_images[]` with the ids of existing ones to delete them. Use
+     * `multipart/form-data`. A post can have at most 5 photos in the end.
      */
-    public function update(UpdatePostRequest $request, Post $post): PostResource
+    public function update(UpdatePostRequest $request, Post $post, PostImageService $images): PostResource
     {
         Gate::authorize('update', $post);
 
-        $post->fill($request->validated());
+        DB::transaction(function () use ($request, $post, $images) {
+            $post->fill($request->safe()->except(['images', 'remove_images']));
+            $changed = $post->isDirty();
 
-        if ($post->isDirty()) {
-            $post->status = PostStatus::Pending;
-            $post->rejection_reason = null;
-            $post->save();
-        }
+            $removeIds = array_unique($request->validated('remove_images', []));
+            foreach ($post->images()->whereIn('id', $removeIds)->get() as $image) {
+                $images->deleteImage($image);
+                $changed = true;
+            }
+
+            $new = $request->file('images', []);
+            if ($new !== []) {
+                $images->attach($post, $new);
+                $changed = true;
+            }
+
+            if ($changed) {
+                $post->status = PostStatus::Pending;
+                $post->rejection_reason = null;
+                $post->save();
+            }
+        });
 
         return new PostResource($post->load(['category', 'user', 'images']));
     }
