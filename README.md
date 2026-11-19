@@ -1,143 +1,253 @@
-# IT Project Management
+# FindIT
 
-Laravel (API) + Angular (SPA) + PostgreSQL, run with Docker. All code lives in `project/` and is bind-mounted into the containers, so host edits apply immediately.
+A lost & found platform. People post items they lost or found, search and browse them on a list or a map, and message each other about a post. Admins moderate posts, manage categories and ban users.
+
+Laravel API + Angular SPA + PostgreSQL, run with Docker in development and production.
+
+## Contents
+
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Repository layout](#repository-layout)
+- [Local development](#local-development)
+- [Tests and CI](#tests-and-ci)
+- [API](#api)
+- [Database](#database)
+- [Registration](#registration)
+- [Data retention](#data-retention)
+- [Production](#production) (full guide: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md))
+- [Backups](#backups)
+- [Performance benchmark](#performance-benchmark)
+- [Backend conventions](#backend-conventions)
+
+## Features
+
+- **Posts.** Lost or found items with a category, description, location on a map, event date and photos (EXIF data is stripped). New posts wait for admin approval before they appear publicly. Authors can edit, resolve and delete their own posts.
+- **Search.** Accent- and case-insensitive text search over titles and descriptions, filters by type and category, a list view and a Leaflet map view.
+- **Suggested matches.** The author of a post sees likely counterparts: approved posts of the opposite type in the same category, less than 2 km away, with an event date within 7 days.
+- **Saved searches.** Users save a search and get a notification when a new post matches it.
+- **Messages.** Direct messages about a post, with image and video attachments. Message bodies are encrypted at rest. Attachments are served through signed, expiring links.
+- **Notifications.** A bell in the header for saved-search matches and moderation results (post approved or rejected).
+- **Moderation.** Users report posts. Admins approve or reject posts (with a reason), ban and unban users, manage categories and see site statistics.
+- **Accounts.** Registration with a CAPTCHA, token-based login, data export, account deletion with automatic purge after 21 days.
+
+## Tech stack
+
+| Layer | Technology |
+|-------|------------|
+| Backend | PHP 8.4, Laravel 13, Sanctum (bearer tokens), Scramble (OpenAPI docs) |
+| Frontend | Angular 22, Bootstrap 5, Leaflet, Vitest |
+| Database | PostgreSQL 17 |
+| Production | Azure VM, Caddy (HTTPS, static files), FrankenPHP, Oracle Cloud Object Storage for backups |
+| CI/CD | GitHub Actions |
+| Performance tests | .NET 10, headless Chrome |
+
+## Repository layout
 
 ```
 project/
-  backend/    Laravel
-  frontend/   Angular
-docker/       Dockerfiles + entrypoints
+  backend/              Laravel API (API.md documents every endpoint)
+  frontend/             Angular SPA
+docker/
+  backend/, frontend/   Dev images and entrypoints
+  db/initdb/            Creates the app database user on first start
+  prod/                 Production images: backend, proxy, backup
+  performance/          Static frontend build for the benchmark
+deploy/                 Server scripts: deploy, first admin, backups, restore
+automation/             Performance benchmark (.NET + PowerShell)
+.github/workflows/      CI and deploy
+docker-compose.yml               Development
+docker-compose.prod.yml          Production
+docker-compose.performance.yml   Benchmark stack
 ```
 
-## Start
+## Local development
+
+### Requirements
+
+Docker with Compose. On Windows, run everything from WSL so file ownership matches your user (`UID`/`GID` in `.env`, default 1000).
+
+### Start
 
 ```bash
-mkdir -p project/backend project/frontend   # must be created as your user, not by Docker
-cp .env.example .env                         # optional, defaults work
+cp .env.example .env          # optional, the defaults work
 docker compose up --build
+docker compose exec backend php artisan db:seed
 ```
 
-First run scaffolds Laravel into `project/backend` and Angular into `project/frontend`, installs dependencies and runs migrations (a few minutes). Later runs start fast.
+The code in `project/` is bind-mounted into the containers, so edits on the host apply immediately. The backend container installs Composer packages, creates `.env` and `APP_KEY` if missing and runs migrations every time it starts. The frontend container runs `npm install` if `node_modules` is missing.
 
-| Service  | URL / port                                              |
-|----------|---------------------------------------------------------|
-| Angular  | http://localhost:4200                                   |
-| Laravel  | http://localhost:8001                                   |
-| Postgres | localhost:5432 (db / user / pass: `app` / `app` / `secret`) |
-| pgAdmin  | http://localhost:5050 (optional, see below)             |
+| Service | Address |
+|---------|---------|
+| Angular | http://localhost:4200 |
+| Laravel API | http://localhost:8001/api/v1 |
+| API docs (Scramble) | http://localhost:8001/docs/api |
+| Postgres | `localhost:5432`, database `app`, user `app`, password `secret` |
+| pgAdmin (optional) | http://localhost:5050 |
 
-Inside Docker the backend reaches Postgres at host `db`.
+The seeder creates two accounts, both with the password `password`:
 
-Postgres only listens on `127.0.0.1`, so other machines on your network can't reach it. Laravel connects as `app`, which can only use its own database (no superuser rights). The superuser is `postgres` (password `DB_ROOT_PASSWORD`), for admin tasks only. `docker/db/initdb` creates the `app` user and database the first time the DB volume is created.
+| Username | E-mail | Role |
+|----------|--------|------|
+| `testuser` | `test@example.com` | user |
+| `admin` | `admin@example.com` | admin |
 
-## Common commands
+### Database access
 
-```bash
-docker compose exec backend php artisan <cmd>
-docker compose exec backend composer require <pkg>
-docker compose exec frontend ng generate component <name>
-docker compose exec frontend npm install <pkg>
-docker compose exec db psql -U app app
-docker compose --profile tools up -d                # pgAdmin, log in as admin@example.com / admin, add server host "db"
-docker compose exec db pg_dump -U app app > backup.sql
-```
+Postgres listens on `127.0.0.1` only, so other machines on your network can't reach it. Inside Docker the backend reaches it at host `db`.
 
-Run from WSL/Linux so file ownership matches (`UID`/`GID` in `.env`, default 1000).
-
-## Database
-
-The Lost & Found schema is built with Laravel migrations in `project/backend/database/migrations`. They run automatically when the backend container starts. The ER diagram is in `project/backend/database/diagram/` (`.puml` source + `.png`).
-
-| Table | Purpose |
-|-------|---------|
-| `users` | `username`, `email` (unique, case-insensitive), `role` (`user`/`admin`), `banned_at`, GDPR consent (`terms_accepted_at`, `privacy_policy_version`), `avatar_path`, soft deletes |
-| `password_reset_tokens`, `sessions` | Laravel defaults |
-| `personal_access_tokens` | Sanctum API tokens |
-| `categories` | Item categories, 10 defaults inserted by the migration |
-| `posts` | Lost/found posts: `type` (`lost`/`found`), `status` (`pending`/`approved`/`rejected`/`resolved`), coordinates, `event_date` |
-| `post_images` | Images attached to a post |
-| `messages` | Direct messages between users, optionally about a post. Text and/or attachments |
-| `message_attachments` | Files attached to a message (any number): `path`, `mime_type` (`image/*` or `video/*`), `size` in bytes |
-| `notifications` | Laravel database notifications |
-| `reports` | Users reporting posts. One report per user per post, `status` `open`/`closed` |
-
-Rules the database enforces (inserts that break them fail):
-- Permanently deleting a user (not soft delete) deletes their posts, images and messages. Reports they made or reviewed are kept, with the user set to `NULL`.
-- A category that is still used by posts can't be deleted.
-- `type`, `status`, `role` and `mime_type` only accept the values listed above.
-- Coordinates must be valid lat/lng.
-- A message can't be sent to yourself. Deleting a message deletes its attachments.
-
-### After pulling these changes
-
-The DB user setup and the `users` table changed, so delete your local database volume once and rebuild it:
+Laravel connects as `app`, which can only use its own database and has no superuser rights. The superuser `postgres` (password `DB_ROOT_PASSWORD`) is for admin tasks only. `docker/db/initdb` creates the `app` user and database the first time the database volume is created. If you change those settings later, recreate the volume:
 
 ```bash
-docker compose down -v      # deletes local DB data
+docker compose down -v      # deletes all local DB data
 docker compose up -d
 docker compose exec backend php artisan db:seed
 ```
 
-The seeder creates `testuser` / `test@example.com` and the admin `admin` / `admin@example.com`, both with password `password`. `User::factory()->admin()` creates an admin in tests.
+### Common commands
 
-### Notes for backend
+```bash
+docker compose exec backend php artisan <command>
+docker compose exec backend composer require <package>
+docker compose exec frontend npx ng generate component <name>
+docker compose exec frontend npm install <package>
+docker compose exec db psql -U app app
+docker compose exec db pg_dump -U app app > backup.sql
+docker compose --profile tools up -d     # pgAdmin: log in as admin@example.com / admin, add server host "db"
+```
 
-- `App\Models\User` still lists `name` as fillable. It needs to be updated to `username`, `terms_accepted_at` and `privacy_policy_version`. There is no `name` or `remember_token` column any more.
-- Never make `role` (or `banned_at`) fillable. Otherwise anyone could register with `"role": "admin"`. Set it explicitly in the admin-only endpoint (`$user->forceFill(['role' => 'admin'])`). A test fails if `role` becomes mass assignable.
-- When installing Sanctum (`php artisan install:api`), delete the `personal_access_tokens` migration it publishes. The table already exists here.
-- Encrypt `messages.body` with the `encrypted` cast in the model.
-- The database can't check "a message needs a body or at least one attachment" (it spans two tables), so the message FormRequest must. Create the message and its attachments in one transaction.
-- Set `message_attachments.mime_type` from the stored file (`$file->getMimeType()`, which reads the content), not from the client's `Content-Type` header.
-- Deleting a message row doesn't remove its files from disk. Delete them in the model's `deleting` event or in the prune job.
-- Schema changes go through new migrations.
+### E-mail in development
+
+Mail goes to the Laravel log by default (`MAIL_MAILER=log`). To send real mail, set `MAIL_MAILER=resend`, `RESEND_API_KEY` and a `MAIL_FROM_ADDRESS` on a domain verified in Resend in `.env`.
+
+## Tests and CI
+
+```bash
+docker compose exec backend php artisan test        # backend tests (in-memory SQLite)
+docker compose exec backend vendor/bin/pint         # fix PHP code style
+docker compose exec frontend npx ng test --watch=false
+docker compose exec frontend npx prettier --write src
+```
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`:
+
+| Job | What it checks |
+|-----|----------------|
+| Backend | Pint style check, migrations against Postgres 17, `php artisan test`, migration rollback |
+| Frontend | Prettier check, unit tests, production build |
+| Docker image | Builds the production `backend`, `proxy` and `backup` images |
+
+CI runs the backend tests against Postgres, not SQLite, so a migration that only works on SQLite fails there. Mark these jobs as required status checks on `main` so a failing PR can't be merged.
+
+## API
+
+All endpoints live under `/api/v1`. Authentication uses Sanctum bearer tokens from `POST /login`.
+
+- [`project/backend/API.md`](project/backend/API.md) documents every endpoint: fields, responses, errors and rate limits.
+- Scramble generates interactive docs at `/docs/api` and the OpenAPI document at `/docs/api.json`.
+
+## Database
+
+The schema is built with Laravel migrations in [`project/backend/database/migrations`](project/backend/database/migrations). Schema changes always go through a new migration. The ER diagram is in [`project/backend/database/diagram/`](project/backend/database/diagram/) (`.puml` source and `.png`).
+
+| Table | Purpose |
+|-------|---------|
+| `users` | `username`, `email` (unique, case-insensitive), `role` (`user`/`admin`), `banned_at`, GDPR consent (`terms_accepted_at`, `privacy_policy_version`), `avatar_path`, soft deletes |
+| `categories` | Item categories. 10 defaults are inserted by the migration. Retired categories (`retired_at`) can't be picked for new posts |
+| `posts` | `type` (`lost`/`found`), `status` (`pending`/`approved`/`rejected`/`resolved`), coordinates, `event_date`, moderation fields (`reviewed_by`, `reviewed_at`, `rejection_reason`) |
+| `post_images` | Images attached to a post |
+| `messages` | Direct messages between users about a post. Text, attachments or both. The body is encrypted |
+| `message_attachments` | Files attached to a message: `path`, `mime_type` (`image/*` or `video/*`), `size` in bytes |
+| `saved_searches`, `saved_search_matches` | A user's saved search filters and the posts already notified for each |
+| `reports` | Users reporting posts. One report per user per post, `status` `open`/`closed` |
+| `notifications` | Laravel database notifications |
+| `personal_access_tokens` | Sanctum API tokens |
+| `cache`, `jobs`, `sessions`, `password_reset_tokens` | Laravel defaults |
+
+The database enforces these rules, so inserts that break them fail:
+
+- Permanently deleting a user (not a soft delete) deletes their posts, images, messages and saved searches. Reports they made or reviewed are kept, with the user set to `NULL`.
+- A category that is still used by posts can't be deleted. Retire it instead.
+- `type`, `status`, `role` and `mime_type` only accept the values listed above.
+- Coordinates must be valid latitude and longitude.
+- A user can't send a message to themselves. Deleting a message deletes its attachments.
 
 ## Registration
 
-### E-mail verification (turned off)
+### E-mail verification (off)
 
 The project has no mail domain yet, so e-mail verification is **off**. New accounts get no verification e-mail and can sign in and post right away.
 
-The verification code is still there. To turn it back on, set `EMAIL_VERIFICATION_ENABLED=true` (`.env` for dev, `.env.production` on the server, then `deploy/deploy.sh`). Mail has to work first (`MAIL_MAILER=resend`, `RESEND_API_KEY`, a `MAIL_FROM_ADDRESS` on a domain verified in Resend).
+The verification code is still in place. To turn it on, set `EMAIL_VERIFICATION_ENABLED=true` (`.env` in development, `.env.production` on the server followed by `deploy/deploy.sh`). Mail has to work first, see [E-mail in development](#e-mail-in-development).
 
-While it is off, `email_verified_at` stays `null`: nobody is marked as verified who wasn't. So once it is on again, accounts created in the meantime are asked to verify before posting. The header prompt has a "Resend e-mail" button for that. Clients should decide whether to show the prompt from `must_verify_email` in the user payload, not from `email_verified_at`. Details are in [`config/verification.php`](project/backend/config/verification.php).
+While it is off, `email_verified_at` stays `null`, so nobody is marked as verified who wasn't. Once it is turned on, accounts created in the meantime are asked to verify before posting, and the header prompt has a "Resend e-mail" button for that. Clients decide whether to show the prompt from `must_verify_email` in the user payload, not from `email_verified_at`. Details are in [`config/verification.php`](project/backend/config/verification.php).
 
 ### Sign-up CAPTCHA
 
-Sign-up is protected by a CAPTCHA to keep automated registrations out. No external service is involved. `CAPTCHA_TYPE` picks one of three kinds:
+Sign-up is protected by a self-hosted CAPTCHA, with no external service. `CAPTCHA_TYPE` picks one of three kinds:
 
 | `CAPTCHA_TYPE` | The user sees | Answer |
 |---|---|---|
-| `hash` (default) | "Checking your browser…" with a progress bar | Found by the browser itself, nothing to type |
+| `hash` (default) | "Checking your browser…" with a progress bar | Found by the browser, nothing to type |
 | `math` | "What is 7 + 5?" | Typed in, never negative |
 | `determinant` | A 2×2 matrix | `a·d − b·c`, typed in, can be negative |
 
-To switch, set `CAPTCHA_TYPE` in `project/backend/.env` for dev, or in `.env.production` on the server and then run `deploy/deploy.sh`. Production caches its config at start-up (`php artisan optimize`), so a change there needs the redeploy. The frontend needs no change: the register page shows whatever kind the server sends. An unknown value makes `GET /captcha` fail with a clear error instead of silently picking a type.
+Set `CAPTCHA_TYPE` in `project/backend/.env` for development, or in `.env.production` on the server followed by `deploy/deploy.sh` (production caches its config at start-up). The frontend needs no change: the register page shows whatever kind the server sends. An unknown value makes `GET /captcha` fail with a clear error instead of silently picking a type.
 
 How it works for every type:
 
-1. `GET /api/v1/captcha` returns `captcha_id`, `type` and `expires_in`, plus `question` (math), `question` and `matrix` (determinant), or `algorithm`, `salt`, `challenge` and `max_number` (hash). The answer stays in the server's cache and is never sent to the browser.
-2. `POST /api/v1/register` sends `captcha_id` and `captcha_answer` with the other fields. The `captcha` middleware checks them before anything else, so without a solved CAPTCHA the endpoint doesn't reveal whether an e-mail address or username is taken.
-3. Every challenge allows **one** attempt, right or wrong, and expires after 5 minutes (`CAPTCHA_TTL_SECONDS`). After any failed registration, the form fetches a new one.
+1. `GET /api/v1/captcha` returns `captcha_id`, `type`, `expires_in` and the challenge: `question` (math), `question` and `matrix` (determinant), or `algorithm`, `salt`, `challenge` and `max_number` (hash). The answer stays in the server's cache and is never sent to the browser.
+2. `POST /api/v1/register` sends `captcha_id` and `captcha_answer` with the other fields. The `captcha` middleware checks them first, so without a solved CAPTCHA the endpoint doesn't reveal whether an e-mail address or username is taken.
+3. Each challenge allows **one** attempt, right or wrong, and expires after 5 minutes (`CAPTCHA_TTL_SECONDS`). After any failed registration the form fetches a new one.
 
-**The hash puzzle.** `challenge` is `SHA-256(salt + n)` for a secret whole number `n` between 0 and `max_number`. The register page starts solving as soon as it opens: a Web Worker tries `n = 0, 1, 2, …` until the hash matches, so the form stays responsive and the puzzle is usually solved before the user has finished typing. If the user clicks "Create account" first, the form waits and is sent once the puzzle is solved. Because `n` is never above `max_number`, the work is bounded: at most `max_number + 1` hashes, half that on average. The default of 3,000,000 (`CAPTCHA_MAX_NUMBER`) takes about 1 s at worst on a current laptop and 10–30 s on a slow phone. If you change it, keep the slow-phone worst case under a minute. The other settings are in [`config/captcha.php`](project/backend/config/captcha.php).
+**The hash puzzle.** `challenge` is `SHA-256(salt + n)` for a secret whole number `n` between 0 and `max_number`. The register page starts solving as soon as it opens: a Web Worker tries `n = 0, 1, 2, …` until the hash matches, so the form stays responsive and the puzzle is usually solved before the user finishes typing. If the user clicks "Create account" first, the form is sent once the puzzle is solved. The work is bounded at `max_number + 1` hashes, half that on average. The default of 3,000,000 (`CAPTCHA_MAX_NUMBER`) takes about 1 second at worst on a current laptop and 10–30 seconds on a slow phone. If you change it, keep the slow-phone worst case under a minute. Other settings are in [`config/captcha.php`](project/backend/config/captcha.php).
 
-`GET /captcha` is limited to 30 requests per minute per IP and `POST /register` to 5. Unanswered challenges are deleted from the `cache` table by `app:prune-expired-cache`, which the scheduler runs daily at 00:30 UTC.
+`GET /captcha` is limited to 30 requests per minute per IP and `POST /register` to 5. Unanswered challenges are removed from the `cache` table by the daily `app:prune-expired-cache` job.
 
-None of the three stops a bot written for this site. `math` and `determinant` can be read by a program as easily as by a person. `hash` doesn't tell a person from a program either, but it makes every sign-up cost CPU time, which together with the rate limits makes mass registration slow and expensive.
+None of the three types stops a bot written for this site. `math` and `determinant` can be read by a program as easily as by a person. `hash` doesn't tell a person from a program either, but it makes every sign-up cost CPU time, which, together with the rate limits, makes mass registration slow and expensive.
 
-## Production (Azure VM)
+## Data retention
 
-`docker-compose.prod.yml` runs the live site. It's separate from the dev setup above, which stays unchanged.
+AC-17 requires a deleted account to be gone within 30 days, backups included.
+
+Deleting an account soft-deletes it. Every day at 00:00 UTC the scheduler runs `model:prune`, which permanently deletes accounts soft-deleted more than **21 days** ago, together with their posts, messages and uploaded files. Backups are kept for 7 days.
+
+Worst case, deleted data still exists for 21 days (waiting for the purge) + 1 day (until the purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **30 days**.
+
+The numbers live in [`config/retention.php`](project/backend/config/retention.php):
+
+| Setting | Default | Change it with |
+|---------|---------|----------------|
+| `account_purge_days` | 21 | `ACCOUNT_PURGE_DAYS=` in `.env.production`, then `deploy/deploy.sh` |
+| `backup_retention_days` | 7 | `RETENTION_DAYS` in `deploy/backup-storage.sh` and rerun `setup`. Change both |
+| `deleted_account_limit_days` | 30 | Fixed by AC-17 |
+
+`account_purge_days + backup_retention_days + 2` must stay at or below 30, and `tests/Feature/UserPruningTest.php` fails if the defaults break that. Keeping backups longer therefore means purging accounts sooner.
+
+### Scheduled jobs
+
+Defined in [`routes/console.php`](project/backend/routes/console.php) and run by the `scheduler` container in production. All times are UTC.
+
+| Time | Job |
+|------|-----|
+| 00:00 | `model:prune`: permanently deletes accounts past `account_purge_days` |
+| 00:30 | `app:prune-expired-cache`: removes expired cache entries, including unanswered CAPTCHAs |
+| 00:45 | `sanctum:prune-expired`: removes API tokens that expired more than a day ago |
+| 02:00 | Database backup (in the `backup` container, see [Backups](#backups)) |
+
+## Production
+
+The live site runs on an Azure VM from `docker-compose.prod.yml`, separate from the development setup. **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** covers installing a new server, configuration, migrations, backups, redeploying, rollback and moving to a new server.
 
 | Container | Role |
 |-----------|------|
-| `proxy` | Caddy. The only container with public ports (80, 443). Gets and renews the Let's Encrypt certificate, redirects HTTP to HTTPS, serves the built Angular app and forwards `/api`, `/sanctum`, `/storage` and `/up` to the backend |
-| `backend` | Laravel on FrankenPHP, plain HTTP on port 8080, reachable only from the proxy |
-| `db` | Postgres on an internal Docker network with no published port and no internet access |
-| `backup` | Daily `pg_dump` to Oracle Cloud Object Storage, kept 7 days. No ports. See [Backups](#backups) |
-| `scheduler` | Laravel's scheduler (`php artisan schedule:work`, jobs in `routes/console.php`), e.g. the daily purge of deleted accounts. Same image as `backend`, no ports |
+| `proxy` | Caddy. The only container with public ports (80, 443). HTTPS via Let's Encrypt, serves the built Angular app, forwards `/api/*`, `/storage/*` and `/up` to the backend |
+| `backend` | Laravel on FrankenPHP, reachable only from the proxy |
+| `scheduler` | Laravel's scheduled jobs. Same image as `backend` |
+| `db` | Postgres on an internal network with no published port and no internet access |
+| `backup` | Daily `pg_dump` to Oracle Cloud Object Storage, kept 7 days |
 
-On the server (repo cloned to `/opt/IT-Project-management`):
+In short:
 
 ```bash
 deploy/init-env.sh <hostname> <email>   # once: writes .env.production with random secrets
@@ -145,111 +255,25 @@ deploy/deploy.sh                        # every deploy: pull, build, migrate, re
 deploy/create-admin.sh <user> <email>   # once, after the first deploy: initial admin
 ```
 
-`deploy.sh` runs `php artisan migrate --force` before switching to the new containers. If a migration fails, the deploy stops and the old version keeps running. Pushes to `main` deploy automatically through `.github/workflows/deploy.yml` once the repository variable `DEPLOY_ENABLED` is `true` and the `DEPLOY_*` secrets are set.
+Pushes to `main` deploy automatically through `.github/workflows/deploy.yml` once it is set up. `deploy.sh` runs migrations before replacing the running containers, so a failed migration leaves the old version running.
 
-### First admin account
+## Backups
 
-A fresh database has no admin, and production never runs the seeder. After the first deploy, create the initial admin on the server:
+The database is backed up daily to a private Oracle Cloud bucket and kept for 7 days. The server can only write backups, not read or delete them. Uploaded files and `APP_KEY` are **not** in the backup; keep `.env.production` in the team's password manager.
 
-```bash
-deploy/create-admin.sh <username> <email>
-```
+Setup, monitoring, test restores (with the restore log) and disaster recovery are in [DEPLOYMENT_GUIDE.md, section 7](DEPLOYMENT_GUIDE.md#7-backups).
 
-It asks for the password at a hidden prompt (at least 12 characters), so the password never ends up in git, `.env.production`, logs or your shell history.
+## Performance benchmark
 
-It only works for a person in a shell on the server. It refuses to run without an interactive terminal (CI, cron, piped input, `ssh host cmd` without `-t`) and when Docker points at a remote daemon (`DOCKER_HOST`, docker context). The website can't trigger it: there is no route for it, and the Laravel command refuses to run outside an interactive CLI.
+`automation/` contains a repeatable benchmark: it seeds 10,000 posts, measures the public search API, and loads the Home, Items and Map pages in headless Chrome over a simulated 4G connection. It runs against `docker-compose.performance.yml`, which uses the production backend image and a production Angular build served by Caddy.
 
-This is only for bootstrapping. It refuses to run while an active admin exists. Further admins are managed from the website. If every admin is banned or deleted, running it again creates a new one.
+Requirements: the dev `db` and `backend` containers running, the .NET 10 SDK and Google Chrome. Steps are in [`automation/performance/README.md`](automation/performance/README.md).
 
-Useful commands on the server:
+## Backend conventions
 
-```bash
-alias dc='docker compose --env-file .env.production -f docker-compose.prod.yml'
-dc ps                                   # db must show no host port
-dc logs -f backend
-dc exec backend php artisan migrate:status
-dc exec db psql -U app app              # DB access only from the server itself
-dc exec backup backup now               # extra backup to Oracle right away (see Backups)
-```
-
-Never add a `ports:` entry to `db`. Docker-published ports bypass `ufw`, so the Azure firewall (NSG) and the missing port are what keep the database private.
-
-### Backups
-
-The `backup` container runs `pg_dump` every day at 02:00 UTC (`BACKUP_AT` in `.env.production` to change it) and uploads the dump to the Oracle Cloud Object Storage bucket `db-backups`, so it's off the VM's disk. A lifecycle rule on the bucket deletes each backup after 7 days. Versioning is off, so deleted means gone. Storage is within Oracle's Always Free tier (20 GB; a dump is well under 1 MB today).
-
-The server's URL (`BACKUP_UPLOAD_URL`, a pre-authenticated request) can only **write** backups. It can't list, read or delete them, and the bucket is private (`NoPublicAccess`). Backup names end in a random suffix, so they can't be guessed and overwritten either. Reading them goes through the OCI CLI (Cloud Shell in the Oracle console).
-
-What is **not** in the backup:
-- **`APP_KEY`.** Message bodies are encrypted with it. A restored database without the original key has unreadable messages. Keep a copy of `.env.production` in the team's password manager.
-- **Uploaded files** (the `app-storage` volume: avatars, post images, attachments).
-
-#### Setup (once)
-
-1. In the Oracle Cloud console, open **Cloud Shell** (the `>_` icon, top right). The OCI CLI there is already logged in.
-2. Get the script into Cloud Shell: Cloud Shell menu (gear icon) → **Upload** → `deploy/backup-storage.sh`, or `git clone` the repo.
-3. Run it:
-   ```bash
-   bash backup-storage.sh setup
-   ```
-   It creates the bucket, a policy that lets Object Storage delete old backups, the 7-day delete rule and the write-only URL. At the end it prints a `BACKUP_UPLOAD_URL=https://...` line.
-4. On the server, add that line to `.env.production` (replace the empty `BACKUP_UPLOAD_URL=` line if there is one), then:
-   ```bash
-   deploy/deploy.sh                        # starts the backup container
-   dc exec backup backup now               # first backup, don't wait for 02:00
-   dc ps backup                            # should say (healthy)
-   ```
-5. In Cloud Shell, check it arrived: `bash backup-storage.sh list`.
-
-The URL expires after a year. Running `setup` again makes a new one, and the old one stops working. Put a reminder in the calendar.
-
-#### Checking
-
-`dc ps backup` shows `unhealthy` when no backup succeeded in the last 26 hours or the last one failed (3 attempts, 10 minutes apart). `dc logs backup` says why. `deploy.sh` warns on every deploy if `BACKUP_UPLOAD_URL` is missing. In the console, the bucket is under Storage → Buckets → `db-backups`.
-
-#### Test restore
-
-Do this after setup and whenever the backup setup changes. It doesn't touch the live database.
-
-1. In Cloud Shell, get a download link for the newest backup (valid 1 hour):
-   ```bash
-   bash backup-storage.sh url                    # or: bash backup-storage.sh url app-20261107T020000Z-1a2b3c4d.dump
-   ```
-2. On the server, restore it into a temporary database named `restore_test_<timestamp>`:
-   ```bash
-   deploy/restore-db.sh 'https://objectstorage.<region>.oraclecloud.com/p/.../o/app-...dump'
-   ```
-   The script checks the file is a valid dump, restores it as the `app` user in a single transaction, and prints row counts per table next to the live database's, plus the newest migration in each. Then it drops the temporary restore database, so no extra copy of personal data stays around.
-3. Counts close to live (live has changed since the backup) and the same latest migration mean the backup is good. Add a row below.
-
-| Date | Who | Backup | Where | Result |
-|------|-----|--------|-------|--------|
-| 2026-11-07 | Kan6de | `app-20261107T101120Z-ad6414e7.dump` | Local copy of the prod stack, storage emulated (not Oracle) | OK: 25 users restored (live had 24 after a purge), latest migration matched. Live restore (`--live`) also tested |
-
-#### Restoring after a failure
-
-1. If the VM is gone: set up a new one, clone the repo to `/opt/IT-Project-management`, put the saved `.env.production` back (same `APP_KEY`, same `BACKUP_UPLOAD_URL`) and run `deploy/deploy.sh`.
-2. Get a download link as in step 1 above. Pick an older backup with `list` if the newest is already broken.
-3. On the server:
-   ```bash
-   deploy/restore-db.sh --live '<url>'
-   ```
-   It restores into a new database first, so the live data is only touched once that worked. After you type the database name to confirm, it stops the backend, renames the current database to `app_before_restore_<time>`, puts the restored one in its place, runs any newer migrations and starts everything again. Drop the old database with the command it prints once the site looks right.
-
-Anything written after the backup was made (at most a day) is lost.
-
-#### Retention and account deletion
-
-AC-17 says a deleted account must be gone within 30 days, backups included. Deleting an account soft-deletes it. The `scheduler` container runs `model:prune` every day at 00:00 UTC, which permanently deletes accounts soft-deleted more than **21 days** ago, together with their posts, messages and uploaded files.
-
-Worst case, the data then still exists for 21 days (waiting for the purge) + 1 day (until the daily purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **30 days**.
-
-The numbers live in [`config/retention.php`](project/backend/config/retention.php):
-
-| Setting | Default | Change it with |
-|---------|---------|----------------|
-| `account_purge_days` | 21 | `ACCOUNT_PURGE_DAYS=` in `.env.production`, then `deploy/deploy.sh` |
-| `backup_retention_days` | 7 | `RETENTION_DAYS` in `deploy/backup-storage.sh` + rerun `setup`; change both |
-| `deleted_account_limit_days` | 30 | AC-17, not meant to change |
-
-`account_purge_days + backup_retention_days + 2` must stay at or below 30. A test (`tests/Feature/UserPruningTest.php`) fails if the defaults break that. So keeping backups longer means purging accounts sooner.
+- **Never make `role` or `banned_at` mass assignable.** Otherwise anyone could register with `"role": "admin"`. Set them explicitly in admin-only code (`$user->forceFill(['role' => 'admin'])`). A test fails if `role` becomes fillable.
+- **Set `mime_type` from the stored file** (`$file->getMimeType()`, which reads the content), never from the client's `Content-Type` header.
+- **Validate across tables in the FormRequest.** The database can't check that a message has a body or at least one attachment, so `StoreMessageRequest` does. Create a message and its attachments in one transaction.
+- **Deleting rows doesn't delete files.** Account purges remove a user's files from disk. Any new code that deletes posts, images or attachments has to remove their files too.
+- **Use `User::factory()->admin()`** to create an admin in tests.
+- **Schema changes go through new migrations.** Never edit a migration that has already run in production.
