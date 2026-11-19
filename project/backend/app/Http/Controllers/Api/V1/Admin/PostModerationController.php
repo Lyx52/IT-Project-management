@@ -8,6 +8,7 @@ use App\Http\Resources\PostResource;
 use App\Models\Post;
 use App\Models\Report;
 use App\Notifications\PostModeratedNotification;
+use App\Services\PossibleMatchNotifier;
 use App\Services\SavedSearchNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,7 @@ class PostModerationController extends Controller
      * Publishes a pending post, notifies its author and the owners of saved
      * searches it matches.
      */
-    public function approve(Request $request, Post $post, SavedSearchNotifier $savedSearches): JsonResponse
+    public function approve(Request $request, Post $post, SavedSearchNotifier $savedSearches, PossibleMatchNotifier $possibleMatches): JsonResponse
     {
         if ($post->status !== PostStatus::Pending) {
             return response()->json([
@@ -71,6 +72,7 @@ class PostModerationController extends Controller
 
         $post->user->notify(new PostModeratedNotification($post));
         $savedSearches->notifyMatches($post);
+        $possibleMatches->notifyMatches($post);
 
         $post->load(['category', 'user', 'images']);
 
