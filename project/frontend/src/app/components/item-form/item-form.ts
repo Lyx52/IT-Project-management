@@ -1,8 +1,10 @@
 import {
   Component,
+  computed,
   ElementRef,
   EventEmitter,
   inject,
+  Input,
   OnInit,
   Output,
   signal,
@@ -22,7 +24,7 @@ import { AuthService } from '../../services/auth';
 import en from '../../../assets/en.json';
 import lv from '../../../assets/lv.json';
 import { PostService } from '../../services/posts.service';
-import { Category } from '../../models/models';
+import { Category, Item, ItemImage } from '../../models/models';
 import * as L from 'leaflet';
 
 function notFutureDate(control: AbstractControl): ValidationErrors | null {
@@ -70,6 +72,39 @@ export class ItemForm implements OnInit {
 
   @Output() created = new EventEmitter<void>();
 
+  /** When set, the form edits this post instead of creating a new one. */
+  @Input() set post(value: Item | null) {
+    this.editing = value;
+    if (value) {
+      this.form.reset({
+        type: value.type,
+        categoryId: value.category.id,
+        title: value.title,
+        description: value.description,
+        eventDate: value.event_date.slice(0, 10),
+        locationName: value.location_name ?? '',
+      });
+
+      this.existingImages.set(value.images ?? []);
+      this.removedImageIds.set([]);
+
+      if (value.latitude !== null && value.longitude !== null) {
+        this.selectedCoordinates.set({ latitude: value.latitude, longitude: value.longitude });
+        this.showSelectedMarker();
+      }
+    }
+  }
+  editing: Item | null = null;
+
+  /** Editing: the photos the post has now, and the ones marked for removal. */
+  readonly existingImages = signal<ItemImage[]>([]);
+  readonly removedImageIds = signal<number[]>([]);
+
+  /** Existing photos that stay after saving. */
+  readonly keptImages = computed(() =>
+    this.existingImages().filter((image) => !this.removedImageIds().includes(image.id)),
+  );
+
   readonly isAuthenticated = this.auth.isAuthenticated;
 
   // Set from HTTP callbacks, so they are signals: components are OnPush by
@@ -82,11 +117,6 @@ export class ItemForm implements OnInit {
   readonly maxImageSize = 5 * 1024 * 1024;
 
   readonly allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
-
-  readonly defaultCoordinates = {
-    latitude: 56.9496,
-    longitude: 24.1052,
-  };
 
   readonly form = this.fb.nonNullable.group({
     type: ['lost', Validators.required],
@@ -135,6 +165,9 @@ export class ItemForm implements OnInit {
       maxZoom: 19,
     }).addTo(this.map);
 
+    // Editing: start on the post's saved location
+    this.showSelectedMarker();
+
     this.map.on('click', (event: L.LeafletMouseEvent) => {
       const { lat, lng } = event.latlng;
 
@@ -157,6 +190,31 @@ export class ItemForm implements OnInit {
         }).addTo(this.map!);
       }
     });
+  }
+
+  /** Puts the marker on the selected location and centres the map there. */
+  private showSelectedMarker(): void {
+    const coordinates = this.selectedCoordinates();
+
+    if (!this.map || !coordinates) {
+      return;
+    }
+
+    const latLng = L.latLng(coordinates.latitude, coordinates.longitude);
+
+    if (this.selectedMarker) {
+      this.selectedMarker.setLatLng(latLng);
+    } else {
+      this.selectedMarker = L.circleMarker(latLng, {
+        radius: 9,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: '#39976b',
+        fillOpacity: 1,
+      }).addTo(this.map);
+    }
+
+    this.map.setView(latLng, 15);
   }
 
   loadCategories(): void {
@@ -196,8 +254,12 @@ export class ItemForm implements OnInit {
 
     this.imageError = '';
 
-    if (files.length > this.maxImages) {
-      this.imageError = `You can upload up to ${this.maxImages} images.`;
+    const room = this.maxImages - this.keptImages().length;
+
+    if (files.length > room) {
+      this.imageError = this.editing
+        ? `This post can have up to ${this.maxImages} images, so you can add ${room} more.`
+        : `You can upload up to ${this.maxImages} images.`;
       input.value = '';
       return;
     }
@@ -219,6 +281,12 @@ export class ItemForm implements OnInit {
     }
 
     this.selectedImages = files;
+  }
+
+  /** Marks an existing photo for removal; it is deleted when the post is saved. */
+  removeExistingImage(id: number): void {
+    this.removedImageIds.update((ids) => [...ids, id]);
+    this.imageError = '';
   }
 
   removeImage(index: number): void {
@@ -249,6 +317,7 @@ export class ItemForm implements OnInit {
 
     const value = this.form.getRawValue();
     const payload = new FormData();
+    const editing = this.editing;
 
     payload.append('type', value.type);
     payload.append('category_id', String(value.categoryId));
@@ -259,17 +328,39 @@ export class ItemForm implements OnInit {
     payload.append('latitude', String(coordinates.latitude));
     payload.append('longitude', String(coordinates.longitude));
 
-    if (value.locationName.trim()) {
+    if (editing) {
+      // location_name may be cleared
       payload.append('location_name', value.locationName.trim());
+
+      for (const id of this.removedImageIds()) {
+        payload.append('remove_images[]', String(id));
+      }
+
+      for (const image of this.selectedImages) {
+        payload.append('images[]', image);
+      }
+    } else {
+      if (value.locationName.trim()) {
+        payload.append('location_name', value.locationName.trim());
+      }
+
+      for (const image of this.selectedImages) {
+        payload.append('images[]', image);
+      }
     }
 
-    for (const image of this.selectedImages) {
-      payload.append('images[]', image);
-    }
+    const request = editing
+      ? this.postService.updatePost(editing.id, payload)
+      : this.postService.createPost(payload);
 
-    this.postService.createPost(payload).subscribe({
+    request.subscribe({
       next: () => {
         this.isSubmitting.set(false);
+
+        if (editing) {
+          this.created.emit();
+          return;
+        }
 
         this.form.reset({
           type: 'lost',
@@ -296,6 +387,11 @@ export class ItemForm implements OnInit {
           const errors = Object.values(error.error.errors).flat().join(' ');
 
           this.submitError.set(errors || 'Please check the form fields.');
+          return;
+        }
+
+        if (error.status === 403 && editing) {
+          this.submitError.set(error.error?.message ?? 'You cannot edit this post.');
           return;
         }
 

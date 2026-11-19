@@ -65,6 +65,13 @@ export class PostService {
     });
   }
 
+  /** Partial update (author only). Sent as POST, as the API expects. */
+  updatePost(id: number, formData: FormData): Observable<ApiResponse<Post>> {
+    return this.http.post<ApiResponse<Post>>(`${environment.apiBaseUrl}/post/${id}`, formData, {
+      headers: this.headers,
+    });
+  }
+
   getPostById(id: number): Observable<ApiResponse<Item>> {
     return this.http.get<ApiResponse<Item>>(`${environment.apiBaseUrl}/post/${id}`, {
       headers: this.headers,
