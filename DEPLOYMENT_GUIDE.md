@@ -95,16 +95,18 @@ Recommended:
 | Disk | 30 GB or more |
 | Login | SSH key, no password login |
 
-In Azure, open these inbound ports in the VM's **network security group** (NSG):
+**The firewall is the VM's network security group (NSG) in Azure.** It filters traffic before it reaches the VM, so nothing on the server can get around it. That includes Docker, which bypasses a host firewall like `ufw` for published ports. It is also managed outside the VM, so someone who breaks into the server can't switch it off. On another cloud, use that provider's firewall in the same way (AWS security groups, Oracle security lists, and so on).
 
-| Port | Protocol | Why |
-|------|----------|-----|
-| 22 | TCP | SSH. Restrict the source to your own IP range if you can |
-| 80 | TCP | Let's Encrypt validation and the redirect to HTTPS |
-| 443 | TCP | HTTPS |
-| 443 | UDP | HTTP/3 (optional, Caddy falls back to TCP) |
+Allow only these inbound ports and deny everything else (the NSG's default):
 
-Don't open 5432 or any other port. The database must never be reachable from outside.
+| Port | Protocol | Source | Why |
+|------|----------|--------|-----|
+| 22 | TCP | Your team's IP addresses if they are fixed, otherwise any | SSH. If deploys run from GitHub Actions, their IPs change, so the source must be any. SSH then relies on key-only login |
+| 80 | TCP | Any | Let's Encrypt validation and the redirect to HTTPS |
+| 443 | TCP | Any | HTTPS |
+| 443 | UDP | Any | HTTP/3 (optional, Caddy falls back to TCP) |
+
+Never open 5432 or any other port. The database must never be reachable from outside.
 
 ### 3.2 Point the hostname at the server
 
@@ -134,18 +136,7 @@ docker version
 docker compose version        # Docker Compose version v2.x or newer
 ```
 
-### 3.4 Firewall and Docker logs
-
-Turn on the host firewall for anything outside Docker:
-
-```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 80/tcp
-sudo ufw allow 443
-sudo ufw enable
-```
-
-Ports published by Docker bypass `ufw`. That is why the `db` container has no `ports:` entry; the NSG and the missing port are what keep the database private.
+### 3.4 Docker logs and host firewall
 
 Docker keeps container logs forever by default, which eventually fills the disk. Limit them:
 
@@ -154,6 +145,15 @@ sudo tee /etc/docker/daemon.json > /dev/null <<'EOF'
 { "log-driver": "json-file", "log-opts": { "max-size": "10m", "max-file": "5" } }
 EOF
 sudo systemctl restart docker
+```
+
+**Host firewall (`ufw`): optional.** The NSG from [3.1](#31-create-the-vm) is the real firewall. `ufw` doesn't protect the containers: Docker-published ports bypass it, which is why the `db` container must never get a `ports:` entry. It only adds a second layer for services on the host itself, e.g. one installed later by mistake. If you turn it on, allow SSH **first**, or you lock yourself out:
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443
+sudo ufw enable
 ```
 
 ### 3.5 Add swap on small VMs
