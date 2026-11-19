@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { routes } from '../../app.routes';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
@@ -56,11 +56,7 @@ describe('NotificationBell', () => {
 
   const create = async (data = [MATCH, APPROVED], unread = 1) => {
     TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter(routes),
-      ],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter(routes)],
     });
     httpMock = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(NotificationBell);
