@@ -127,6 +127,23 @@ The signed-in user's own posts in every status (`pending`, `approved`, `rejected
 
 **200** `{ "data": [ Post, ... ], "links": { ... }, "meta": { "current_page": 1, "last_page": 1, "total": 3, ... } }`
 
+### DELETE `/user`
+
+Suspends the signed-in account immediately, revokes all of its API tokens, and schedules permanent deletion after the 30-day grace period. The daily pruning task removes the account's posts, images and messages; report rows remain with a null reporter.
+
+**202**
+```json
+{
+  "message": "Your account is suspended and scheduled for permanent deletion.",
+  "data": {
+    "deleted_at": "2026-11-18T12:00:00.000000Z",
+    "scheduled_deletion_at": "2026-12-18T12:00:00.000000Z"
+  }
+}
+```
+
+The account cannot sign in during the grace period. Personal data in backups may remain for up to 39 days after the request, based on the 7-day backup retention and daily cleanup schedule.
+
 ### GET `/email/verify/{id}/{hash}`
 
 The link in the verification e-mail (signed URL, don't build it by hand).
@@ -524,4 +541,4 @@ Returns all-time aggregate post counts by type and status, plus the number of re
 
 ## Not available yet
 
-The database schema also covers message attachments, report moderation (listing and closing reports), account deletion and category management, but there are no endpoints for them yet. There is also no inbox (list of all your conversations).
+The database schema also covers message attachments and report moderation (listing and closing reports), but there are no endpoints for those yet. There is also no inbox (list of all your conversations).
