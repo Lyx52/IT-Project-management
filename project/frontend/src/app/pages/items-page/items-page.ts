@@ -112,14 +112,10 @@ export class ItemsPageComponent {
     });
 
     this.searchInput$
-    .pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntilDestroyed()
-    )
-    .subscribe(value => {
-      this.applyFilters({ q: value.trim() || null });
-  });
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe((value) => {
+        this.applyFilters({ q: value.trim() || null });
+      });
 
     this.loadCategories();
   }
@@ -130,7 +126,7 @@ export class ItemsPageComponent {
     const order = this.sortOrder();
 
     return [...this.items()]
-      .filter(item => {
+      .filter((item) => {
         const date = item.event_date?.slice(0, 10);
 
         if (!date) return !from && !to;
@@ -140,9 +136,7 @@ export class ItemsPageComponent {
         return true;
       })
       .sort((a, b) => {
-        const comparison =
-          new Date(b.created_at).getTime() -
-          new Date(a.created_at).getTime();
+        const comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 
         return order === 'newest' ? comparison : -comparison;
       });
@@ -154,9 +148,7 @@ export class ItemsPageComponent {
   }
 
   toggleSortOrder(): void {
-    this.sortOrder.update(order =>
-      order === 'newest' ? 'oldest' : 'newest'
-    );
+    this.sortOrder.update((order) => (order === 'newest' ? 'oldest' : 'newest'));
   }
 
   resetFilters(): void {

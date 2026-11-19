@@ -55,7 +55,6 @@ export class PostPage {
     });
   }
 
-
   readonly unreadMessagesCount = signal(0);
 
   isMessengerOpen = false;

@@ -1,4 +1,3 @@
-
 <app-header />
 
 <main class="page-container py-4">
@@ -94,11 +93,7 @@
         (change)="dateTo.set($any($event.target).value)"
       />
 
-      <button
-        type="button"
-        class="btn btn-outline-secondary"
-        (click)="resetFilters()"
-      >
+      <button type="button" class="btn btn-outline-secondary" (click)="resetFilters()">
         Reset filters
       </button>
     </div>
@@ -117,9 +112,7 @@
             class="d-flex flex-wrap align-items-center gap-2"
             (submit)="$event.preventDefault(); submitSave()"
           >
-            <label class="small fw-semibold" for="saved-search-name">
-              Name this search
-            </label>
+            <label class="small fw-semibold" for="saved-search-name"> Name this search </label>
 
             <input
               id="saved-search-name"
@@ -130,21 +123,11 @@
               (input)="saveName.set($any($event.target).value)"
             />
 
-            <button
-              class="btn btn-primary btn-sm"
-              type="submit"
-              [disabled]="isSaving()"
-            >
+            <button class="btn btn-primary btn-sm" type="submit" [disabled]="isSaving()">
               {{ isSaving() ? 'Saving…' : 'Save' }}
             </button>
 
-            <button
-              class="btn btn-link btn-sm"
-              type="button"
-              (click)="closeSave()"
-            >
-              Cancel
-            </button>
+            <button class="btn btn-link btn-sm" type="button" (click)="closeSave()">Cancel</button>
           </form>
 
           @if (saveError()) {
@@ -159,18 +142,12 @@
             <a routerLink="/saved-searches">Manage saved searches</a>
           </p>
         } @else {
-          <button
-            class="btn btn-outline-primary btn-sm"
-            type="button"
-            (click)="openSave()"
-          >
+          <button class="btn btn-outline-primary btn-sm" type="button" (click)="openSave()">
             <i class="bi bi-bell me-1"></i>
             Save this search
           </button>
 
-          <span class="small text-muted ms-2">
-            Get notified when a new post matches.
-          </span>
+          <span class="small text-muted ms-2"> Get notified when a new post matches. </span>
         }
       </div>
     }
@@ -204,11 +181,7 @@
         </p>
       </div>
 
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-sm"
-        (click)="toggleSortOrder()"
-      >
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="toggleSortOrder()">
         <i class="bi bi-sort-down me-1"></i>
         {{ sortOrder() === 'newest' ? 'Newest first' : 'Oldest first' }}
       </button>
@@ -217,11 +190,7 @@
     @if (loadError()) {
       <div class="alert alert-danger">
         {{ loadError() }}
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-danger ms-2"
-          (click)="loadPosts()"
-        >
+        <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="loadPosts()">
           Retry
         </button>
       </div>
@@ -289,9 +258,7 @@
       <div class="modal-header-custom">
         <div>
           <h5 id="createPostTitle" class="fw-bold mb-1">Create a post</h5>
-          <p class="text-muted small mb-0">
-            Share information about a lost or found item.
-          </p>
+          <p class="text-muted small mb-0">Share information about a lost or found item.</p>
         </div>
 
         <button

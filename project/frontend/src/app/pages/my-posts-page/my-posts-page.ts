@@ -84,6 +84,4 @@ export class MyPostsPage {
   openTerms(): void {
     this.router.navigate(['/terms']);
   }
-
-
 }

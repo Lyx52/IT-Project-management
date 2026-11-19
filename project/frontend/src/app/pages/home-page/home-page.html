@@ -39,12 +39,7 @@
     } @else if (loadError()) {
       <div class="alert alert-danger">
         {{ loadError() }}
-        <button
-          class="btn btn-sm btn-outline-danger ms-2"
-          (click)="loadPosts()"
-        >
-          Retry
-        </button>
+        <button class="btn btn-sm btn-outline-danger ms-2" (click)="loadPosts()">Retry</button>
       </div>
     } @else if (filteredItems().length === 0) {
       <div class="text-center py-5">
@@ -84,9 +79,7 @@
 
 <!-- Messenger popup -->
 <div class="messenger-popup" [hidden]="!isMessengerOpen">
-  <app-messenger
-    (unreadCountChange)="unreadMessagesCount.set($event)"
-  />
+  <app-messenger (unreadCountChange)="unreadMessagesCount.set($event)" />
 </div>
 
 <app-footer (showTriggered)="openTerms()" />

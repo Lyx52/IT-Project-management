@@ -30,12 +30,12 @@ export class HomePageComponent {
 
   texts = en;
 
-   constructor(private router: Router) {}
+  constructor(private router: Router) {}
 
   ngOnInit() {
     this.loadPosts();
   }
-  
+
   isCreatePostOpen = false;
   isMessengerOpen = false;
 
@@ -63,9 +63,7 @@ export class HomePageComponent {
       return this.items();
     }
 
-    return this.items().filter((item) =>
-      item.title.toLowerCase().includes(query)
-    );
+    return this.items().filter((item) => item.title.toLowerCase().includes(query));
   });
 
   onSearch(event: Event): void {

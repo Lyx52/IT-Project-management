@@ -67,9 +67,7 @@
 
 <!-- Messenger popup -->
 <div class="messenger-popup" [hidden]="!isMessengerOpen">
-  <app-messenger
-    (unreadCountChange)="unreadMessagesCount.set($event)"
-  />
+  <app-messenger (unreadCountChange)="unreadMessagesCount.set($event)" />
 </div>
 
 <app-footer (showTriggered)="openTerms()" />
