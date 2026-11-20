@@ -1,0 +1,105 @@
+@if (actionError()) {
+  <div class="alert alert-danger py-2 small" role="alert">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ actionError() }}
+  </div>
+}
+
+@if (isEmpty()) {
+  <div class="empty-state text-center py-5">
+    <i class="bi bi-inbox fs-2 text-muted"></i>
+    <p class="text-muted mt-2 mb-0">Nothing waiting for review.</p>
+  </div>
+} @else {
+  <div class="queue-list">
+    @for (post of posts(); track post.id) {
+      <article class="queue-item">
+        <div class="queue-item-main">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span
+              class="badge"
+              [class.badge-lost]="post.type === 'lost'"
+              [class.badge-found]="post.type === 'found'"
+            >
+              {{ post.type }}
+            </span>
+            <span class="text-muted small">{{ post.category.name }}</span>
+          </div>
+
+          <h6 class="fw-bold mb-1">{{ post.title }}</h6>
+          <p class="text-muted small mb-2 description">{{ post.description }}</p>
+
+          <p class="text-muted small mb-2">
+            by <span class="fw-semibold">{{ post.user.username }}</span> · {{ post.event_date }} ·
+            submitted {{ post.created_at | date: 'short' }}
+          </p>
+
+          <app-post-image-strip [images]="post.images" />
+        </div>
+
+        <div class="queue-item-actions">
+          <button
+            class="btn btn-sm btn-approve"
+            type="button"
+            (click)="approve(post)"
+            [disabled]="busyId() !== null"
+          >
+            <i class="bi bi-check-lg me-1"></i>
+            Approve
+          </button>
+
+          <button
+            class="btn btn-sm btn-outline-danger"
+            type="button"
+            (click)="startReject(post)"
+            [disabled]="busyId() !== null"
+          >
+            <i class="bi bi-x-lg me-1"></i>
+            Reject
+          </button>
+
+          @if (busyId() === post.id) {
+            <span class="spinner-border spinner-border-sm text-muted" aria-label="Working"></span>
+          }
+        </div>
+      </article>
+    }
+  </div>
+}
+
+@if (rejecting(); as post) {
+  <div class="reason-backdrop" (click)="cancelReject()">
+    <div
+      class="reason-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rejectTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <h6 id="rejectTitle" class="fw-bold mb-1">Reject "{{ post.title }}"</h6>
+      <p class="text-muted small mb-3">
+        The reason is shown to the author, so they know what to change.
+      </p>
+
+      <label class="form-label" for="reject-reason">Reason (optional)</label>
+      <textarea
+        id="reject-reason"
+        class="form-control"
+        rows="3"
+        maxlength="500"
+        placeholder="Not a lost or found item, duplicate, offensive..."
+        [value]="reason()"
+        (input)="reason.set($any($event.target).value)"
+      ></textarea>
+
+      <div class="reason-actions mt-3">
+        <button class="btn btn-sm btn-outline-secondary" type="button" (click)="cancelReject()">
+          Cancel
+        </button>
+        <button class="btn btn-sm btn-outline-danger" type="button" (click)="confirmReject()">
+          Reject post
+        </button>
+      </div>
+    </div>
+  </div>
+}

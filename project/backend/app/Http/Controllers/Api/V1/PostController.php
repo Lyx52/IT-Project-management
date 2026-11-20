@@ -29,7 +29,12 @@ class PostController extends Controller
     {
         $posts = Post::approved()
             ->with(['category', 'user', 'images'])
-            ->latest()
+            // Newest by approval, not by submission: a post sits in the
+            // moderation queue before it is published, so ordering by
+            // created_at buries a post that waited and was approved today
+            // under one submitted yesterday. COALESCE covers rows approved
+            // before reviewed_at existed, which fall back to created_at.
+            ->orderByRaw('COALESCE(reviewed_at, created_at) DESC')
             ->latest('id')
             ->paginate(20);
 

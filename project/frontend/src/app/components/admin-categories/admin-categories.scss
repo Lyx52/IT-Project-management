@@ -1,0 +1,45 @@
+.create-row {
+  display: flex;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.categories-table {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  overflow: hidden;
+
+  th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #858585;
+  }
+}
+
+.retired-row {
+  opacity: 0.6;
+}
+
+.row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.delete-blocked {
+  font-style: italic;
+}
+
+.badge-retired {
+  background: #f1f1f1;
+  color: #858585;
+}
+
+.badge-live {
+  background: #eaf5ef;
+  color: #39976b;
+}

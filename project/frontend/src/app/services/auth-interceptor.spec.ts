@@ -14,6 +14,7 @@ const USER: AuthUser = {
   username: 'jane_doe',
   email: 'jane@example.com',
   email_verified_at: null,
+  role: 'user' as const,
   must_verify_email: false,
 };
 

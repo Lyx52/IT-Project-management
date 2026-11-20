@@ -130,6 +130,15 @@ export interface PostModeratedDetails {
   reason: string | null;
 }
 
+/** Sent to whoever reported a post, once a moderator has dealt with it. */
+export interface ReportReviewedDetails {
+  report_id: number;
+  post_id: number;
+  post_title: string | null;
+  outcome: 'action_taken' | 'dismissed';
+  message: string;
+}
+
 export type AppNotification = {
   id: string;
   read_at: string | null;
@@ -137,6 +146,7 @@ export type AppNotification = {
 } & (
   | { type: 'saved_search_match'; details: SavedSearchMatchDetails }
   | { type: 'post_moderated'; details: PostModeratedDetails }
+  | { type: 'report_reviewed'; details: ReportReviewedDetails }
 );
 
 export interface NotificationPage extends Paginated<AppNotification> {

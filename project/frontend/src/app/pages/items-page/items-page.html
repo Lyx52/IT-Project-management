@@ -71,7 +71,10 @@
       >
         <option value="">All categories</option>
         @for (category of categories(); track category.id) {
-          <option [value]="category.id">
+          <!-- [selected] as well as the select's [value]: the options are
+               rendered after the value binding is written, so a deep link like
+               /items?category_id=2 would otherwise show "All categories". -->
+          <option [value]="category.id" [selected]="category.id === selectedCategoryId()">
             {{ category.name }}
           </option>
         }
@@ -101,64 +104,60 @@
     </div>
 
     <!-- Save this search -->
-    @if (hasFilters()) {
-      <div class="save-search w-100">
-        @if (filters().date_from || filters().date_to) {
-          <p class="small text-muted mb-0">
-            Date ranges apply to this list only and are not included in saved-search notifications.
-            Clear the date range before saving this search.
-          </p>
-        } @else if (!isAuthenticated()) {
-          <p class="small text-muted mb-0">
-            <i class="bi bi-bell me-1"></i>
-            <a routerLink="/login" [queryParams]="{ returnUrl: currentUrl() }">Sign in</a>
-            to save this search and get a notification when a new post matches it.
-          </p>
-        } @else if (isSaveOpen()) {
-          <form
-            class="d-flex flex-wrap align-items-center gap-2"
-            (submit)="$event.preventDefault(); submitSave()"
-          >
-            <label class="small fw-semibold" for="saved-search-name"> Name this search </label>
-
-            <input
-              id="saved-search-name"
-              class="form-control form-control-sm w-auto flex-grow-1"
-              style="max-width: 280px"
-              maxlength="50"
-              [value]="saveName()"
-              (input)="saveName.set($any($event.target).value)"
-            />
-
-            <button class="btn btn-primary btn-sm" type="submit" [disabled]="isSaving()">
-              {{ isSaving() ? 'Saving…' : 'Save' }}
-            </button>
-
-            <button class="btn btn-link btn-sm" type="button" (click)="closeSave()">Cancel</button>
-          </form>
-
-          @if (saveError()) {
-            <p class="small text-danger mb-0 mt-1" role="alert">
-              {{ saveError() }}
-            </p>
-          }
-        } @else if (savedAs()) {
-          <p class="small text-success mb-0" role="status">
-            <i class="bi bi-check-circle me-1"></i>
-            Saved as “{{ savedAs() }}”. You will get a notification when a new post matches.
-            <a routerLink="/saved-searches">Manage saved searches</a>
-          </p>
-        } @else {
-          <button class="btn btn-outline-primary btn-sm" type="button" (click)="openSave()">
-            <i class="bi bi-bell me-1"></i>
-            Save this search
+   @if (hasFilters()) {
+  <div class="save-search-row">
+    <div class="save-search">
+      @if (filters().date_from || filters().date_to) {
+        <p class="small text-muted mb-0">
+          Date ranges apply to this list only and are not included in saved-search notifications.
+          Clear the date range before saving this search.
+        </p>
+      } @else if (!isAuthenticated()) {
+        <a
+          class="btn btn-sm save-search-action"
+          routerLink="/login"
+          [queryParams]="{ returnUrl: currentUrl() }"
+        >
+          <i class="bi bi-bell" aria-hidden="true"></i>
+          Sign in to save
+        </a>
+        <p class="save-search-text">Get notified when a new post matches this search.</p>
+      } @else if (isSaveOpen()) {
+        <i class="bi bi-bell save-search-icon" aria-hidden="true"></i>
+        <form class="save-search-form" (submit)="$event.preventDefault(); submitSave()">
+          <label class="visually-hidden" for="saved-search-name">Name this search</label>
+          <input
+            id="saved-search-name"
+            class="form-control form-control-sm"
+            maxlength="50"
+            placeholder="Name this search"
+            [value]="saveName()"
+            (input)="saveName.set($any($event.target).value)"
+          />
+          <button class="btn btn-sm save-search-action" type="submit" [disabled]="isSaving()">
+            {{ isSaving() ? 'Saving…' : 'Save' }}
           </button>
-
-          <span class="small text-muted ms-2"> Get notified when a new post matches. </span>
+          <button class="btn btn-sm save-search-cancel" type="button" (click)="closeSave()">
+            Cancel
+          </button>
+        </form>
+        @if (saveError()) {
+          <p class="save-search-error" role="alert">{{ saveError() }}</p>
         }
-      </div>
-    }
-  </section>
+      } @else if (savedAs()) {
+        <i class="bi bi-check-circle-fill save-search-icon saved" aria-hidden="true"></i>
+        <p class="save-search-text" role="status">Saved as “{{ savedAs() }}”.</p>
+        <a class="btn btn-sm save-search-cancel" routerLink="/saved-searches">Manage</a>
+      } @else {
+        <button class="btn btn-sm save-search-action" type="button" (click)="openSave()">
+          <i class="bi bi-bell" aria-hidden="true"></i>
+          Save this search
+        </button>
+        <p class="save-search-text">Get notified when a new post matches this search.</p>
+      }
+    </div>
+  </div>
+}
 
   <!-- Items list -->
   <section class="items-section">
@@ -230,101 +229,21 @@
         <i class="bi bi-search"></i>
         <h6 class="fw-bold mt-3">No items found</h6>
         <p class="text-muted mb-0">
-          {{
-            hasFilters()
-              ? 'Nothing matches this search yet. Save it to hear about new posts.'
-              : 'There are no items yet.'
-          }}
+          @if (hasFilters()) {
+            Nothing matches this search yet. Save it to hear about new posts.
+          } @else if (hasAnyFilter()) {
+            Nothing matches these dates. Try widening the range.
+          } @else {
+            There are no items yet.
+          }
         </p>
       </div>
     }
   </section>
 </main>
 
-<!-- Create post button -->
-<button
-  type="button"
-  class="create-post-button"
-  (click)="openCreatePost()"
-  aria-label="Create a post"
->
-  <i class="bi bi-plus-lg"></i>
-  <span>Create post</span>
-</button>
+<app-create-post (created)="onPostCreated()" />
 
-<!-- Create post modal -->
-@if (isCreatePostOpen) {
-  <div class="modal-backdrop-custom" (click)="closeCreatePost()">
-    <div
-      class="create-post-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="createPostTitle"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="modal-header-custom">
-        <div>
-          <h5 id="createPostTitle" class="fw-bold mb-1">Create a post</h5>
-          <p class="text-muted small mb-0">Share information about a lost or found item.</p>
-        </div>
+<app-messenger-launcher />
 
-        <button
-          type="button"
-          class="btn-close"
-          (click)="closeCreatePost()"
-          aria-label="Close"
-        ></button>
-      </div>
-
-      <div class="modal-body-custom">
-        <app-item-form (created)="onPostCreated()" />
-      </div>
-    </div>
-  </div>
-}
-
-<!-- Edit post modal -->
-@if (editingItem()) {
-  <div class="modal-backdrop-custom" (click)="closeEdit()">
-    <div
-      class="create-post-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="editPostTitle"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="modal-header-custom">
-        <div>
-          <h5 id="editPostTitle" class="fw-bold mb-1">Edit post</h5>
-          <p class="text-muted small mb-0">Correct a mistake in your post.</p>
-        </div>
-
-        <button type="button" class="btn-close" (click)="closeEdit()" aria-label="Close"></button>
-      </div>
-
-      <div class="modal-body-custom">
-        <app-item-form [post]="editingItem()" (created)="onPostEdited()" />
-      </div>
-    </div>
-  </div>
-}
-
-<!-- Messenger button -->
-<button
-  type="button"
-  class="messenger-button"
-  [class.active]="isMessengerOpen"
-  (click)="toggleMessenger()"
-  aria-label="Open messenger"
->
-  <i [class]="isMessengerOpen ? 'bi bi-x-lg' : 'bi bi-chat-dots-fill'"></i>
-</button>
-
-<!-- Messenger popup -->
-@if (isMessengerOpen) {
-  <div class="messenger-popup">
-    <app-messenger />
-  </div>
-}
-
-<app-footer (showTriggered)="openTerms()" />
+<app-footer />

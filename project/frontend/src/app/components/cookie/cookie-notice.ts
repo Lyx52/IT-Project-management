@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import en from '../../../assets/en.json';
 
 /** localStorage key set once the visitor has dismissed the notice. */
@@ -10,6 +11,7 @@ export const COOKIE_NOTICE_KEY = 'cookieNoticeDismissed';
  */
 @Component({
   selector: 'app-cookie-notice',
+  imports: [RouterLink],
   templateUrl: './cookie-notice.html',
   styleUrl: './cookie-notice.scss',
 })

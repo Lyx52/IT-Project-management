@@ -1,0 +1,118 @@
+<app-header />
+
+<main class="page-container py-4">
+  <header class="admin-heading mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Moderation</h4>
+      <p class="text-muted mb-0">Review submissions, handle reports and manage accounts.</p>
+    </div>
+
+    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="loadQueue()">
+      <i class="bi bi-arrow-clockwise me-1"></i>
+      Refresh
+    </button>
+  </header>
+
+  <!-- Tabs -->
+  <div class="admin-tabs mb-4" role="tablist">
+    <button
+      class="admin-tab"
+      type="button"
+      role="tab"
+      [class.active]="tab() === 'pending'"
+      [attr.aria-selected]="tab() === 'pending'"
+      (click)="selectTab('pending')"
+    >
+      <i class="bi bi-hourglass-split me-1"></i>
+      Pending posts
+      @if (pendingCount() > 0) {
+        <span class="tab-count">{{ pendingCount() }}</span>
+      }
+    </button>
+
+    <button
+      class="admin-tab"
+      type="button"
+      role="tab"
+      [class.active]="tab() === 'reports'"
+      [attr.aria-selected]="tab() === 'reports'"
+      (click)="selectTab('reports')"
+    >
+      <i class="bi bi-flag me-1"></i>
+      Reports
+      @if (reportCount() > 0) {
+        <span class="tab-count">{{ reportCount() }}</span>
+      }
+    </button>
+
+    <button
+      class="admin-tab"
+      type="button"
+      role="tab"
+      [class.active]="tab() === 'users'"
+      [attr.aria-selected]="tab() === 'users'"
+      (click)="selectTab('users')"
+    >
+      <i class="bi bi-people me-1"></i>
+      Users
+    </button>
+
+    <button
+      class="admin-tab"
+      type="button"
+      role="tab"
+      [class.active]="tab() === 'categories'"
+      [attr.aria-selected]="tab() === 'categories'"
+      (click)="selectTab('categories')"
+    >
+      <i class="bi bi-tags me-1"></i>
+      Categories
+    </button>
+
+    <button
+      class="admin-tab"
+      type="button"
+      role="tab"
+      [class.active]="tab() === 'statistics'"
+      [attr.aria-selected]="tab() === 'statistics'"
+      (click)="selectTab('statistics')"
+    >
+      <i class="bi bi-graph-up me-1"></i>
+      Statistics
+    </button>
+  </div>
+
+  @if (loadError() && usesQueue()) {
+    <div class="alert alert-danger py-2 small" role="alert">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ loadError() }}
+      <button class="btn btn-sm btn-outline-danger ms-2" type="button" (click)="loadQueue()">
+        Retry
+      </button>
+    </div>
+  }
+
+  @if (isLoading() && usesQueue()) {
+    <div class="text-center py-5">
+      <span class="spinner-border text-secondary" aria-label="Loading"></span>
+    </div>
+  } @else {
+    @switch (tab()) {
+      @case ('pending') {
+        <app-admin-pending-posts [posts]="pendingPosts()" (changed)="loadQueue()" />
+      }
+      @case ('reports') {
+        <app-admin-reports [reports]="openReports()" (changed)="loadQueue()" />
+      }
+      @case ('users') {
+        <app-admin-users />
+      }
+      @case ('categories') {
+        <app-admin-categories />
+      }
+      @case ('statistics') {
+        <app-admin-statistics />
+      }
+    }
+  }
+</main>
