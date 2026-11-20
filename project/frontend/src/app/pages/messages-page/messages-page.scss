@@ -1,19 +1,68 @@
 @use '../../../styles/variables' as *;
 
+// Matches the back link on the post detail page.
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $text-secondary;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+
+  i {
+    transition: transform 150ms ease;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: $primary;
+
+    i {
+      transform: translateX(-3px);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back-link i {
+    transition: none;
+  }
+}
+
 .messages-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 18rem;
   align-items: start;
   gap: 1.25rem;
-  max-width: 1120px;
+  max-width: 1280px;
   margin: 0 auto;
+
+  // With the tips hidden the second column was still reserved, so the
+  // conversation sat left of centre with 18rem of empty space beside it.
+  &.no-tips {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .messages-container {
   width: 100%;
   min-width: 0;
-  max-width: 850px;
-  margin: 0;
+  // The same 900px as .post on the item details page, so a conversation and
+  // the post it is about are the same width.
+  max-width: 900px;
+  // Centred in its column rather than pinned left
+  margin-inline: auto;
+  // One height on every conversation, so the composer never moves and opening
+  // a short thread does not resize the page.
+  height: 720px;
+  display: flex;
+  flex-direction: column;
   position: relative;
   background: $surface;
   border: 1px solid $border-color;
@@ -22,6 +71,7 @@
 }
 
 .messages-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -88,8 +138,10 @@
 }
 
 .messages-body {
-  min-height: 380px;
-  max-height: 550px;
+  // Takes whatever the header and composer leave; min-height: 0 is what lets
+  // it actually scroll inside a flex column rather than pushing them out.
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -161,6 +213,7 @@
 }
 
 .message-composer {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -222,6 +275,18 @@
 @media (max-width: 768px) {
   .messages-layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  // A fixed 720px does not fit a phone, so there it follows the viewport.
+  .messages-container {
+    height: min(720px, calc(100vh - 170px));
+    min-height: 420px;
+  }
+
+  // Above the conversation on a phone: safety advice is worth reading before
+  // you start arranging to meet someone, not after scrolling past the thread.
+  .tips-sidebar {
+    order: -1;
   }
 }
 

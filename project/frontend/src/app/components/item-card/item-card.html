@@ -66,15 +66,11 @@
       </div>
     </div>
 
-    <a class="btn btn-outline-primary btn-sm w-100 mt-3" [routerLink]="['/post', item.id]">
-      View details
-    </a>
-
-    @if (canEdit) {
-      <button class="btn btn-outline-secondary btn-sm w-100 mt-2" (click)="edit.emit(item)">
-        <i class="bi bi-pencil me-1"></i>
-        Edit
-      </button>
-    }
+    <div class="item-actions mt-3">
+      <a class="btn btn-outline-primary btn-sm flex-grow-1" [routerLink]="['/post', item.id]">
+        View details
+      </a>
+      <app-report-post [postId]="item.id" />
+    </div>
   </div>
 </div>
