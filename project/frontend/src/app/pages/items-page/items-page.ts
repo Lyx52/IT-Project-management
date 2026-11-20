@@ -98,7 +98,7 @@ export class ItemsPageComponent {
   readonly selectedCategoryId = computed(() => this.filters().category_id);
   readonly dateFrom = computed(() => this.filters().date_from ?? '');
   readonly dateTo = computed(() => this.filters().date_to ?? '');
-  
+
   /**
    * Filters the server applies, and the only ones a saved search can store.
    * Drives "Save this search", so the dates are deliberately not counted: a
