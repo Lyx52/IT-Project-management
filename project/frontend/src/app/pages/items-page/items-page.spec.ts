@@ -140,7 +140,7 @@ describe('ItemsPageComponent', () => {
     harness.fixture.detectChanges();
   };
 
-  it('narrows the list by event date', async () => {
+  it('sends the event date range to the backend and renders filtered results', async () => {
     await open();
     expectSearch({}).flush(
       page([
@@ -154,11 +154,19 @@ describe('ItemsPageComponent', () => {
     expect(text()).toContain('Recent item');
 
     setDate('From date', '2026-11-01');
+    await settle();
+    expectSearch({ date_from: '2026-11-01' }).flush(
+      page([{ ...item(2), title: 'Recent item', event_date: '2026-11-20' }]),
+    );
+    await settle();
 
     expect(text()).not.toContain('Old item');
     expect(text()).toContain('Recent item');
 
     setDate('To date', '2026-11-10');
+    await settle();
+    expectSearch({ date_from: '2026-11-01', date_to: '2026-11-10' }).flush(page([]));
+    await settle();
 
     expect(text()).not.toContain('Recent item');
   });
@@ -193,6 +201,9 @@ describe('ItemsPageComponent', () => {
     expect(component.hasAnyFilter()).toBe(false);
 
     setDate('From date', '2026-11-01');
+    await settle();
+    expectSearch({ date_from: '2026-11-01' }).flush(page([item(1)]));
+    await settle();
 
     // The label and empty state follow any filter...
     expect(component.hasAnyFilter()).toBe(true);

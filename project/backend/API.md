@@ -207,23 +207,25 @@ Public feed: **approved** posts only, newest first, 20 per page. Standard Larave
 
 ### GET `/posts/query`
 
-Search the public feed by text, type and category. Same posts, order and pagination as `GET /posts` (approved only, so resolved posts are left out). All filters are optional and combine with AND.
+Search the public feed by text, type, category and event-date range. Same posts, order and pagination as `GET /posts` (approved only, so resolved posts are left out). All filters are optional and combine with AND.
 
 | Query param | Rules |
 |---|---|
 | `q` | optional, max 100 chars |
 | `type` | optional, `lost` \| `found` |
 | `category_id` | optional, an id from `GET /category/query` |
+| `date_from` | optional, inclusive `YYYY-MM-DD` lower bound for `event_date` |
+| `date_to` | optional, inclusive `YYYY-MM-DD` upper bound for `event_date`; must be on or after `date_from` |
 
 - Every word in `q` must appear in the title or the description (`red bus` won't match a post that only mentions "red").
 - Case and diacritics are ignored: `atslegas` finds "Atslēgas" and the other way round.
 - `%` and `_` are matched literally, not as wildcards.
 - Without any filter this is the same as `GET /posts`.
-- Pagination links keep the filters (`?q=keys&type=found&page=2`).
-- The same filters can be saved with `POST /saved-searches` to get notified about new matching posts.
+- Pagination links keep the filters (`?q=keys&type=found&date_from=2026-01-01&page=2`).
+- Text, type and category filters can be saved with `POST /saved-searches` to get notified about new matching posts. Date bounds apply only to the feed and are not stored in saved searches.
 
 ```bash
-curl "http://localhost:8001/api/v1/posts/query?q=atslegas&type=found&category_id=2" -H "Accept: application/json"
+curl "http://localhost:8001/api/v1/posts/query?q=atslegas&type=found&category_id=2&date_from=2026-01-01&date_to=2026-06-30" -H "Accept: application/json"
 ```
 
 **200** `{ "data": [ Post, ... ], "links": {...}, "meta": {...} }`

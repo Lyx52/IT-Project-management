@@ -94,11 +94,13 @@ export interface Paginated<T> {
   meta: PageMeta;
 }
 
-/** The filters of GET /posts/query, which is also what a saved search stores. */
+/** The filters of GET /posts/query. Saved-search notifications omit the date bounds. */
 export interface PostFilters {
   q: string | null;
   type: 'lost' | 'found' | null;
   category_id: number | null;
+  date_from: string | null;
+  date_to: string | null;
 }
 
 export interface SavedSearch {

@@ -17,24 +17,45 @@ import { SavedSearchService } from '../../services/saved-searches.service';
 
 type ItemTypeFilter = 'all' | 'lost' | 'found';
 
-const NO_FILTERS: PostFilters = { q: null, type: null, category_id: null };
+const NO_FILTERS: PostFilters = {
+  q: null,
+  type: null,
+  category_id: null,
+  date_from: null,
+  date_to: null,
+};
 
-/** Reads the filters from `?q=…&type=…&category_id=…`, ignoring anything invalid. */
+/** Reads the filters from the URL, ignoring values that are invalid for the feed. */
 export function filtersFromParams(params: ParamMap): PostFilters {
   const q = params.get('q')?.trim() || null;
   const type = params.get('type');
   const categoryId = Number(params.get('category_id'));
+  let dateFrom = validDate(params.get('date_from'));
+  let dateTo = validDate(params.get('date_to'));
+
+  if (dateFrom && dateTo && dateTo < dateFrom) {
+    dateFrom = null;
+    dateTo = null;
+  }
 
   return {
     q: q ? q.slice(0, 100) : null,
     type: type === 'lost' || type === 'found' ? type : null,
     category_id: Number.isInteger(categoryId) && categoryId > 0 ? categoryId : null,
+    date_from: dateFrom,
+    date_to: dateTo,
   };
 }
 
 /** The query params for a set of filters; unset ones are left out of the URL. */
 export function paramsFromFilters(filters: PostFilters): Record<string, string | number | null> {
-  return { q: filters.q || null, type: filters.type, category_id: filters.category_id };
+  return {
+    q: filters.q || null,
+    type: filters.type,
+    category_id: filters.category_id,
+    date_from: filters.date_from,
+    date_to: filters.date_to,
+  };
 }
 
 @Component({
@@ -51,8 +72,6 @@ export class ItemsPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   texts = en;
-  readonly dateFrom = signal('');
-  readonly dateTo = signal('');
   readonly sortOrder = signal<'newest' | 'oldest'>('newest');
 
   private readonly searchInput$ = new Subject<string>();
@@ -77,6 +96,9 @@ export class ItemsPageComponent {
 
   readonly selectedType = computed<ItemTypeFilter>(() => this.filters().type ?? 'all');
   readonly selectedCategoryId = computed(() => this.filters().category_id);
+  readonly dateFrom = computed(() => this.filters().date_from ?? '');
+  readonly dateTo = computed(() => this.filters().date_to ?? '');
+
   /**
    * Filters the server applies, and the only ones a saved search can store.
    * Drives "Save this search", so the dates are deliberately not counted: a
@@ -89,9 +111,10 @@ export class ItemsPageComponent {
   });
 
   /** Anything that narrows what is on screen, including the client-side dates. */
-  readonly hasAnyFilter = computed(
-    () => this.hasFilters() || this.dateFrom() !== '' || this.dateTo() !== '',
-  );
+  readonly hasAnyFilter = computed(() => {
+    const { date_from, date_to } = this.filters();
+    return this.hasFilters() || date_from !== null || date_to !== null;
+  });
   readonly hasMore = computed(() => {
     const meta = this.meta();
     return meta !== null && meta.current_page < meta.last_page;
@@ -128,26 +151,14 @@ export class ItemsPageComponent {
     this.loadCategories();
   }
 
-  readonly filteredItems = computed(() => {
-    const from = this.dateFrom();
-    const to = this.dateTo();
+  readonly sortedItems = computed(() => {
     const order = this.sortOrder();
 
-    return [...this.items()]
-      .filter((item) => {
-        const date = item.event_date?.slice(0, 10);
+    return [...this.items()].sort((a, b) => {
+      const comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 
-        if (!date) return !from && !to;
-        if (from && date < from) return false;
-        if (to && date > to) return false;
-
-        return true;
-      })
-      .sort((a, b) => {
-        const comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-
-        return order === 'newest' ? comparison : -comparison;
-      });
+      return order === 'newest' ? comparison : -comparison;
+    });
   });
 
   onSearchInput(value: string): void {
@@ -161,8 +172,6 @@ export class ItemsPageComponent {
 
   resetFilters(): void {
     this.searchText.set('');
-    this.dateFrom.set('');
-    this.dateTo.set('');
     this.sortOrder.set('newest');
 
     this.searchInput$.next('');
@@ -246,6 +255,14 @@ export class ItemsPageComponent {
 
   selectCategory(value: string): void {
     this.applyFilters({ category_id: value === '' ? null : Number(value) });
+  }
+
+  selectDateFrom(value: string): void {
+    this.applyFilters({ date_from: value || null });
+  }
+
+  selectDateTo(value: string): void {
+    this.applyFilters({ date_to: value || null });
   }
 
   openSave(): void {
@@ -333,4 +350,16 @@ function saveErrorMessage(error: HttpErrorResponse): string {
   }
 
   return 'Could not save the search. Please try again.';
+}
+
+function validDate(value: string | null): string | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+    ? value
+    : null;
 }

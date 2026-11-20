@@ -84,16 +84,18 @@
         type="date"
         class="form-control"
         aria-label="From date"
-        [value]="dateFrom()"
-        (change)="dateFrom.set($any($event.target).value)"
+        [value]="filters().date_from ?? ''"
+        [max]="filters().date_to ?? ''"
+        (change)="selectDateFrom($any($event.target).value)"
       />
 
       <input
         type="date"
         class="form-control"
         aria-label="To date"
-        [value]="dateTo()"
-        (change)="dateTo.set($any($event.target).value)"
+        [value]="filters().date_to ?? ''"
+        [min]="filters().date_from ?? ''"
+        (change)="selectDateTo($any($event.target).value)"
       />
 
       <button type="button" class="btn btn-outline-secondary" (click)="resetFilters()">
@@ -102,10 +104,15 @@
     </div>
 
     <!-- Save this search -->
-    @if (hasFilters()) {
+    @if (hasAnyFilter()) {
       <div class="save-search-row">
         <div class="save-search">
-          @if (!isAuthenticated()) {
+          @if (filters().date_from || filters().date_to) {
+            <p class="small text-muted mb-0">
+              Date ranges apply to this list only and are not included in saved-search
+              notifications. Clear the date range before saving this search.
+            </p>
+          } @else if (!isAuthenticated()) {
             <a
               class="btn btn-sm save-search-action"
               routerLink="/login"
@@ -114,14 +121,11 @@
               <i class="bi bi-bell" aria-hidden="true"></i>
               Sign in to save
             </a>
-
             <p class="save-search-text">Get notified when a new post matches this search.</p>
           } @else if (isSaveOpen()) {
             <i class="bi bi-bell save-search-icon" aria-hidden="true"></i>
-
             <form class="save-search-form" (submit)="$event.preventDefault(); submitSave()">
               <label class="visually-hidden" for="saved-search-name">Name this search</label>
-
               <input
                 id="saved-search-name"
                 class="form-control form-control-sm"
@@ -130,31 +134,25 @@
                 [value]="saveName()"
                 (input)="saveName.set($any($event.target).value)"
               />
-
               <button class="btn btn-sm save-search-action" type="submit" [disabled]="isSaving()">
                 {{ isSaving() ? 'Saving…' : 'Save' }}
               </button>
-
               <button class="btn btn-sm save-search-cancel" type="button" (click)="closeSave()">
                 Cancel
               </button>
             </form>
-
             @if (saveError()) {
               <p class="save-search-error" role="alert">{{ saveError() }}</p>
             }
           } @else if (savedAs()) {
             <i class="bi bi-check-circle-fill save-search-icon saved" aria-hidden="true"></i>
-
             <p class="save-search-text" role="status">Saved as “{{ savedAs() }}”.</p>
-
             <a class="btn btn-sm save-search-cancel" routerLink="/saved-searches">Manage</a>
           } @else {
             <button class="btn btn-sm save-search-action" type="button" (click)="openSave()">
               <i class="bi bi-bell" aria-hidden="true"></i>
               Save this search
             </button>
-
             <p class="save-search-text">Get notified when a new post matches this search.</p>
           }
         </div>
@@ -180,7 +178,7 @@
           @if (isLoading()) {
             Searching…
           } @else {
-            {{ filteredItems().length }} items
+            {{ meta()?.total ?? sortedItems().length }} items
             {{ hasAnyFilter() ? 'match this search' : 'available' }}
 
             @if (filters().q) {
@@ -208,9 +206,9 @@
         <div class="spinner-border text-primary" role="status"></div>
         <p class="text-muted mt-2 mb-0">Loading items...</p>
       </div>
-    } @else if (filteredItems().length > 0) {
+    } @else if (sortedItems().length > 0) {
       <div class="items-grid">
-        @for (item of filteredItems(); track item.id) {
+        @for (item of sortedItems(); track item.id) {
           <app-item-card [item]="item" />
         }
       </div>
@@ -232,10 +230,10 @@
         <i class="bi bi-search"></i>
         <h6 class="fw-bold mt-3">No items found</h6>
         <p class="text-muted mb-0">
-          @if (hasFilters()) {
-            Nothing matches this search yet. Save it to hear about new posts.
-          } @else if (hasAnyFilter()) {
+          @if (filters().date_from || filters().date_to) {
             Nothing matches these dates. Try widening the range.
+          } @else if (hasFilters()) {
+            Nothing matches this search yet. Save it to hear about new posts.
           } @else {
             There are no items yet.
           }

@@ -45,9 +45,9 @@ class PostController extends Controller
      * Search posts
      *
      * Searches the public feed. `q` matches posts whose title or description
-     * contains every word, ignoring case and diacritics. `type` and
-     * `category_id` narrow it down further. Without any filter this is the
-     * plain feed. Newest first, 20 per page.
+     * contains every word, ignoring case and diacritics. `type`, `category_id`
+     * and the inclusive `date_from`/`date_to` bounds narrow it down further.
+     * Without any filter this is the plain feed. Newest first, 20 per page.
      */
     public function search(SearchPostsRequest $request): AnonymousResourceCollection
     {
