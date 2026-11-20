@@ -21,3 +21,9 @@ Schedule::command('app:prune-expired-cache')->dailyAt('00:30');
 // Deletes API tokens that expired (config/sanctum.php `expiration`) more than a
 // day ago. They no longer authenticate anyway; this just removes the rows.
 Schedule::command('sanctum:prune-expired', ['--hours' => 24])->dailyAt('00:45');
+
+// Remove resolved posts and read notifications past their retention periods.
+// Appending Artisan output records the deleted counts for each daily run.
+Schedule::command('app:prune-old-platform-data')
+    ->dailyAt('01:00')
+    ->appendOutputTo(storage_path('logs/platform-data-pruning.log'));
