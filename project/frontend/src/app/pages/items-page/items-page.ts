@@ -103,16 +103,15 @@ export class ItemsPageComponent {
    * something the backend silently drops.
    */
   readonly hasFilters = computed(() => {
-    const { q, type, category_id, date_from, date_to } = this.filters();
-    return (
-      q !== null || type !== null || category_id !== null || date_from !== null || date_to !== null
-    );
+    const { q, type, category_id } = this.filters();
+    return q !== null || type !== null || category_id !== null;
   });
 
   /** Anything that narrows what is on screen, including the client-side dates. */
-  readonly hasAnyFilter = computed(
-    () => this.hasFilters() || this.dateFrom() !== '' || this.dateTo() !== '',
-  );
+  readonly hasAnyFilter = computed(() => {
+    const { date_from, date_to } = this.filters();
+    return this.hasFilters() || date_from !== null || date_to !== null;
+  });
   readonly hasMore = computed(() => {
     const meta = this.meta();
     return meta !== null && meta.current_page < meta.last_page;
