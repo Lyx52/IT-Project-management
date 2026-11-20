@@ -326,10 +326,11 @@ Then in a browser:
 - [ ] The site opens over HTTPS without a certificate warning.
 - [ ] You can register a new account and sign in.
 - [ ] You can create a post with a photo. It shows on My Posts as pending.
-- [ ] After you approve it (below), the post and its photo appear on the Items page and the Map page.
+- [ ] Signed in as the admin, open **Moderation** in the header (`/admin`) and approve the post on the **Pending posts** tab.
+- [ ] The post and its photo appear on the Items page and the Map page.
 - [ ] Signed in as a second account, you can send a message with an image attachment about that post.
 
-The website has no moderation screen yet, so approve the test post through the API. On the server or your own machine:
+If the moderation page doesn't load, you can also approve the post through the API to tell a frontend problem from a backend one. On the server or your own machine:
 
 ```bash
 SITE=https://findit.example.com

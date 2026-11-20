@@ -1,59 +1,42 @@
-# Frontend
+# FindIT frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.5.
+The Angular 22 single-page app for FindIT, with Bootstrap 5 and Leaflet. Unit tests use Vitest.
 
-## Development server
+Setup, the full feature list and production are covered in the [main README](../../README.md). The API it talks to is documented in [`../backend/API.md`](../backend/API.md).
 
-To start a local development server, run:
+## Running
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+The app runs in the `frontend` Docker container (see the main README) and is served at http://localhost:4200 with live reload. Run commands inside the container:
 
 ```bash
-ng generate component component-name
+docker compose exec frontend npx ng test --watch=false     # unit tests
+docker compose exec frontend npx prettier --write src      # format (CI checks this)
+docker compose exec frontend npx ng build                  # production build into dist/
+docker compose exec frontend npx ng generate component <name>
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## API address
 
-```bash
-ng generate --help
+| Build | File | `apiBaseUrl` |
+|-------|------|--------------|
+| Development (`ng serve`) | `src/environments/environment.development.ts` | `http://localhost:8001/api/v1` |
+| Production | `src/environments/environment.ts` | `/api/v1` (same origin; Caddy forwards it to the backend) |
+
+## Layout
+
+```
+src/app/
+  pages/        One folder per route (see app.routes.ts): home, items, map, post, my-posts,
+                saved-searches, messages, login, register, terms, privacy, admin
+  components/   Shared pieces: header, notification bell, messenger, item card and form,
+                report dialog, and the admin panel tabs (admin-pending-posts, admin-reports,
+                admin-users, admin-categories, admin-statistics)
+  services/     HTTP clients for the API (auth, posts, messages, notifications,
+                saved searches, admin) and the bearer-token interceptor
+  guards/       authGuard (signed in) and adminGuard (role admin)
+  captcha/      Sign-up CAPTCHA, including the Web Worker that solves the hash puzzle
+  models/       TypeScript types for API responses
+  utils/        Small helpers
 ```
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+The admin page (`/admin`) is lazy-loaded and guarded by `adminGuard`, so ordinary users never download it. The header shows the **Moderation** link only to admins.

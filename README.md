@@ -23,12 +23,12 @@ Laravel API + Angular SPA + PostgreSQL, run with Docker in development and produ
 ## Features
 
 - **Posts.** Lost or found items with a category, description, location on a map, event date and photos (EXIF data is stripped). New posts wait for admin approval before they appear publicly. Authors can edit their posts, photos included, which sends them back to moderation. They can also mark them resolved or delete them.
-- **Search.** Accent- and case-insensitive text search over titles and descriptions, filters by type and category, a list view and a Leaflet map view.
+- **Search.** Accent- and case-insensitive text search over titles and descriptions, filters by type, category and event-date range, a list view and a Leaflet map view.
 - **Suggested matches.** The author of a post sees likely counterparts: approved posts of the opposite type in the same category, less than 2 km away, with an event date within 7 days.
 - **Saved searches.** Users save a search and get a notification when a new post matches it.
 - **Messages.** Direct messages about a post, with image and video attachments. Message bodies are encrypted at rest. Attachments are served through signed, expiring links.
-- **Notifications.** A bell in the header for new messages, possible matches for your posts, saved-search matches and moderation results (post approved or rejected).
-- **Moderation.** Users report posts. Admins approve or reject posts (with a reason), ban and unban users, manage categories and see site statistics. The website has screens for statistics only so far; the rest is available through the API.
+- **Notifications.** A bell in the header for new messages, possible matches for your posts, saved-search matches, moderation results (post approved, rejected or taken down) and the outcome of posts you reported.
+- **Moderation.** Users report posts. Admins work in the moderation panel (`/admin`, linked in the header for admins), which has tabs for pending posts (approve, or reject with a reason), reports (hide the post, ban the author or dismiss), users (search, ban and unban), categories (add, rename, retire, restore, delete) and statistics.
 - **Accounts.** Registration with a CAPTCHA, token-based login, data export, and account deletion: the account is suspended at once and permanently deleted after 30 days.
 - **Automatic cleanup.** Resolved posts are deleted six months after they were resolved, and read notifications after 90 days.
 
@@ -160,7 +160,7 @@ The schema is built with Laravel migrations in [`project/backend/database/migrat
 | `messages` | Direct messages between users about a post. Text, attachments or both. The body is encrypted |
 | `message_attachments` | Files attached to a message: `path`, `mime_type` (`image/*` or `video/*`), `size` in bytes |
 | `saved_searches`, `saved_search_matches` | A user's saved search filters and the posts already notified for each |
-| `reports` | Users reporting posts. One report per user per post, `status` `open`/`closed` |
+| `reports` | Users reporting posts. One report per user per post, `status` `open`/`closed`, `reviewed_by` (the admin who closed it) |
 | `notifications` | Laravel database notifications |
 | `personal_access_tokens` | Sanctum API tokens |
 | `cache`, `jobs`, `sessions`, `password_reset_tokens` | Laravel defaults |
