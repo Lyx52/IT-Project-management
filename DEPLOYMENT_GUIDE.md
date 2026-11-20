@@ -52,7 +52,7 @@ The whole site runs on one Linux VM as five Docker containers, defined in [`dock
 |-----------|--------------|
 | `proxy` | The only container with public ports. Gets and renews the Let's Encrypt certificate, redirects HTTP to HTTPS, serves the built Angular app, forwards `/api/*`, `/storage/*` and `/up` to the backend |
 | `backend` | The Laravel API on FrankenPHP, plain HTTP on port 8080, reachable only from the proxy |
-| `scheduler` | Same image as `backend`, runs Laravel's scheduled jobs (account purge, cache and token cleanup) |
+| `scheduler` | Same image as `backend`, runs Laravel's scheduled jobs: account purge, removal of old resolved posts and read notifications, cache and token cleanup |
 | `db` | PostgreSQL 17 on an internal network with no route in or out |
 | `backup` | Dumps the database every day at 02:00 UTC and uploads it to Oracle Cloud |
 
@@ -222,7 +222,15 @@ deploy/init-env.sh findit.example.com admin@example.com
 
 This writes `.env.production` with random secrets (`APP_KEY`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`), readable only by you. It refuses to overwrite an existing file.
 
-**Replacing a server:** don't run `init-env.sh`. Copy the saved `.env.production` from the password manager into `/opt/IT-Project-management/.env.production` and run `chmod 600 .env.production`.
+Then add this line, which `init-env.sh` doesn't write yet:
+
+```bash
+echo 'ACCOUNT_PURGE_DAYS=30' >> .env.production
+```
+
+Without it, `docker-compose.prod.yml` falls back to 21 days and deleted accounts are purged earlier than the documented 30 days. See [7.7](#77-backup-retention-and-account-deletion).
+
+**Replacing a server:** don't run `init-env.sh`. Copy the saved `.env.production` from the password manager into `/opt/IT-Project-management/.env.production` and run `chmod 600 .env.production`. Check that it has `ACCOUNT_PURGE_DAYS=30`, and add the line if not.
 
 **Save a copy now.** Put the whole file in the team's password manager. Without its `APP_KEY`, a restored database has unreadable messages.
 
@@ -246,7 +254,7 @@ Edit `.env.production` with any editor. Every setting:
 | `CAPTCHA_TYPE` | `hash` | Sign-up CAPTCHA: `hash`, `math` or `determinant`. See the README |
 | `BACKUP_UPLOAD_URL` | empty | Write-only Oracle bucket URL, set in [section 7](#7-backups) |
 | `BACKUP_AT` | `02:00` | Daily backup time, UTC. Not in the generated file; add the line to change it |
-| `ACCOUNT_PURGE_DAYS` | `21` | Days before a deleted account is permanently removed. Not in the generated file. Tied to the backup retention, read [7.7](#77-backup-retention-and-account-deletion) before changing it |
+| `ACCOUNT_PURGE_DAYS` | `21` (compose file), should be `30` | Days a deleted account stays suspended before it is permanently removed. The app's default is 30, but `docker-compose.prod.yml` still falls back to 21, so **set `ACCOUNT_PURGE_DAYS=30` explicitly** ([4.1](#41-create-envproduction)). Tied to the backup retention, read [7.7](#77-backup-retention-and-account-deletion) before changing it |
 
 **After changing a setting** on a running site, recreate the containers so they pick it up:
 
@@ -487,11 +495,13 @@ rm app-storage.tar.gz
 
 ### 7.7 Backup retention and account deletion
 
-How long Oracle keeps backups is part of a legal limit. AC-17 says a deleted account must be gone within 30 days, **backups included**. Worst case, deleted data still exists for:
+How long Oracle keeps backups is part of what the site promises users about account deletion. A deleted account is suspended at once and permanently removed from the database after 30 days. It must be gone from backups too within `deleted_account_limit_days` (39) in `config/retention.php`. Worst case, deleted data still exists for:
 
-21 days (until the account purge) + 1 day (until the daily purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **30 days**
+30 days (the suspension) + 1 day (until the daily purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **39 days**
 
-So don't change the 7 days on Oracle's side on its own, whether in the console or in `RETENTION_DAYS` in `deploy/backup-storage.sh`. `account_purge_days + backup_retention_days + 2` must stay at or below 30: keeping backups longer means purging accounts sooner. To change it:
+This only holds if production really purges after 30 days. Check that `.env.production` has `ACCOUNT_PURGE_DAYS=30` ([4.1](#41-create-envproduction)).
+
+So don't change the 7 days on Oracle's side on its own, whether in the console or in `RETENTION_DAYS` in `deploy/backup-storage.sh`. `account_purge_days + backup_retention_days + 2` must stay at or below `deleted_account_limit_days`: keeping backups longer means purging accounts sooner, or promising users a longer limit. To change it:
 
 1. Set `RETENTION_DAYS` in `deploy/backup-storage.sh` and `backup_retention_days` in `project/backend/config/retention.php` to the same value, and lower `account_purge_days` to match. `tests/Feature/UserPruningTest.php` fails if the sum breaks the limit.
 2. Merge and deploy the change.
@@ -675,7 +685,10 @@ All times UTC. Defined in `project/backend/routes/console.php` and `docker/prod/
 
 | Time | Job |
 |------|-----|
-| 00:00 | Permanently delete accounts soft-deleted more than 21 days ago |
+| 00:00 | Permanently delete accounts deleted more than `ACCOUNT_PURGE_DAYS` (30) days ago |
 | 00:30 | Remove expired cache entries, including unanswered CAPTCHAs |
 | 00:45 | Remove expired API tokens |
+| 01:00 | Delete posts resolved more than six months ago and notifications read more than 90 days ago. Each run appends its counts to `storage/logs/platform-data-pruning.log` |
 | 02:00 | Database backup to Oracle |
+
+Check the scheduler's recent runs with `dc logs --tail 50 scheduler`, and the cleanup counts with `dc exec scheduler tail storage/logs/platform-data-pruning.log`.

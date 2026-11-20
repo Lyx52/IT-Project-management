@@ -22,14 +22,15 @@ Laravel API + Angular SPA + PostgreSQL, run with Docker in development and produ
 
 ## Features
 
-- **Posts.** Lost or found items with a category, description, location on a map, event date and photos (EXIF data is stripped). New posts wait for admin approval before they appear publicly. Authors can edit, resolve and delete their own posts.
+- **Posts.** Lost or found items with a category, description, location on a map, event date and photos (EXIF data is stripped). New posts wait for admin approval before they appear publicly. Authors can edit their posts, photos included, which sends them back to moderation. They can also mark them resolved or delete them.
 - **Search.** Accent- and case-insensitive text search over titles and descriptions, filters by type and category, a list view and a Leaflet map view.
 - **Suggested matches.** The author of a post sees likely counterparts: approved posts of the opposite type in the same category, less than 2 km away, with an event date within 7 days.
 - **Saved searches.** Users save a search and get a notification when a new post matches it.
 - **Messages.** Direct messages about a post, with image and video attachments. Message bodies are encrypted at rest. Attachments are served through signed, expiring links.
-- **Notifications.** A bell in the header for saved-search matches and moderation results (post approved or rejected).
-- **Moderation.** Users report posts. Admins approve or reject posts (with a reason), ban and unban users, manage categories and see site statistics.
-- **Accounts.** Registration with a CAPTCHA, token-based login, data export, account deletion with automatic purge after 21 days.
+- **Notifications.** A bell in the header for new messages, possible matches for your posts, saved-search matches and moderation results (post approved or rejected).
+- **Moderation.** Users report posts. Admins approve or reject posts (with a reason), ban and unban users, manage categories and see site statistics. The website has screens for statistics only so far; the rest is available through the API.
+- **Accounts.** Registration with a CAPTCHA, token-based login, data export, and account deletion: the account is suspended at once and permanently deleted after 30 days.
+- **Automatic cleanup.** Resolved posts are deleted six months after they were resolved, and read notifications after 90 days.
 
 ## Tech stack
 
@@ -219,6 +220,10 @@ Account retention settings live in [`project/backend/config/retention.php`](proj
 | `account_purge_days` | 30 | `ACCOUNT_PURGE_DAYS=` in `.env.production`, then `deploy/deploy.sh` |
 | `backup_retention_days` | 7 | `RETENTION_DAYS` in `deploy/backup-storage.sh` and rerun `setup`. Change both |
 | `deleted_account_limit_days` | 39 | 30-day suspension plus daily cleanup and backup lifecycle |
+
+Worst case, deleted data still exists for 30 days (the suspension) + 1 day (until the daily purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **39 days**. `account_purge_days + backup_retention_days + 2` must stay at or below `deleted_account_limit_days`, and `tests/Feature/UserPruningTest.php` fails if it doesn't.
+
+> **Production currently purges after 21 days, not 30.** `docker-compose.prod.yml` still sets `ACCOUNT_PURGE_DAYS` to `21` when `.env.production` doesn't set it, and that overrides the 30 in `config/retention.php`. Until the compose file is fixed, put `ACCOUNT_PURGE_DAYS=30` in `.env.production` and run `deploy/deploy.sh`. Otherwise accounts are deleted after 21 days instead of the documented 30.
 
 ### Scheduled jobs
 
