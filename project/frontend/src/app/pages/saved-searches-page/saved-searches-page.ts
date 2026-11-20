@@ -1,11 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { CreatePost } from '../../components/create-post/create-post';
 import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
+import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import { SavedSearch } from '../../models/models';
 import { SavedSearchService } from '../../services/saved-searches.service';
-import { Messenger } from '../../components/messenger/messenger';
+import { relativeTime } from '../../utils/relative-time';
 
 /**
  * The user's saved searches. Each one notifies the user about newly approved
@@ -13,13 +15,12 @@ import { Messenger } from '../../components/messenger/messenger';
  */
 @Component({
   selector: 'app-saved-searches-page',
-  imports: [Header, Footer, RouterLink, Messenger],
+  imports: [Header, Footer, CreatePost, MessengerLauncher, RouterLink],
   templateUrl: './saved-searches-page.html',
   styleUrl: './saved-searches-page.scss',
 })
 export class SavedSearchesPage {
   private readonly savedSearches = inject(SavedSearchService);
-  private readonly router = inject(Router);
 
   readonly searches = signal<SavedSearch[]>([]);
   readonly isLoading = signal(true);
@@ -37,13 +38,34 @@ export class SavedSearchesPage {
     this.load();
   }
 
-  readonly unreadMessagesCount = signal(0);
+  /** "Saved 3 days ago", from created_at, which was going unused. */
+  readonly relativeTime = relativeTime;
 
-  isMessengerOpen = false;
+  /**
+   * What the search actually watches, as separate chips. As one grey sentence
+   * the filters were the least readable part of the row, despite being the
+   * whole point of a saved search.
+   */
+  chips(search: SavedSearch): { label: string; kind: 'query' | 'type' | 'category' }[] {
+    const chips: { label: string; kind: 'query' | 'type' | 'category' }[] = [];
 
-  toggleMessenger(): void {
-    this.isMessengerOpen = !this.isMessengerOpen;
+    if (search.q) {
+      chips.push({ label: `“${search.q}”`, kind: 'query' });
+    }
+
+    if (search.type) {
+      chips.push({ label: search.type, kind: 'type' });
+    }
+
+    if (search.category) {
+      chips.push({ label: search.category.name, kind: 'category' });
+    }
+
+    return chips;
   }
+
+  /** Nothing on this page changes when a post is created; the list stays put. */
+  onPostCreated(): void {}
 
   load(): void {
     this.isLoading.set(true);
@@ -161,9 +183,5 @@ export class SavedSearchesPage {
         });
       },
     });
-  }
-
-  openTerms(): void {
-    this.router.navigate(['/terms']);
   }
 }

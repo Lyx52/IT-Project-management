@@ -29,6 +29,47 @@
   right: 0;
   z-index: 1050;
   width: min(340px, calc(100vw - 32px));
+  // The list is the last thing in the panel now that the footer links are
+  // gone, so it has to be clipped to the card's rounded corners.
+  overflow: hidden;
+}
+
+// A button, not a link styled as one: it performs an action rather than
+// navigating anywhere.
+.bell-mark-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+  background: $surface;
+  color: $text-secondary;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+
+  &:hover {
+    background: #fff6f0;
+    border-color: $primary;
+    color: $primary;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $primary;
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bell-mark-all {
+    transition: none;
+  }
 }
 
 .bell-list {
@@ -39,28 +80,133 @@
 .bell-item {
   display: flex;
   gap: 10px;
-  width: 100%;
-  padding: 10px 16px;
-  border: 0;
+  padding: 12px 16px;
   border-bottom: 1px solid $border-color;
-  background: none;
   text-align: left;
 
-  &:hover {
-    background: $background;
+  &:last-child {
+    border-bottom: 0;
   }
 
   &.unread {
     background: #fff6f0;
   }
+}
 
-  > i {
-    color: $primary;
-    margin-top: 2px;
+.bell-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: $primary;
+}
+
+.bell-body {
+  min-width: 0;
+  flex: 1;
+}
+
+// Kind of notification, above the subject: "Your post", "Your report", or the
+// saved search's own name.
+.bell-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: $text-secondary;
+}
+
+.bell-type {
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  color: #ffffff;
+  background: $lost-color;
+
+  &.found {
+    background: $found-color;
   }
+}
+
+// Unread is marked with a dot as well as the tint: colour alone is not a cue
+// everyone can see.
+.bell-dot {
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: $primary;
+}
+
+.bell-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: $text-primary;
+  overflow-wrap: anywhere;
+}
+
+.bell-message {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: $text-secondary;
+}
+
+.bell-reason {
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  border-left: 3px solid #b42318;
+  background: #fdecea;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #7a271a;
+  overflow-wrap: anywhere;
+}
+
+.bell-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
 }
 
 .bell-time {
   font-size: 11px;
   color: $text-secondary;
+}
+
+.bell-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $primary;
+  text-decoration: none;
+  white-space: nowrap;
+
+  i {
+    font-size: 11px;
+    transition: transform 150ms ease;
+  }
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+
+    i {
+      transform: translateX(2px);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bell-action i {
+    transition: none;
+  }
 }

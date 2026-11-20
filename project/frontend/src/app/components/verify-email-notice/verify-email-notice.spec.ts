@@ -11,12 +11,14 @@ const UNVERIFIED: AuthUser = {
   username: 'jane_doe',
   email: 'jane@example.com',
   email_verified_at: null,
+  role: 'user' as const,
   must_verify_email: true,
 };
 
 const VERIFIED: AuthUser = {
   ...UNVERIFIED,
   email_verified_at: '2026-11-12T00:00:00Z',
+  role: 'user' as const,
   must_verify_email: false,
 };
 

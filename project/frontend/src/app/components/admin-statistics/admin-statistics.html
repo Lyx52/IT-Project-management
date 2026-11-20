@@ -1,0 +1,154 @@
+<form class="range-row mb-4" (submit)="$event.preventDefault(); load()">
+  <div>
+    <label class="form-label" for="stats-from">From</label>
+    <input
+      id="stats-from"
+      class="form-control form-control-sm"
+      type="date"
+      [value]="from()"
+      (input)="from.set($any($event.target).value)"
+    />
+  </div>
+
+  <div>
+    <label class="form-label" for="stats-to">To</label>
+    <input
+      id="stats-to"
+      class="form-control form-control-sm"
+      type="date"
+      [value]="to()"
+      (input)="to.set($any($event.target).value)"
+    />
+  </div>
+
+  <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+</form>
+
+@if (isLoading()) {
+  <div class="text-center py-5">
+    <span class="spinner-border text-secondary" aria-label="Loading"></span>
+  </div>
+} @else if (loadError()) {
+  <div class="alert alert-danger py-2 small" role="alert">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ loadError() }}
+    <button class="btn btn-sm btn-outline-danger ms-2" type="button" (click)="load()">Retry</button>
+  </div>
+} @else if (stats(); as stats) {
+  <p class="text-muted small mb-3">{{ stats.from }} to {{ stats.to }}</p>
+
+  <div class="stat-grid mb-4">
+    <div class="stat-tile">
+      <span class="stat-value">{{ stats.total_posts }}</span>
+      <span class="stat-label">Posts</span>
+    </div>
+
+    <div class="stat-tile">
+      <span class="stat-value">{{ stats.resolved_count }}</span>
+      <span class="stat-label">
+        Resolved
+        @if (resolutionRate() !== null) {
+          <span class="text-muted">({{ resolutionRate() }}%)</span>
+        }
+      </span>
+    </div>
+
+    <div class="stat-tile">
+      <span class="stat-value">
+        @if (stats.average_days_to_resolution === null) {
+          —
+        } @else {
+          {{ stats.average_days_to_resolution }}
+        }
+      </span>
+      <span class="stat-label">Avg days to resolve</span>
+    </div>
+
+    <div class="stat-tile">
+      <span class="stat-value">{{ stats.open_reports }}</span>
+      <span class="stat-label">Open reports</span>
+    </div>
+
+    <div class="stat-tile">
+      <span class="stat-value">{{ stats.banned_users }}</span>
+      <span class="stat-label">Banned users</span>
+    </div>
+  </div>
+
+  <div class="breakdowns">
+    <section>
+      <h6 class="fw-bold mb-2">By status</h6>
+      @for (row of statusRows(); track row.status) {
+        <div class="bar-row">
+          <span class="bar-label">{{ row.status }}</span>
+          <span class="bar-track">
+            <span class="bar-fill" [style.width]="barWidth(row.count, statusRows())"></span>
+          </span>
+          <span class="bar-count">{{ row.count }}</span>
+        </div>
+      }
+    </section>
+
+    <section>
+      <h6 class="fw-bold mb-2">By type</h6>
+      @for (row of typeRows(); track row.type) {
+        <div class="bar-row">
+          <span class="bar-label">{{ row.type }}</span>
+          <span class="bar-track">
+            <span class="bar-fill" [style.width]="barWidth(row.count, typeRows())"></span>
+          </span>
+          <span class="bar-count">{{ row.count }}</span>
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="matrix mt-4">
+    <h6 class="fw-bold mb-2">Posts by type and status</h6>
+    <p class="text-muted small mb-2">
+      Every post created in this period, split both ways. The bars above show each total on its own;
+      this shows the combinations.
+    </p>
+
+    <div class="table-responsive">
+      <table class="table matrix-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">Type</th>
+            @for (status of statusKeys(); track status) {
+              <th scope="col" class="text-end">{{ status | titlecase }}</th>
+            }
+            <th scope="col" class="text-end">Total</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (row of matrixRows(); track row.type) {
+            <tr>
+              <th scope="row">{{ row.type | titlecase }}</th>
+              @for (cell of row.cells; track $index) {
+                <td class="text-end" [class.is-zero]="cell === 0">{{ cell }}</td>
+              }
+              <td class="text-end fw-semibold">{{ row.total }}</td>
+            </tr>
+          }
+        </tbody>
+
+        <tfoot>
+          <tr>
+            <th scope="row">All</th>
+            @for (total of columnTotals(); track $index) {
+              <td class="text-end" [class.is-zero]="total === 0">{{ total }}</td>
+            }
+            <td class="text-end fw-semibold">{{ stats.total_posts }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <p class="text-muted small mt-4 mb-0">
+    <i class="bi bi-info-circle me-1"></i>
+    Aggregate figures only. No personal data is included, so these can be shared.
+  </p>
+}

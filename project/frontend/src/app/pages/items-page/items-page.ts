@@ -8,8 +8,8 @@ import { Category, Item, PageMeta, PostFilters } from '../../models/models';
 import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
 import { ItemCard } from '../../components/item-card/item-card';
-import { ItemForm } from '../../components/item-form/item-form';
-import { Messenger } from '../../components/messenger/messenger';
+import { CreatePost } from '../../components/create-post/create-post';
+import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import en from '../../../assets/en.json';
 import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
@@ -40,7 +40,7 @@ export function paramsFromFilters(filters: PostFilters): Record<string, string |
 @Component({
   selector: 'app-items-page',
   standalone: true,
-  imports: [Header, ItemCard, ItemForm, Messenger, Footer, RouterLink],
+  imports: [Header, ItemCard, CreatePost, MessengerLauncher, Footer, RouterLink],
   templateUrl: './items-page.html',
   styleUrl: './items-page.scss',
 })
@@ -77,10 +77,21 @@ export class ItemsPageComponent {
 
   readonly selectedType = computed<ItemTypeFilter>(() => this.filters().type ?? 'all');
   readonly selectedCategoryId = computed(() => this.filters().category_id);
+  /**
+   * Filters the server applies, and the only ones a saved search can store.
+   * Drives "Save this search", so the dates are deliberately not counted: a
+   * saved search cannot carry them, and offering to save one would promise
+   * something the backend silently drops.
+   */
   readonly hasFilters = computed(() => {
     const { q, type, category_id } = this.filters();
     return q !== null || type !== null || category_id !== null;
   });
+
+  /** Anything that narrows what is on screen, including the client-side dates. */
+  readonly hasAnyFilter = computed(
+    () => this.hasFilters() || this.dateFrom() !== '' || this.dateTo() !== '',
+  );
   readonly hasMore = computed(() => {
     const meta = this.meta();
     return meta !== null && meta.current_page < meta.last_page;
@@ -92,11 +103,6 @@ export class ItemsPageComponent {
   readonly isSaving = signal(false);
   readonly saveError = signal('');
   readonly savedAs = signal<string | null>(null);
-
-  readonly editingItem = signal<Item | null>(null);
-
-  isCreatePostOpen = false;
-  isMessengerOpen = false;
 
   private loadSubscription?: Subscription;
 
@@ -279,37 +285,7 @@ export class ItemsPageComponent {
   }
 
   onPostCreated(): void {
-    this.closeCreatePost();
     this.loadPosts();
-  }
-
-  openCreatePost(): void {
-    this.isCreatePostOpen = true;
-  }
-
-  closeCreatePost(): void {
-    this.isCreatePostOpen = false;
-  }
-
-  openEdit(item: Item): void {
-    this.editingItem.set(item);
-  }
-
-  closeEdit(): void {
-    this.editingItem.set(null);
-  }
-
-  onPostEdited(): void {
-    this.closeEdit();
-    this.loadPosts();
-  }
-
-  toggleMessenger(): void {
-    this.isMessengerOpen = !this.isMessengerOpen;
-  }
-
-  openTerms() {
-    this.router.navigate(['/terms']);
   }
 
   /** Where to come back to after signing in to save this search. */

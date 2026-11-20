@@ -41,13 +41,13 @@ class CategoryManagementTest extends TestCase
 
         $created = $this->postJson('/api/v1/admin/categories', ['name' => 'Backpacks'])
             ->assertCreated()
-            ->assertJsonPath('name', 'Backpacks');
+            ->assertJsonPath('data.name', 'Backpacks');
 
-        $id = $created->json('id');
+        $id = $created->json('data.id');
 
         $this->patchJson("/api/v1/admin/categories/{$id}", ['name' => 'School bags'])
             ->assertOk()
-            ->assertJsonPath('name', 'School bags');
+            ->assertJsonPath('data.name', 'School bags');
     }
 
     public function test_category_names_are_unique_ignoring_capitalization(): void
@@ -111,13 +111,13 @@ class CategoryManagementTest extends TestCase
 
         $id = $this->postJson('/api/v1/admin/categories', ['name' => 'Umbrellas'])
             ->assertCreated()
-            ->json('id');
+            ->json('data.id');
 
         $this->postJson("/api/v1/admin/categories/{$id}/retire")->assertOk();
 
         $this->postJson("/api/v1/admin/categories/{$id}/restore")
             ->assertOk()
-            ->assertJsonPath('retired_at', null);
+            ->assertJsonPath('data.retired_at', null);
 
         $this->deleteJson("/api/v1/admin/categories/{$id}")->assertNoContent();
 

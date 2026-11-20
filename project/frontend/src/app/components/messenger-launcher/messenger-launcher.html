@@ -1,0 +1,22 @@
+@if (isAuthenticated()) {
+  <button
+    class="messenger-button"
+    [class.active]="isOpen()"
+    (click)="toggle()"
+    [attr.aria-expanded]="isOpen()"
+    aria-label="Open messenger"
+  >
+    <i [class]="isOpen() ? 'bi bi-x-lg' : 'bi bi-chat-dots-fill'"></i>
+
+    @if (unreadCount() > 0) {
+      <span class="messenger-unread-badge">
+        {{ unreadCount() > 99 ? '99+' : unreadCount() }}
+      </span>
+    }
+  </button>
+
+  <!-- Kept mounted while closed, so the unread badge above stays current -->
+  <div class="messenger-popup" [hidden]="!isOpen()">
+    <app-messenger (unreadCountChange)="unreadCount.set($event)" />
+  </div>
+}

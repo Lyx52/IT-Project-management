@@ -1,5 +1,3 @@
-/* Messenger */
-
 .messenger-button {
   position: fixed;
   right: 25px;
@@ -70,14 +68,14 @@
   overflow: hidden;
 
   box-shadow: 0 5px 25px rgba(0, 0, 0, 0.18);
-  animation: modal-appear 0.2s ease-out;
+  animation: messenger-appear 0.2s ease-out;
 
   &[hidden] {
     display: none;
   }
 }
 
-@keyframes modal-appear {
+@keyframes messenger-appear {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -86,5 +84,28 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+// The same breakpoint the create-post button uses: they were moving to their
+// mobile offsets at different widths, so between 481px and 768px one sat 10px
+// lower than the other.
+@media (max-width: 768px) {
+  .messenger-button {
+    right: 15px;
+    bottom: 15px;
+  }
+
+  .messenger-popup {
+    right: 15px;
+    bottom: 85px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .messenger-button,
+  .messenger-popup {
+    transition: none;
+    animation: none;
   }
 }

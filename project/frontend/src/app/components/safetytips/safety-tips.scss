@@ -1,30 +1,68 @@
 @use '../../../styles/variables' as *;
 
-.safety-tips-container {
+// Amber rather than the brand orange, which already means "primary action"
+// here, and rather than a plain white card, which this was easy to scroll past.
+.safety-tips {
+  display: block;
   box-sizing: border-box;
   width: 100%;
-  max-height: min(70vh, 32rem);
-  overflow-y: auto;
-  overflow-wrap: anywhere;
-  padding: 1.25rem;
-  border: 1px solid $border-color;
+  padding: 12px 14px;
+  background: #fff8e6;
+  border: 1px solid #f3dda1;
+  border-left: 3px solid #b88300;
   border-radius: $border-radius;
-  background: $surface;
-  box-shadow: 0 4px 12px rgb(15 23 42 / 8%);
+  color: #6b4e00;
+}
+
+.safety-tips-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .safety-tips-title {
-  margin: 0 0 1rem;
-  color: $text-primary;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b4e00;
+
+  i {
+    font-size: 15px;
+    color: #b88300;
+  }
 }
 
-.safety-tips-description,
-.safety-tips-list {
-  color: $text-secondary;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
+.safety-tips-hide {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border: 1px solid #e3cc8f;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b4e00;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: #fdf1d0;
+    border-color: #b88300;
+  }
 }
 
+// No max-height and no overflow: the list is short enough to read in full, and
+// a scrollbar inside a sidebar panel is awkward to use.
 .safety-tips-list {
-  padding-left: 1.25rem;
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+  font-size: 12px;
+  line-height: 1.5;
+
+  li + li {
+    margin-top: 3px;
+  }
 }

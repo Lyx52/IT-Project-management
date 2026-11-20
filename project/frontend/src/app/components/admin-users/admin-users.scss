@@ -1,0 +1,81 @@
+.users-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 280px;
+  max-width: 420px;
+  padding: 5px 8px;
+  background: #f7f7f7;
+  border-radius: 8px;
+
+  > i {
+    color: #858585;
+    padding-left: 5px;
+  }
+
+  input {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+.status-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f7f7f7;
+  border-radius: 8px;
+}
+
+.switch-button {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #858585;
+  font-size: 13px;
+  font-weight: 600;
+
+  &.active {
+    background: #ffffff;
+    color: #333333;
+  }
+}
+
+.users-table {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  overflow: hidden;
+
+  th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #858585;
+  }
+}
+
+.badge-admin {
+  background: #fff1e9;
+  color: #e87942;
+}
+
+.badge-banned {
+  background: #fdeaec;
+  color: #dc3545;
+}
+
+.badge-active {
+  background: #eaf5ef;
+  color: #39976b;
+}
