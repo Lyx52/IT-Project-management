@@ -179,7 +179,7 @@
             Searching…
           } @else {
             {{ meta()?.total ?? sortedItems().length }} items
-            {{ hasFilters() ? 'match this search' : 'available' }}
+            {{ hasAnyFilter() ? 'match this search' : 'available' }}
 
             @if (filters().q) {
               for “{{ filters().q }}”
