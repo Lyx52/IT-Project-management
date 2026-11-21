@@ -30,7 +30,7 @@ const matches = (url: string, paths: string[]): boolean =>
  * a request to any other host (map tiles, a geocoder, a CDN) must never carry
  * it, or that host could act as the signed-in user.
  */
-const isApiRequest = (url: string): boolean => {
+export const isApiRequest = (url: string): boolean => {
   const base = environment.apiBaseUrl;
 
   return url === base || url.startsWith(`${base}/`) || url.startsWith(`${base}?`);

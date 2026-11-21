@@ -38,6 +38,10 @@ EMAIL_VERIFICATION_ENABLED=false
 # or hash (a puzzle the browser solves by itself). See config/captcha.php.
 CAPTCHA_TYPE=hash
 
+# Signs Anubis's "challenge solved" cookie (see Bot protection in
+# DEPLOYMENT_GUIDE.md). Changing it makes every visitor solve it again.
+ANUBIS_KEY=$(openssl rand -hex 32)
+
 # Daily database backups (see Backups in README.md). Paste the BACKUP_UPLOAD_URL
 # line printed by deploy/backup-storage.sh setup here.
 BACKUP_UPLOAD_URL=

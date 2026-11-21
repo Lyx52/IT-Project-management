@@ -18,6 +18,13 @@ main() {
   echo ">> Pulling latest code"
   git pull --ff-only
 
+  # Servers set up before Anubis was added have no key for it yet
+  if ! grep -Eq '^ANUBIS_KEY=.+' .env.production; then
+    echo ">> Adding ANUBIS_KEY to .env.production"
+    sed -i '/^ANUBIS_KEY=/d' .env.production
+    echo "ANUBIS_KEY=$(openssl rand -hex 32)" >> .env.production
+  fi
+
   echo ">> Building images"
   compose build --pull
 
@@ -32,7 +39,10 @@ main() {
 
   echo ">> Checking backend health"
   for _ in $(seq 1 20); do
-    if compose exec -T proxy wget -qO /dev/null http://backend:8080/up; then
+    # Through Anubis and the proxy's internal site, so a broken link anywhere
+    # in the chain fails the deploy, not just a broken backend. Anubis
+    # refuses requests without X-Real-IP, normally set by the public site.
+    if compose exec -T proxy wget -qO /dev/null --header 'X-Real-IP: 127.0.0.1' http://anubis:8923/up; then
       docker image prune -f >/dev/null
       echo ">> Deployed: https://$(grep '^SITE_ADDRESS=' .env.production | cut -d= -f2)"
       if ! grep -Eq '^BACKUP_UPLOAD_URL=.+' .env.production; then
@@ -42,7 +52,7 @@ main() {
     fi
     sleep 3
   done
-  echo "Backend did not become healthy, check: docker compose -f docker-compose.prod.yml logs backend" >&2
+  echo "Site did not become healthy, check: docker compose -f docker-compose.prod.yml logs backend anubis proxy" >&2
   exit 1
 }
 

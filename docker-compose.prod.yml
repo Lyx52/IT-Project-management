@@ -1,8 +1,9 @@
 # Production stack for the Azure VM. Run it through deploy/deploy.sh, which
 # passes --env-file .env.production (created by deploy/init-env.sh).
 #
-# Only the proxy publishes ports. The database sits on an internal network
-# with no published port, so nothing outside Docker can reach it.
+# Only the proxy publishes ports, and requests pass through Anubis on the way
+# in. The database sits on an internal network with no published port, so
+# nothing outside Docker can reach it.
 
 name: itpm
 
@@ -24,7 +25,37 @@ services:
       - caddy-data:/data
       - caddy-config:/config
     networks: [web]
-    depends_on: [backend]
+    depends_on: [anubis, backend]
+
+  # Bot filter between the public site and the app, see "Bot protection" in
+  # DEPLOYMENT_GUIDE.md. Browsers solve a short proof-of-work once, known AI
+  # scrapers are refused. Rules: docker/prod/anubis/botPolicies.yaml
+  anubis:
+    # Pinned: the bundled default rules change between versions
+    image: ghcr.io/techarohq/anubis:v1.28.2
+    restart: unless-stopped
+    environment:
+      BIND: ":8923"
+      # Back into the proxy container, which routes to the SPA or backend
+      TARGET: http://proxy:3000
+      POLICY_FNAME: /data/botPolicies.yaml
+      # After a solved challenge Anubis redirects back to the page asked for.
+      # Only ever to this site, or a crafted link could send people elsewhere.
+      REDIRECT_DOMAINS: ${SITE_ADDRESS}
+      # Signs the pass cookie. Keeps visitors from being challenged again
+      # after every restart; if empty, Anubis picks a random key at startup.
+      ED25519_PRIVATE_KEY_HEX: ${ANUBIS_KEY:-}
+      # How long a solved challenge lasts. The SPA reloads itself if it
+      # expires mid-session, see project/frontend/src/app/services/anubis-interceptor.ts
+      COOKIE_EXPIRATION_TIME: ${ANUBIS_COOKIE_EXPIRATION:-168h}
+    volumes:
+      - ./docker/prod/anubis/botPolicies.yaml:/data/botPolicies.yaml:ro
+    networks: [web]
+    healthcheck:
+      test: ["CMD", "anubis", "--healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:

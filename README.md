@@ -243,7 +243,8 @@ The live site runs on an Azure VM from `docker-compose.prod.yml`, separate from 
 
 | Container | Role |
 |-----------|------|
-| `proxy` | Caddy. The only container with public ports (80, 443). HTTPS via Let's Encrypt, serves the built Angular app, forwards `/api/*`, `/storage/*` and `/up` to the backend |
+| `proxy` | Caddy. The only container with public ports (80, 443). HTTPS via Let's Encrypt, passes every request through `anubis`, serves the built Angular app, forwards `/api/*`, `/storage/*` and `/up` to the backend |
+| `anubis` | [Anubis](https://github.com/TecharoHQ/anubis) bot filter: browsers solve a few-second proof-of-work once, known AI scrapers are refused. See "Bot protection" in the deployment guide |
 | `backend` | Laravel on FrankenPHP, reachable only from the proxy |
 | `scheduler` | Laravel's scheduled jobs. Same image as `backend` |
 | `db` | Postgres on an internal network with no published port and no internet access |
