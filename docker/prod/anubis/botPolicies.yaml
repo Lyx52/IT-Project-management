@@ -1,0 +1,88 @@
+# Anubis rules for the production proxy (see docker/prod/proxy/Caddyfile).
+# Docs: https://anubis.techaro.lol/docs/admin/policies
+#
+# Rules are checked top to bottom and the first ALLOW, DENY or CHALLENGE
+# wins. WEIGH rules add points instead; the total then picks an action from
+# the default thresholds (none, a light challenge, or a harder one).
+#
+# In practice, with Anubis's default rules:
+#  - Browsers ("Mozilla" in the User-Agent) solve a short proof-of-work once,
+#    then carry a cookie that lets every request through, /api/* included.
+#  - Known AI scrapers are refused, the big search engines are let through.
+#  - Other clients (curl, uptime monitors, scripts) are let through: Anubis
+#    targets scrapers that pretend to be browsers.
+
+bots:
+  # Laravel's health check, for any monitor outside Docker. deploy/deploy.sh
+  # checks through Anubis too.
+  - name: health-check
+    path_regex: ^/up$
+    action: ALLOW
+
+  # Everything Anubis ships by default (AI scraper blocklists, search engine
+  # allowlist, robots.txt and /.well-known, the browser catch-all). Bundled
+  # with the pinned image version in docker-compose.prod.yml.
+  - import: (data)/meta/default-config.yaml
+
+# The default config's GeoIP-based rules need a MaxMind database we don't
+# have; without one they match nothing. No DNS blocklist lookups either.
+dnsbl: false
+
+# How hard the proof-of-work is, by the points a request collected above.
+# An ordinary browser gets 10 points (the "generic-browser" rule).
+#
+# Difficulty N means the browser must find a SHA-256 hash starting with N
+# zero hex digits: about 16^N tries on average, so each step is 16x the work.
+#   3 ≈ 4,000 tries     instant everywhere
+#   4 ≈ 65,000 tries    under a second on a laptop, a few on an old phone
+#   5 ≈ 1,000,000 tries a few seconds on a laptop, 10-30 s on a slow phone
+#   6 ≈ 17,000,000      several seconds on a laptop, can be minutes on a phone
+#   7 ≈ 270,000,000     effectively a wall
+#
+# Anubis's defaults are the same table with 2 / 4 / 6. Ordinary browsers are
+# raised from 2 (practically free) to 6. Lower it to 5 if phone users
+# complain about the wait. Listing thresholds here replaces the defaults
+# entirely, so all of them are needed.
+thresholds:
+  - name: minimal-suspicion
+    expression: weight <= 0
+    action: ALLOW
+
+  # Only reachable through custom rules that lower a request's points
+  - name: mild-suspicion
+    expression:
+      all:
+        - weight > 0
+        - weight < 10
+    action: CHALLENGE
+    challenge:
+      algorithm: metarefresh
+      difficulty: 1
+
+  # Ordinary browsers
+  - name: moderate-suspicion
+    expression:
+      all:
+        - weight >= 10
+        - weight < 20
+    action: CHALLENGE
+    challenge:
+      algorithm: fast
+      difficulty: 6
+
+  - name: mild-proof-of-work
+    expression:
+      all:
+        - weight >= 20
+        - weight < 30
+    action: CHALLENGE
+    challenge:
+      algorithm: fast
+      difficulty: 7
+
+  - name: extreme-suspicion
+    expression: weight >= 30
+    action: CHALLENGE
+    challenge:
+      algorithm: fast
+      difficulty: 8
