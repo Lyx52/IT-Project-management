@@ -68,7 +68,7 @@ thresholds:
     action: CHALLENGE
     challenge:
       algorithm: fast
-      difficulty: 6
+      difficulty: 4
 
   - name: mild-proof-of-work
     expression:
@@ -78,7 +78,7 @@ thresholds:
     action: CHALLENGE
     challenge:
       algorithm: fast
-      difficulty: 7
+      difficulty: 6
 
   - name: extreme-suspicion
     expression: weight >= 30
