@@ -49,7 +49,10 @@ services:
       # expires mid-session, see project/frontend/src/app/services/anubis-interceptor.ts
       COOKIE_EXPIRATION_TIME: ${ANUBIS_COOKIE_EXPIRATION:-168h}
     volumes:
-      - ./docker/prod/anubis/botPolicies.yaml:/data/botPolicies.yaml:ro
+      # The folder, not the single file: git pull replaces the file, and a
+      # single-file mount would keep showing the old one. Anubis reads the
+      # rules only at startup; deploy.sh recreates it on every deploy.
+      - ./docker/prod/anubis:/data:ro
     networks: [web]
     healthcheck:
       test: ["CMD", "anubis", "--healthcheck"]

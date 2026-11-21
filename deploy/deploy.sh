@@ -36,6 +36,9 @@ main() {
 
   echo ">> Starting containers"
   compose up -d --remove-orphans
+  # Anubis reads docker/prod/anubis/botPolicies.yaml only at startup, and
+  # "up" leaves it running when just that file changed
+  compose up -d --force-recreate --no-deps anubis
 
   echo ">> Checking backend health"
   for _ in $(seq 1 20); do
