@@ -94,7 +94,7 @@ The site still has no `robots.txt`, so search engines index it as before. Anubis
 
 | What | Where |
 |------|-------|
-| Rules (who is allowed, challenged or refused) and puzzle difficulty | [`docker/prod/anubis/botPolicies.yaml`](docker/prod/anubis/botPolicies.yaml). It imports Anubis's default rules, adds an exception for `/up` and sets the difficulty (`thresholds`). Changes apply with `dc restart anubis`. Rule format: [Anubis policy docs](https://anubis.techaro.lol/docs/admin/policies) |
+| Rules (who is allowed, challenged or refused) and puzzle difficulty | [`docker/prod/anubis/botPolicies.yaml`](docker/prod/anubis/botPolicies.yaml). It imports Anubis's default rules, adds an exception for `/up` and sets the difficulty (`thresholds`). Changes apply on the next deploy, or right away with `dc up -d --force-recreate anubis`. Rule format: [Anubis policy docs](https://anubis.techaro.lol/docs/admin/policies) |
 | Version | `image:` of `anubis` in `docker-compose.prod.yml`. Pinned on purpose: the default rules come with the image and change between versions. To upgrade, change the tag, deploy, and do the checks in [5.3](#53-check-that-it-works) |
 | Proxy side | [`docker/prod/proxy/Caddyfile`](docker/prod/proxy/Caddyfile) |
 | Settings | `ANUBIS_KEY` and `ANUBIS_COOKIE_EXPIRATION`, see [4.2](#42-settings) |
