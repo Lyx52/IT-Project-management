@@ -55,6 +55,22 @@ export const routes: Routes = [
     component: LoginPageComponent,
   },
   {
+    path: 'forgot-password',
+    title: 'Forgot Password – FindIT',
+    loadComponent: () =>
+      import('./pages/forgot-password-page/forgot-password-page').then(
+        (m) => m.ForgotPasswordPageComponent,
+      ),
+  },
+  {
+    path: 'reset-password',
+    title: 'Reset Password – FindIT',
+    loadComponent: () =>
+      import('./pages/reset-password-page/reset-password-page').then(
+        (m) => m.ResetPasswordPageComponent,
+      ),
+  },
+  {
     path: 'terms',
     title: 'Terms of Use – FindIT',
     component: Terms,

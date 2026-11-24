@@ -124,6 +124,10 @@ export interface LogoutResponse {
   message: string;
 }
 
+export interface PasswordResetResponse {
+  message: string;
+}
+
 /** Laravel's 422 body: one array of messages per rejected field. */
 export interface ValidationErrorBody {
   message: string;
