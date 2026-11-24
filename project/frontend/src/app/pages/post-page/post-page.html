@@ -123,9 +123,26 @@
                     </span>
                   </div>
                 </div>
-                <button class="btn btn-outline-primary btn-sm mt-3" (click)="closepostevent()">
-                  Resolve this post
-                </button>
+                @if (isMine() && post.status === 'approved') {
+                  <button
+                    class="btn btn-outline-primary btn-sm mt-3"
+                    type="button"
+                    [disabled]="isResolving()"
+                    (click)="closepostevent()"
+                  >
+                    {{ isResolving() ? 'Resolving…' : 'Resolve this post' }}
+                  </button>
+                }
+                @if (canDelete()) {
+                  <button
+                    class="btn btn-outline-danger btn-sm mt-3 ms-2"
+                    type="button"
+                    [disabled]="isDeleting()"
+                    (click)="deletePost()"
+                  >
+                    {{ isDeleting() ? 'Deleting…' : 'Delete post' }}
+                  </button>
+                }
               </div>
             </section>
 

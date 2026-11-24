@@ -72,6 +72,12 @@ export class PostService {
     });
   }
 
+  deletePost(id: number): Observable<void> {
+    return this.http.delete<void>(`${environment.apiBaseUrl}/post/${id}`, {
+      headers: this.headers,
+    });
+  }
+
   getPostById(id: number): Observable<ApiResponse<Item>> {
     return this.http.get<ApiResponse<Item>>(`${environment.apiBaseUrl}/post/${id}`, {
       headers: this.headers,
