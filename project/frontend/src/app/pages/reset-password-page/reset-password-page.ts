@@ -100,7 +100,8 @@ export class ResetPasswordPageComponent {
           this.formError.set(
             messages
               ? Object.values(messages).flat()[0]
-              : (error.error?.message ?? 'The reset link is invalid or has expired. Request a new one.'),
+              : (error.error?.message ??
+                  'The reset link is invalid or has expired. Request a new one.'),
           );
         },
       });

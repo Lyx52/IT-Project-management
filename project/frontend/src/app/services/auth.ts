@@ -100,7 +100,9 @@ export class AuthService {
   }
 
   requestPasswordReset(email: string): Observable<PasswordResetResponse> {
-    return this.http.post<PasswordResetResponse>(`${environment.apiBaseUrl}/forgot-password`, { email });
+    return this.http.post<PasswordResetResponse>(`${environment.apiBaseUrl}/forgot-password`, {
+      email,
+    });
   }
 
   resetPassword(payload: {
@@ -109,7 +111,10 @@ export class AuthService {
     password: string;
     password_confirmation: string;
   }): Observable<PasswordResetResponse> {
-    return this.http.post<PasswordResetResponse>(`${environment.apiBaseUrl}/reset-password`, payload);
+    return this.http.post<PasswordResetResponse>(
+      `${environment.apiBaseUrl}/reset-password`,
+      payload,
+    );
   }
 
   /**
