@@ -6,6 +6,8 @@ use App\Enums\PostStatus;
 use App\Enums\PostType;
 use App\Http\Controllers\Controller;
 use App\Models\Post;
+use App\Models\Report;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,8 @@ class StatisticsController extends Controller
 {
     /**
      * Return aggregate platform figures. No post, account, or message data is
-     * included in this response.
+     * included in this response, so the figures can be shared outside the
+     * moderation team (AC-32).
      */
     public function __invoke(Request $request): JsonResponse
     {
@@ -27,22 +30,42 @@ class StatisticsController extends Controller
             'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
         ])->validate();
 
-        $counts = [];
         $statuses = array_map(fn (PostStatus $status) => $status->value, PostStatus::cases());
+        $types = array_map(fn (PostType $type) => $type->value, PostType::cases());
 
-        foreach (PostType::cases() as $type) {
-            $counts[$type->value] = array_fill_keys($statuses, 0);
+        // Every type/status pair starts at zero, so a status nobody has used
+        // still appears in the response instead of being missing.
+        $counts = [];
+
+        foreach ($types as $type) {
+            $counts[$type] = array_fill_keys($statuses, 0);
         }
 
+        $byType = array_fill_keys($types, 0);
+        $byStatus = array_fill_keys($statuses, 0);
+        $totalPosts = 0;
+
+        // Scoped to the window, because the response reports that window back
+        // and a page that labels its figures with a date range must not show
+        // all-time counts underneath it.
         $groupedCounts = DB::table('posts')
             ->select('type', 'status', DB::raw('COUNT(*) AS total'))
+            ->whereDate('created_at', '>=', $period['from'])
+            ->whereDate('created_at', '<=', $period['to'])
             ->groupBy('type', 'status')
             ->get();
 
         foreach ($groupedCounts as $row) {
-            if (isset($counts[$row->type][$row->status])) {
-                $counts[$row->type][$row->status] = (int) $row->total;
+            if (! isset($counts[$row->type][$row->status])) {
+                continue;
             }
+
+            $total = (int) $row->total;
+
+            $counts[$row->type][$row->status] = $total;
+            $byType[$row->type] += $total;
+            $byStatus[$row->status] += $total;
+            $totalPosts += $total;
         }
 
         $resolved = Post::query()
@@ -52,6 +75,8 @@ class StatisticsController extends Controller
             ->whereDate('resolved_at', '<=', $period['to'])
             ->get(['created_at', 'resolved_at']);
 
+        // max(0, ...) per post: a row resolved before it was created would
+        // otherwise drag the average below zero and show a negative figure.
         $averageDays = $resolved->isEmpty()
             ? null
             : round($resolved->avg(fn (Post $post) => max(
@@ -61,10 +86,21 @@ class StatisticsController extends Controller
 
         return response()->json([
             'data' => [
-                'period' => $period,
+                'from' => $period['from'],
+                'to' => $period['to'],
+
                 'posts_by_type_and_status' => $counts,
+                'total_posts' => $totalPosts,
+                'by_type' => $byType,
+                'by_status' => $byStatus,
+
                 'resolved_count' => $resolved->count(),
-                'average_resolution_days' => $averageDays,
+                'average_days_to_resolution' => $averageDays,
+
+                // Current totals rather than window-scoped: these answer "how
+                // much is waiting for us right now".
+                'open_reports' => Report::where('status', 'open')->count(),
+                'banned_users' => User::whereNotNull('banned_at')->count(),
             ],
         ]);
     }

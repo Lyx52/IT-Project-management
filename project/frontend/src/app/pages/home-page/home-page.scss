@@ -1,16 +1,5 @@
 @use '../../../styles/variables' as *;
 
-.search-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
-}
-
 .search-box {
   display: flex;
   align-items: center;
@@ -54,95 +43,6 @@
 
 /* Messenger */
 
-.messenger-button {
-  position: fixed;
-  right: 25px;
-  bottom: 25px;
-  z-index: 1001;
-
-  width: 58px;
-  height: 58px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border: none;
-  border-radius: 50%;
-
-  background: #f07836;
-  color: white;
-  font-size: 23px;
-
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s;
-
-  &:hover {
-    background: #dc6428;
-    transform: translateY(-2px);
-  }
-
-  &.active {
-    background: #555;
-  }
-
-  .messenger-unread-badge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-
-    min-width: 20px;
-    height: 20px;
-    padding: 0 5px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 50%;
-    background: #dc3545;
-    color: white;
-
-    font-size: 10px;
-    font-weight: bold;
-    border: 2px solid white;
-  }
-}
-
-.messenger-popup {
-  position: fixed;
-  right: 25px;
-  bottom: 95px;
-  z-index: 1000;
-
-  width: 350px;
-  max-width: calc(100vw - 30px);
-  max-height: min(550px, calc(100vh - 130px));
-
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-
-  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.18);
-  animation: modal-appear 0.2s ease-out;
-
-  &[hidden] {
-    display: none;
-  }
-}
-
-@keyframes modal-appear {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* Terms */
 
 .terms-container {
@@ -163,7 +63,7 @@
 /* Responsive */
 
 @media (max-width: 768px) {
-  .search-section {
+  .page-heading {
     flex-direction: column;
     align-items: stretch;
   }
@@ -175,16 +75,6 @@
   .items-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 15px;
-  }
-
-  .messenger-button {
-    right: 15px;
-    bottom: 15px;
-  }
-
-  .messenger-popup {
-    right: 15px;
-    bottom: 85px;
   }
 }
 

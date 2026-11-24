@@ -13,6 +13,7 @@ const USER: AuthUser = {
   username: 'jane_doe',
   email: 'jane@example.com',
   email_verified_at: null,
+  role: 'user' as const,
   must_verify_email: false,
 };
 
@@ -95,6 +96,51 @@ describe('Header', () => {
     click(userButton());
 
     expect(text()).not.toContain('Log out');
+  });
+
+  it('keeps My posts and Saved searches in the account menu, not the page nav', () => {
+    setup(true);
+
+    const el = fixture.nativeElement as HTMLElement;
+
+    // Not in the page nav, and not on screen at all until the menu is opened.
+    expect(el.querySelector('#main-nav')!.textContent).not.toContain('My posts');
+    expect(el.querySelector('#main-nav')!.textContent).not.toContain('Saved searches');
+    expect(text()).not.toContain('My posts');
+
+    click(userButton());
+
+    const menu = el.querySelector<HTMLElement>('#user-menu-dropdown')!;
+
+    expect(menu.textContent).toContain('My posts');
+    expect(menu.textContent).toContain('Saved searches');
+    expect(menu.querySelector('a[href="/my-posts"]')).not.toBeNull();
+    expect(menu.querySelector('a[href="/saved-searches"]')).not.toBeNull();
+  });
+
+  it('closes the account menu once one of its links is picked', () => {
+    setup(true);
+    // The test router has no routes, so following a link would reject
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+
+    click(userButton());
+    expect(userButton().getAttribute('aria-expanded')).toBe('true');
+
+    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
+      '#user-menu-dropdown a[href="/my-posts"]',
+    )!;
+    click(link);
+
+    expect(userButton().getAttribute('aria-expanded')).toBe('false');
+    expect(text()).not.toContain('Log out');
+  });
+
+  it('hides both links from a visitor, who has no account menu', () => {
+    setup(false);
+
+    expect(text()).not.toContain('My posts');
+    expect(text()).not.toContain('Saved searches');
+    expect((fixture.nativeElement as HTMLElement).querySelector('#user-menu-dropdown')).toBeNull();
   });
 
   it('folds the page links out on small screens and away again once one is picked', () => {

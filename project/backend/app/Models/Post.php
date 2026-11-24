@@ -130,19 +130,21 @@ class Post extends Model
     }
 
     /**
-     * The filters of GET /posts/query, also used to match saved searches, so
-     * a saved search is notified about exactly the posts it would find.
-     * Empty filters are left out.
+     * The filters of GET /posts/query. Saved searches use the text, type and
+     * category subset; date bounds apply only to feed queries. Empty filters
+     * are left out.
      *
      * @param  Builder<self>  $query
-     * @param  array{q?: ?string, type?: ?string, category_id?: int|string|null}  $filters
+     * @param  array{q?: ?string, type?: ?string, category_id?: int|string|null, date_from?: ?string, date_to?: ?string}  $filters
      */
     public function scopeMatchingFilters(Builder $query, array $filters): void
     {
         $query
             ->when($filters['q'] ?? null, fn (Builder $q, string $text) => $q->search($text))
             ->when($filters['type'] ?? null, fn (Builder $q, string $type) => $q->where('type', $type))
-            ->when($filters['category_id'] ?? null, fn (Builder $q, int|string $id) => $q->where('category_id', $id));
+            ->when($filters['category_id'] ?? null, fn (Builder $q, int|string $id) => $q->where('category_id', $id))
+            ->when($filters['date_from'] ?? null, fn (Builder $q, string $date) => $q->where('event_date', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn (Builder $q, string $date) => $q->where('event_date', '<=', $date));
     }
 
     /**

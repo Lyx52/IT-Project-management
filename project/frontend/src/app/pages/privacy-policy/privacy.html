@@ -1,6 +1,9 @@
 <app-header />
 <div class="privacy-container">
-  <h1 class="privacy-title">{{ privacy.ptitle }}</h1>
+  <div class="privacy-head">
+    <h1 class="privacy-title">{{ privacy.ptitle }}</h1>
+    <span class="privacy-version">Version {{ version }}</span>
+  </div>
 
   <section class="privacy-section">
     <h2 class="privacy-subtitle">{{ privacy.psubtitle }}</h2>
@@ -36,5 +39,14 @@
     <h2 class="privacy-subtitle">{{ privacy.subptitle6 }}</h2>
     <p class="privacy-text">{{ privacy.ptext6 }}</p>
   </section>
-  <button type="button" class="acceptance-button" (click)="acceptprivacy()">Accept</button>
+  <section class="privacy-section" id="cookies">
+    <h2 class="privacy-subtitle">{{ privacy.subptitle7 }}</h2>
+    <p class="privacy-text">{{ privacy.ptext7 }}</p>
+  </section>
+  <section class="privacy-section">
+    <p class="privacy-text privacy-crosslink">
+      {{ privacy.seeAlso }}
+      <a routerLink="/terms">{{ privacy.Terms }}</a>
+    </p>
+  </section>
 </div>

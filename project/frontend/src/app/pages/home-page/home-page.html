@@ -2,7 +2,7 @@
 
 <main class="page-container py-4">
   <!-- Search section -->
-  <div class="search-section mb-4">
+  <div class="page-heading mb-4">
     <div>
       <h4 class="fw-bold mb-1">{{ texts.hometitle }}</h4>
       <p class="text-muted mb-0">One place for lost and found items.</p>
@@ -51,7 +51,7 @@
     } @else {
       <div class="items-grid">
         @for (item of filteredItems(); track item.id) {
-          <app-item-card [item]="item" (edit)="openEdit($event)" />
+          <app-item-card [item]="item" />
         }
       </div>
     }
@@ -61,51 +61,6 @@
 <!-- Create post component -->
 <app-create-post (created)="onPostCreated()" />
 
-<!-- Edit post modal -->
-@if (editingItem()) {
-  <div class="modal-backdrop-custom" (click)="closeEdit()">
-    <div
-      class="create-post-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="editPostTitle"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="modal-header-custom">
-        <div>
-          <h5 id="editPostTitle" class="fw-bold mb-1">Edit post</h5>
-          <p class="text-muted small mb-0">Correct a mistake in your post.</p>
-        </div>
+<app-messenger-launcher />
 
-        <button type="button" class="btn-close" (click)="closeEdit()" aria-label="Close"></button>
-      </div>
-
-      <div class="modal-body-custom">
-        <app-item-form [post]="editingItem()" (created)="onPostEdited()" />
-      </div>
-    </div>
-  </div>
-}
-
-<!-- Messenger floating button -->
-<button
-  class="messenger-button"
-  [class.active]="isMessengerOpen"
-  (click)="toggleMessenger()"
-  aria-label="Open messenger"
->
-  <i [class]="isMessengerOpen ? 'bi bi-x-lg' : 'bi bi-chat-dots-fill'"></i>
-
-  @if (unreadMessagesCount() > 0) {
-    <span class="messenger-unread-badge">
-      {{ unreadMessagesCount() > 99 ? '99+' : unreadMessagesCount() }}
-    </span>
-  }
-</button>
-
-<!-- Messenger popup -->
-<div class="messenger-popup" [hidden]="!isMessengerOpen">
-  <app-messenger (unreadCountChange)="unreadMessagesCount.set($event)" />
-</div>
-
-<app-footer (showTriggered)="openTerms()" />
+<app-footer />

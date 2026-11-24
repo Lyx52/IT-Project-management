@@ -22,14 +22,15 @@ Laravel API + Angular SPA + PostgreSQL, run with Docker in development and produ
 
 ## Features
 
-- **Posts.** Lost or found items with a category, description, location on a map, event date and photos (EXIF data is stripped). New posts wait for admin approval before they appear publicly. Authors can edit, resolve and delete their own posts.
-- **Search.** Accent- and case-insensitive text search over titles and descriptions, filters by type and category, a list view and a Leaflet map view.
+- **Posts.** Lost or found items with a category, description, location on a map, event date and photos (EXIF data is stripped). New posts wait for admin approval before they appear publicly. Authors can edit their posts, photos included, which sends them back to moderation. They can also mark them resolved or delete them.
+- **Search.** Accent- and case-insensitive text search over titles and descriptions, filters by type, category and event-date range, a list view and a Leaflet map view.
 - **Suggested matches.** The author of a post sees likely counterparts: approved posts of the opposite type in the same category, less than 2 km away, with an event date within 7 days.
 - **Saved searches.** Users save a search and get a notification when a new post matches it.
 - **Messages.** Direct messages about a post, with image and video attachments. Message bodies are encrypted at rest. Attachments are served through signed, expiring links.
-- **Notifications.** A bell in the header for saved-search matches and moderation results (post approved or rejected).
-- **Moderation.** Users report posts. Admins approve or reject posts (with a reason), ban and unban users, manage categories and see site statistics.
-- **Accounts.** Registration with a CAPTCHA, token-based login, data export, account deletion with automatic purge after 21 days.
+- **Notifications.** A bell in the header for new messages, possible matches for your posts, saved-search matches, moderation results (post approved, rejected or taken down) and the outcome of posts you reported.
+- **Moderation.** Users report posts. Admins work in the moderation panel (`/admin`, linked in the header for admins), which has tabs for pending posts (approve, or reject with a reason), reports (hide the post, ban the author or dismiss), users (search, ban and unban), categories (add, rename, retire, restore, delete) and statistics.
+- **Accounts.** Registration with a CAPTCHA, token-based login, data export, and account deletion: the account is suspended at once and permanently deleted after 30 days.
+- **Automatic cleanup.** Resolved posts are deleted six months after they were resolved, and read notifications after 90 days.
 
 ## Tech stack
 
@@ -159,7 +160,7 @@ The schema is built with Laravel migrations in [`project/backend/database/migrat
 | `messages` | Direct messages between users about a post. Text, attachments or both. The body is encrypted |
 | `message_attachments` | Files attached to a message: `path`, `mime_type` (`image/*` or `video/*`), `size` in bytes |
 | `saved_searches`, `saved_search_matches` | A user's saved search filters and the posts already notified for each |
-| `reports` | Users reporting posts. One report per user per post, `status` `open`/`closed` |
+| `reports` | Users reporting posts. One report per user per post, `status` `open`/`closed`, `reviewed_by` (the admin who closed it) |
 | `notifications` | Laravel database notifications |
 | `personal_access_tokens` | Sanctum API tokens |
 | `cache`, `jobs`, `sessions`, `password_reset_tokens` | Laravel defaults |
@@ -208,21 +209,21 @@ None of the three types stops a bot written for this site. `math` and `determina
 
 ## Data retention
 
-AC-17 requires a deleted account to be gone within 30 days, backups included.
+Account deletion immediately suspends the account. The account and its related personal data are permanently deleted after 30 days. Daily pruning and the 7-day backup lifecycle mean the final backup containing that data can remain for up to 39 days after the request.
 
-Deleting an account soft-deletes it. Every day at 00:00 UTC the scheduler runs `model:prune`, which permanently deletes accounts soft-deleted more than **21 days** ago, together with their posts, messages and uploaded files. Backups are kept for 7 days.
+The scheduler also removes resolved posts six months after their `resolved_at` date and read notifications 90 days after their `read_at` date. Unread notifications are retained.
 
-Worst case, deleted data still exists for 21 days (waiting for the purge) + 1 day (until the purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **30 days**.
-
-The numbers live in [`config/retention.php`](project/backend/config/retention.php):
+Account retention settings live in [`project/backend/config/retention.php`](project/backend/config/retention.php):
 
 | Setting | Default | Change it with |
 |---------|---------|----------------|
-| `account_purge_days` | 21 | `ACCOUNT_PURGE_DAYS=` in `.env.production`, then `deploy/deploy.sh` |
+| `account_purge_days` | 30 | `ACCOUNT_PURGE_DAYS=` in `.env.production`, then `deploy/deploy.sh` |
 | `backup_retention_days` | 7 | `RETENTION_DAYS` in `deploy/backup-storage.sh` and rerun `setup`. Change both |
-| `deleted_account_limit_days` | 30 | Fixed by AC-17 |
+| `deleted_account_limit_days` | 39 | 30-day suspension plus daily cleanup and backup lifecycle |
 
-`account_purge_days + backup_retention_days + 2` must stay at or below 30, and `tests/Feature/UserPruningTest.php` fails if the defaults break that. Keeping backups longer therefore means purging accounts sooner.
+Worst case, deleted data still exists for 30 days (the suspension) + 1 day (until the daily purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **39 days**. `account_purge_days + backup_retention_days + 2` must stay at or below `deleted_account_limit_days`, and `tests/Feature/UserPruningTest.php` fails if it doesn't.
+
+> **Production currently purges after 21 days, not 30.** `docker-compose.prod.yml` still sets `ACCOUNT_PURGE_DAYS` to `21` when `.env.production` doesn't set it, and that overrides the 30 in `config/retention.php`. Until the compose file is fixed, put `ACCOUNT_PURGE_DAYS=30` in `.env.production` and run `deploy/deploy.sh`. Otherwise accounts are deleted after 21 days instead of the documented 30.
 
 ### Scheduled jobs
 
@@ -233,6 +234,7 @@ Defined in [`routes/console.php`](project/backend/routes/console.php) and run by
 | 00:00 | `model:prune`: permanently deletes accounts past `account_purge_days` |
 | 00:30 | `app:prune-expired-cache`: removes expired cache entries, including unanswered CAPTCHAs |
 | 00:45 | `sanctum:prune-expired`: removes API tokens that expired more than a day ago |
+| 01:00 | `app:prune-old-platform-data`: removes expired resolved posts and read notifications; appends run counts to `storage/logs/platform-data-pruning.log` |
 | 02:00 | Database backup (in the `backup` container, see [Backups](#backups)) |
 
 ## Production
@@ -241,7 +243,8 @@ The live site runs on an Azure VM from `docker-compose.prod.yml`, separate from 
 
 | Container | Role |
 |-----------|------|
-| `proxy` | Caddy. The only container with public ports (80, 443). HTTPS via Let's Encrypt, serves the built Angular app, forwards `/api/*`, `/storage/*` and `/up` to the backend |
+| `proxy` | Caddy. The only container with public ports (80, 443). HTTPS via Let's Encrypt, passes every request through `anubis`, serves the built Angular app, forwards `/api/*`, `/storage/*` and `/up` to the backend |
+| `anubis` | [Anubis](https://github.com/TecharoHQ/anubis) bot filter: browsers solve a few-second proof-of-work once, known AI scrapers are refused. See "Bot protection" in the deployment guide |
 | `backend` | Laravel on FrankenPHP, reachable only from the proxy |
 | `scheduler` | Laravel's scheduled jobs. Same image as `backend` |
 | `db` | Postgres on an internal network with no published port and no internet access |

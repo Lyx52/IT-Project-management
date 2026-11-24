@@ -83,4 +83,12 @@
   .dropdown-item:focus {
     color: #f07836;
   }
+
+  // Bootstrap's .active fills the row solid blue, which fights the brand. The
+  // current page is marked with the brand colour and a tint instead.
+  .dropdown-item.active {
+    background-color: #fdf0e9;
+    color: #f07836;
+    font-weight: 600;
+  }
 }

@@ -1,32 +1,35 @@
 {
 	email {$ACME_EMAIL}
+
+	# The inner site below only ever receives requests from Anubis. Trusting
+	# it keeps the X-Forwarded-Proto/Host set by the public site intact, so
+	# Laravel still sees https:// (signed e-mail links depend on that).
+	servers :3000 {
+		trusted_proxies static private_ranges
+	}
 }
+
+# Every request takes this path:
+#
+#   client ─443→ public site (TLS) ─→ anubis:8923 ─→ :3000 (routing) ─→ backend
+#
+# Anubis decides per request whether to pass it on, show its proof-of-work
+# challenge or refuse it. Its rules are in docker/prod/anubis/botPolicies.yaml.
 
 # A hostname here makes Caddy fetch and renew a certificate and redirect
 # http:// to https:// on its own.
 {$SITE_ADDRESS} {
 	encode zstd gzip
 
+	# Headers that suit every response, including Anubis's challenge page.
+	# The Content-Security-Policy is set on the inner site instead, see there.
 	header {
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 
-		# Only this site's own files may run or load. The SPA keeps its API
-		# token in localStorage, so this is the main line of defence: even if
-		# an injection slipped through, the browser refuses inline and foreign
-		# scripts and refuses to send data to other hosts.
-		#  - style-src 'unsafe-inline': Angular adds component styles as
-		#    <style> elements at runtime
-		#  - img-src data: blob:: Bootstrap draws icons as data: SVGs; blob:
-		#    is the browser's own local object URLs (e.g. the data export)
-		#  - worker-src 'self': the sign-up CAPTCHA runs in a Web Worker
-		# Adding a third-party script, font, map tiles or analytics means
-		# adding its host here.
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
-
 		# No other site may show this one in a frame (clickjacking). Same as
-		# frame-ancestors above, for browsers that predate CSP level 2.
+		# frame-ancestors in the CSP, for browsers that predate CSP level 2.
 		X-Frame-Options DENY
 
 		# Browser features the site never uses are switched off, so injected
@@ -41,11 +44,53 @@
 		-X-Powered-By
 	}
 
+	reverse_proxy anubis:8923 {
+		# Overwrites anything the client sent, so the IP Anubis (and, through
+		# it, Laravel's rate limits) sees is the real one
+		header_up X-Real-IP {remote_host}
+		header_up X-Http-Version {http.request.proto}
+		# Anubis refuses requests whose TLS name differs from the Host header
+		# (domain fronting). Not {tls_server_name} as in Anubis's Caddy docs:
+		# Caddy doesn't know that one and would send it literally, which
+		# makes Anubis refuse every request.
+		header_up X-TLS-SNI-Name {http.request.tls.server_name}
+	}
+}
+
+# The actual site. Plain HTTP, reachable only inside Docker: the port is not
+# published, so the only way in is through Anubis.
+:3000 {
+	# Only this site's own files may run or load. The SPA keeps its API
+	# token in localStorage, so this is the main line of defence: even if
+	# an injection slipped through, the browser refuses inline and foreign
+	# scripts and refuses to send data to other hosts.
+	#  - style-src 'unsafe-inline': Angular adds component styles as
+	#    <style> elements at runtime
+	#  - img-src data: blob:: Bootstrap draws icons as data: SVGs; blob:
+	#    is the browser's own local object URLs (e.g. the data export)
+	#  - connect-src nominatim: the map page's place search (geocoding)
+	#  - worker-src 'self': the sign-up CAPTCHA runs in a Web Worker
+	# Adding a third-party script, font, map tiles or analytics means
+	# adding its host here.
+	#
+	# Set here rather than on the public site so it doesn't reach Anubis's
+	# challenge page, which needs an inline script, blob: workers and data:
+	# fonts. Anubis never forwards that page here, and passes the app's own
+	# responses (and this header) through unchanged.
+	header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+
 	# /sanctum/* is not forwarded: the SPA authenticates with bearer tokens,
 	# so Sanctum's cookie (CSRF) routes have no use from outside.
 	@backend path /api/* /storage/* /up
 	handle @backend {
-		reverse_proxy backend:8080
+		reverse_proxy backend:8080 {
+			# Without this the backend would see Anubis's container address
+			# as every visitor's IP, and all rate limits (login, sign-up,
+			# posting) would become one bucket shared by the whole site.
+			# X-Real-IP was set by the public site above from the real
+			# connection; Laravel trusts the proxy and reads this header.
+			header_up X-Forwarded-For {header.X-Real-IP}
+		}
 	}
 
 	# Angular SPA: unknown paths fall back to index.html for client-side routing

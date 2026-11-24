@@ -1,9 +1,9 @@
 <app-header />
 
 <main class="page-container py-4">
-  <a class="btn btn-link px-0 mb-3" routerLink="/items">
-    <i class="bi bi-arrow-left me-1"></i>
-    Back to items
+  <a class="back-link" routerLink="/items">
+    <i class="bi bi-arrow-left"></i>
+    <span>Back to items</span>
   </a>
 
   @switch (state()) {
@@ -38,9 +38,62 @@
         <article class="post card">
           <!-- Images -->
           @if (post.images.length > 0) {
-            <div class="post-images">
-              @for (image of post.images; track image.id) {
-                <img [src]="image.url" [alt]="post.title" loading="lazy" />
+            <div
+              class="post-carousel"
+              role="group"
+              aria-roledescription="carousel"
+              [attr.aria-label]="post.title + ' photos'"
+              (keydown)="onCarouselKey($event, post.images.length)"
+              tabindex="0"
+            >
+              @for (image of post.images; track image.id; let i = $index) {
+                <img
+                  [src]="image.url"
+                  [alt]="
+                    post.images.length > 1
+                      ? post.title + ' - photo ' + (i + 1) + ' of ' + post.images.length
+                      : post.title
+                  "
+                  [hidden]="i !== imageIndex()"
+                  loading="lazy"
+                />
+              }
+
+              @if (post.images.length > 1) {
+                <button
+                  class="carousel-arrow carousel-prev"
+                  type="button"
+                  aria-label="Previous photo"
+                  (click)="previousImage(post.images.length)"
+                >
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+
+                <button
+                  class="carousel-arrow carousel-next"
+                  type="button"
+                  aria-label="Next photo"
+                  (click)="nextImage(post.images.length)"
+                >
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+
+                <span class="carousel-counter" aria-hidden="true">
+                  {{ imageIndex() + 1 }} / {{ post.images.length }}
+                </span>
+
+                <div class="carousel-dots">
+                  @for (image of post.images; track image.id; let i = $index) {
+                    <button
+                      class="carousel-dot"
+                      type="button"
+                      [class.active]="i === imageIndex()"
+                      [attr.aria-label]="'Show photo ' + (i + 1)"
+                      [attr.aria-current]="i === imageIndex() ? 'true' : null"
+                      (click)="showImage(i)"
+                    ></button>
+                  }
+                </div>
               }
             </div>
           } @else {
@@ -67,6 +120,26 @@
                 </span>
               }
             </div>
+
+            <!-- Why a moderator refused it. The API only sends this to the
+                 author and to admins, and only for a rejected post. -->
+            @if (post.status === 'rejected' && post.rejection_reason) {
+              <div class="rejection-notice" role="note">
+                <i class="bi bi-x-octagon"></i>
+                <div>
+                  <p class="fw-semibold mb-1">A moderator did not publish this post</p>
+                  <p class="mb-0">{{ post.rejection_reason }}</p>
+                </div>
+              </div>
+            } @else if (post.status === 'rejected' && isMine()) {
+              <div class="rejection-notice" role="note">
+                <i class="bi bi-x-octagon"></i>
+                <div>
+                  <p class="fw-semibold mb-1">A moderator did not publish this post</p>
+                  <p class="mb-0">No reason was given.</p>
+                </div>
+              </div>
+            }
 
             <!-- Title and description -->
             <h1 class="h3 fw-bold mb-3">{{ post.title }}</h1>
@@ -123,28 +196,56 @@
                     </span>
                   </div>
                 </div>
-                @if (isMine() && post.status === 'approved') {
-                  <button
-                    class="btn btn-outline-primary btn-sm mt-3"
-                    type="button"
-                    [disabled]="isResolving()"
-                    (click)="closepostevent()"
-                  >
-                    {{ isResolving() ? 'Resolving…' : 'Resolve this post' }}
-                  </button>
-                }
-                @if (canDelete()) {
-                  <button
-                    class="btn btn-outline-danger btn-sm mt-3 ms-2"
-                    type="button"
-                    [disabled]="isDeleting()"
-                    (click)="deletePost()"
-                  >
-                    {{ isDeleting() ? 'Deleting…' : 'Delete post' }}
-                  </button>
-                }
               </div>
             </section>
+
+            <!-- Owner actions. Resolve used to sit inside the details grid and
+                 was shown to everyone, though only the author could use it. -->
+            @if (isMine()) {
+              <section class="owner-actions mt-4" aria-labelledby="owner-actions-title">
+                <div>
+                  <h2 id="owner-actions-title" class="h6 fw-bold mb-1">Your post</h2>
+                  <p class="text-muted small mb-0">
+                    @if (post.status === 'resolved') {
+                      This post is resolved and no longer appears in the feed.
+                    } @else {
+                      Mark it resolved once the item is back with its owner.
+                    }
+                  </p>
+
+                  @if (resolveError()) {
+                    <p class="owner-error small mb-0 mt-2" role="alert">
+                      <i class="bi bi-exclamation-triangle me-1"></i>
+                      {{ resolveError() }}
+                    </p>
+                  }
+                </div>
+
+                @if (post.status !== 'resolved') {
+                  <div class="owner-buttons">
+                    <button class="btn btn-outline-secondary" type="button" (click)="openEdit()">
+                      <i class="bi bi-pencil me-2"></i>
+                      Edit post
+                    </button>
+
+                    <button
+                      class="btn btn-outline-success"
+                      type="button"
+                      [disabled]="isResolving()"
+                      (click)="closepostevent()"
+                    >
+                      <i class="bi bi-check2-circle me-2"></i>
+                      {{ isResolving() ? 'Resolving...' : 'Mark as resolved' }}
+                    </button>
+                  </div>
+                } @else {
+                  <span class="resolved-badge" role="status">
+                    <i class="bi bi-check2-circle me-1"></i>
+                    Resolved
+                  </span>
+                }
+              </section>
+            }
 
             <!-- Contact -->
             @if (!isMine()) {
@@ -154,30 +255,75 @@
                   <p class="text-muted small mb-0">Contact the person who posted this item.</p>
                 </div>
 
-                <button class="contact-button" type="button" (click)="contact()">
-                  <i class="bi bi-chat-dots me-2"></i>
-                  Contact
-                </button>
+                <div class="contact-actions">
+                  <button class="contact-button" type="button" (click)="contact()">
+                    <i class="bi bi-chat-dots me-2"></i>
+                    Contact
+                  </button>
+
+                  <app-report-post [postId]="post.id" />
+                </div>
               </div>
             }
           </div>
         </article>
 
+        <!-- Edit post modal -->
+        @if (isEditing()) {
+          <div class="modal-backdrop-custom" (click)="closeEdit()">
+            <div
+              class="create-post-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="editPostTitle"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="modal-header-custom">
+                <div>
+                  <h5 id="editPostTitle" class="fw-bold mb-1">Edit post</h5>
+                  <p class="text-muted small mb-0">Correct a mistake in your post.</p>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-close"
+                  (click)="closeEdit()"
+                  aria-label="Close"
+                ></button>
+              </div>
+
+              <div class="modal-body-custom">
+                <app-item-form [post]="post" (created)="onPostEdited()" />
+              </div>
+            </div>
+          </div>
+        }
+
         <!-- Possible matches -->
         @if (isMine()) {
-          <section class="mt-5" aria-labelledby="matches-title">
-            <h2 id="matches-title" class="h5 fw-bold mb-1">Possible matches</h2>
+          <section class="matches mt-5" aria-labelledby="matches-title">
+            <div class="matches-head">
+              <h2 id="matches-title" class="h5 fw-bold mb-1">
+                Possible matches
+                @if (matchesState() === 'ready' && matches().length > 0) {
+                  <span class="matches-count">{{ matches().length }}</span>
+                }
+              </h2>
 
-            <p class="text-muted small">
-              {{ post.type === 'lost' ? 'Found' : 'Lost' }}
-              posts in {{ post.category.name }}, dated within 7 days of yours and less than 2 km
-              away, closest first.
-            </p>
+              <p class="matches-explainer mb-0">
+                {{ post.type === 'lost' ? 'Found' : 'Lost' }} items in
+                <strong>{{ post.category.name }}</strong
+                >, reported within <strong>7 days</strong> of yours and less than
+                <strong>2 km</strong> away. Closest first.
+              </p>
+            </div>
 
             @switch (matchesState()) {
               @case ('loading') {
-                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                <span class="text-muted small ms-2"> Looking for matches... </span>
+                <p class="matches-status">
+                  <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                  Looking for matches...
+                </p>
               }
 
               @case ('error') {
@@ -201,10 +347,14 @@
                     }
                   </div>
                 } @else {
-                  <p class="text-muted mb-0">
-                    No possible matches yet. You can also
-                    <a routerLink="/items">browse other items</a>.
-                  </p>
+                  <div class="matches-empty">
+                    <i class="bi bi-search"></i>
+                    <p class="mb-1 fw-semibold">No possible matches yet</p>
+                    <p class="text-muted small mb-0">
+                      We will keep looking as new items are posted. You can also
+                      <a routerLink="/items">browse all items</a>.
+                    </p>
+                  </div>
                 }
               }
             }
@@ -215,25 +365,7 @@
   }
 </main>
 
-<!-- Messenger floating button -->
-<button
-  class="messenger-button"
-  [class.active]="isMessengerOpen"
-  (click)="toggleMessenger()"
-  aria-label="Open messenger"
->
-  <i [class]="isMessengerOpen ? 'bi bi-x-lg' : 'bi bi-chat-dots-fill'"></i>
+<app-create-post (created)="onPostCreated()" />
+<app-messenger-launcher />
 
-  @if (unreadMessagesCount() > 0) {
-    <span class="messenger-unread-badge">
-      {{ unreadMessagesCount() > 99 ? '99+' : unreadMessagesCount() }}
-    </span>
-  }
-</button>
-
-<!-- Messenger popup -->
-<div class="messenger-popup" [hidden]="!isMessengerOpen">
-  <app-messenger (unreadCountChange)="unreadMessagesCount.set($event)" />
-</div>
-
-<app-footer (showTriggered)="openTerms()" />
+<app-footer />
