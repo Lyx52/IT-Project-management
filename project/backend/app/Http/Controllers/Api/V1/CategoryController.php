@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Resources\AdminCategoryResource;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
@@ -30,15 +31,18 @@ class CategoryController extends Controller
     /**
      * List all categories (admin)
      *
-     * Includes retired categories and their retirement date.
+     * Includes retired categories, their retirement date, and how many posts
+     * use each one. The count is what tells a client which categories can be
+     * deleted and which must be retired instead, so it is not optional.
      */
-    public function adminIndex(): JsonResponse
+    public function adminIndex(): AnonymousResourceCollection
     {
         $categories = Category::query()
+            ->withCount('posts')
             ->orderBy('name')
-            ->get(['id', 'name', 'retired_at']);
+            ->get();
 
-        return response()->json($categories);
+        return AdminCategoryResource::collection($categories);
     }
 
     /**
@@ -48,7 +52,7 @@ class CategoryController extends Controller
     {
         $category = Category::query()->create($request->validated());
 
-        return response()->json($category->refresh(), 201);
+        return $this->adminResponse($category)->setStatusCode(201);
     }
 
     /**
@@ -59,7 +63,7 @@ class CategoryController extends Controller
         $category->fill($request->validated());
         $category->save();
 
-        return response()->json($category->refresh());
+        return $this->adminResponse($category);
     }
 
     /**
@@ -72,7 +76,7 @@ class CategoryController extends Controller
         $category->retired_at = now();
         $category->save();
 
-        return response()->json($category->refresh());
+        return $this->adminResponse($category);
     }
 
     /**
@@ -83,7 +87,7 @@ class CategoryController extends Controller
         $category->retired_at = null;
         $category->save();
 
-        return response()->json($category->refresh());
+        return $this->adminResponse($category);
     }
 
     /**
@@ -102,5 +106,17 @@ class CategoryController extends Controller
         $category->delete();
 
         return response()->noContent();
+    }
+
+    /**
+     * One category in the same envelope and with the same fields as the admin
+     * list, so a client can drop the response straight into the row it just
+     * changed instead of refetching the whole list.
+     */
+    private function adminResponse(Category $category): JsonResponse
+    {
+        $category->refresh()->loadCount('posts');
+
+        return AdminCategoryResource::make($category)->response();
     }
 }

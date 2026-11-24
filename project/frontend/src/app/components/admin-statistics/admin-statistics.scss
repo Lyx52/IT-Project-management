@@ -1,0 +1,138 @@
+.range-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: #333333;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #858585;
+}
+
+.breakdowns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 40px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.bar-label {
+  color: #858585;
+  text-transform: capitalize;
+}
+
+.bar-track {
+  height: 10px;
+  background: #f1f1f1;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: #f07836;
+  border-radius: 5px;
+}
+
+.bar-count {
+  text-align: right;
+  color: #333333;
+  font-weight: 600;
+}
+
+// The cross-tab is styled to sit with the tiles above it rather than using
+// Bootstrap's bordered/striped look, which reads as a different component.
+.matrix-table {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 10px 14px;
+    border: 0;
+    border-bottom: 1px solid #f1f1f1;
+    white-space: nowrap;
+  }
+
+  thead th {
+    font-size: 12px;
+    font-weight: 600;
+    color: #858585;
+    text-transform: capitalize;
+    background: #fafafa;
+  }
+
+  tbody th[scope='row'] {
+    font-weight: 600;
+    color: #333333;
+  }
+
+  tbody td {
+    color: #333333;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // A zero is noise next to the figures that matter, so it recedes.
+  td.is-zero {
+    color: #c4c4c4;
+  }
+
+  tfoot {
+    th,
+    td {
+      border-bottom: 0;
+      background: #fafafa;
+      font-weight: 600;
+      color: #333333;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: 1px solid #f1f1f1;
+  }
+}

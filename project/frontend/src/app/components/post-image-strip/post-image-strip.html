@@ -1,0 +1,37 @@
+@if (hasImages()) {
+  <div class="image-strip">
+    @for (image of images(); track image.id) {
+      @if (hasFailed(image)) {
+        <span class="thumb thumb-broken" title="This image could not be loaded">
+          <i class="bi bi-image-alt"></i>
+        </span>
+      } @else {
+        <button
+          class="thumb"
+          type="button"
+          (click)="enlarge(image)"
+          [attr.aria-label]="'Enlarge image ' + image.id"
+        >
+          <img [src]="image.url" alt="" loading="lazy" (error)="onError(image)" />
+        </button>
+      }
+    }
+  </div>
+} @else {
+  <p class="no-photos mb-0">
+    <i class="bi bi-image me-1"></i>
+    {{ emptyLabel() }}
+  </p>
+}
+
+@if (enlarged()) {
+  <div class="viewer-backdrop" (click)="close()">
+    <img class="viewer-image" [src]="enlarged()!.url" alt="" (click)="$event.stopPropagation()" />
+    <button
+      class="viewer-close btn-close btn-close-white"
+      type="button"
+      (click)="close()"
+      aria-label="Close image"
+    ></button>
+  </div>
+}

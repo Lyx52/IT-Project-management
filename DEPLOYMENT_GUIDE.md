@@ -25,16 +25,17 @@ A first installation takes about an hour, most of it waiting for builds and DNS.
 
 ## 1. How production works
 
-The whole site runs on one Linux VM as five Docker containers, defined in [`docker-compose.prod.yml`](docker-compose.prod.yml). All images are built on the server from the repository; nothing is pulled from a registry except the base images.
+The whole site runs on one Linux VM as six Docker containers, defined in [`docker-compose.prod.yml`](docker-compose.prod.yml). The images are built on the server from the repository; nothing is pulled from a registry except the base images and Anubis's ready-made image.
 
 ```
               Internet
                  │  80, 443
-        ┌────────▼────────┐
-        │      proxy      │  Caddy: HTTPS certificate, Angular app,
-        │                 │  forwards /api/*, /storage/*, /up
-        └────────┬────────┘
-                 │  network "web"
+        ┌────────▼────────┐        ┌─────────────┐
+        │      proxy      │ ─────► │   anubis    │  bot filter, sends
+        │                 │ ◄───── │             │  allowed requests back
+        └────────┬────────┘        └─────────────┘
+                 │  network "web"   Caddy: HTTPS certificate, Angular app,
+                 │                  forwards /api/*, /storage/*, /up
         ┌────────▼────────┐        ┌─────────────┐
         │     backend     │        │  scheduler  │  daily cleanup jobs
         │ Laravel :8080   │        │             │
@@ -50,9 +51,10 @@ The whole site runs on one Linux VM as five Docker containers, defined in [`dock
 
 | Container | What it does |
 |-----------|--------------|
-| `proxy` | The only container with public ports. Gets and renews the Let's Encrypt certificate, redirects HTTP to HTTPS, serves the built Angular app, forwards `/api/*`, `/storage/*` and `/up` to the backend |
+| `proxy` | The only container with public ports. Gets and renews the Let's Encrypt certificate, redirects HTTP to HTTPS, hands each request to `anubis`, then serves the built Angular app or forwards `/api/*`, `/storage/*` and `/up` to the backend |
+| `anubis` | [Anubis](https://github.com/TecharoHQ/anubis), the bot filter. Lets a request through, makes the browser solve a short challenge first, or refuses it. See [1.1](#11-bot-protection-anubis) |
 | `backend` | The Laravel API on FrankenPHP, plain HTTP on port 8080, reachable only from the proxy |
-| `scheduler` | Same image as `backend`, runs Laravel's scheduled jobs (account purge, cache and token cleanup) |
+| `scheduler` | Same image as `backend`, runs Laravel's scheduled jobs: account purge, removal of old resolved posts and read notifications, cache and token cleanup |
 | `db` | PostgreSQL 17 on an internal network with no route in or out |
 | `backup` | Dumps the database every day at 02:00 UTC and uploads it to Oracle Cloud |
 
@@ -65,6 +67,43 @@ Data lives in Docker volumes, which survive rebuilds and redeploys:
 | `itpm_caddy-data`, `itpm_caddy-config` | HTTPS certificates | Not needed, Caddy gets new ones |
 
 Settings live in `.env.production` in the repository folder on the server. It is never committed to git.
+
+### 1.1 Bot protection (Anubis)
+
+Every request passes through Anubis before it reaches the app. The proxy runs two sites: the public one (HTTPS) forwards everything to `anubis`, and Anubis sends the requests it allows back to the proxy's internal site on port 3000, which does the routing. Port 3000 isn't published, so there is no way around Anubis.
+
+```
+client ─443→ proxy (HTTPS) ─→ anubis:8923 ─→ proxy :3000 (routing) ─→ backend / Angular app
+```
+
+What visitors get, with Anubis's default rules:
+
+| Client | Result |
+|--------|--------|
+| A browser, first visit | "Making sure you're not a bot!" while it solves a proof-of-work puzzle (difficulty 6: several seconds on a laptop, possibly minutes on an old phone), then the page. A cookie lets every later request through, `/api/*` included, for 7 days |
+| Known AI scrapers (GPTBot, ClaudeBot and others), headless Chrome | Refused |
+| Google, Bing, DuckDuckGo and other big search engines | Let through |
+| curl, scripts, uptime monitors | Let through, so the API commands in this guide work unchanged |
+| Anything on `/up`, `/robots.txt`, `/.well-known/*` | Let through |
+
+The site still has no `robots.txt`, so search engines index it as before. Anubis can serve one (`SERVE_ROBOTS_TXT: "true"` on `anubis`), but that one asks *every* crawler to stay away, search engines included.
+
+**When the cookie runs out.** The cookie expires after 7 days and is tied to the visitor's IP address, so a phone that switches networks gets a new challenge. If that happens while the app is open, an API call gets the challenge page instead of data. The app notices this and reloads the page, the challenge runs, and the visitor ends up back where they were. Anything typed into a form that hadn't been sent yet is lost. See [`anubis-interceptor.ts`](project/frontend/src/app/services/anubis-interceptor.ts).
+
+**Where things are:**
+
+| What | Where |
+|------|-------|
+| Rules (who is allowed, challenged or refused) and puzzle difficulty | [`docker/prod/anubis/botPolicies.yaml`](docker/prod/anubis/botPolicies.yaml). It imports Anubis's default rules, adds an exception for `/up` and sets the difficulty (`thresholds`). Changes apply on the next deploy, or right away with `dc up -d --force-recreate anubis`. Rule format: [Anubis policy docs](https://anubis.techaro.lol/docs/admin/policies) |
+| Version | `image:` of `anubis` in `docker-compose.prod.yml`. Pinned on purpose: the default rules come with the image and change between versions. To upgrade, change the tag, deploy, and do the checks in [5.3](#53-check-that-it-works) |
+| Proxy side | [`docker/prod/proxy/Caddyfile`](docker/prod/proxy/Caddyfile) |
+| Settings | `ANUBIS_KEY` and `ANUBIS_COOKIE_EXPIRATION`, see [4.2](#42-settings) |
+
+**The proxy setup has to stay in this shape:**
+
+- The public site sets `X-Real-IP` from the real connection. Anubis refuses requests without it, and the internal site passes it to the backend as `X-Forwarded-For`. Without that, Laravel would see Anubis's address as every visitor's IP, and the login, sign-up and posting limits would apply to the whole site at once.
+- The Content-Security-Policy is set on the internal site, not the public one. Anubis's challenge page needs an inline script, which the app's CSP forbids. Anubis's own pages therefore get no CSP, and the app's pages and API responses keep the strict one.
+- `X-TLS-SNI-Name` uses `{http.request.tls.server_name}`. Anubis's Caddy example uses `{tls_server_name}`, which Caddy doesn't recognise. It sends the text unchanged, and Anubis then refuses every request as domain fronting.
 
 ---
 
@@ -220,9 +259,17 @@ cd /opt/IT-Project-management
 deploy/init-env.sh findit.example.com admin@example.com
 ```
 
-This writes `.env.production` with random secrets (`APP_KEY`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`), readable only by you. It refuses to overwrite an existing file.
+This writes `.env.production` with random secrets (`APP_KEY`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `ANUBIS_KEY`), readable only by you. It refuses to overwrite an existing file.
 
-**Replacing a server:** don't run `init-env.sh`. Copy the saved `.env.production` from the password manager into `/opt/IT-Project-management/.env.production` and run `chmod 600 .env.production`.
+Then add this line, which `init-env.sh` doesn't write yet:
+
+```bash
+echo 'ACCOUNT_PURGE_DAYS=30' >> .env.production
+```
+
+Without it, `docker-compose.prod.yml` falls back to 21 days and deleted accounts are purged earlier than the documented 30 days. See [7.7](#77-backup-retention-and-account-deletion).
+
+**Replacing a server:** don't run `init-env.sh`. Copy the saved `.env.production` from the password manager into `/opt/IT-Project-management/.env.production` and run `chmod 600 .env.production`. Check that it has `ACCOUNT_PURGE_DAYS=30`, and add the line if not.
 
 **Save a copy now.** Put the whole file in the team's password manager. Without its `APP_KEY`, a restored database has unreadable messages.
 
@@ -244,9 +291,11 @@ Edit `.env.production` with any editor. Every setting:
 | `RESEND_API_KEY` | empty | Resend API key |
 | `EMAIL_VERIFICATION_ENABLED` | `false` | Require new users to verify their e-mail. Needs working mail first |
 | `CAPTCHA_TYPE` | `hash` | Sign-up CAPTCHA: `hash`, `math` or `determinant`. See the README |
+| `ANUBIS_KEY` | random | Signs the bot filter's cookie ([1.1](#11-bot-protection-anubis)). `deploy.sh` adds it to older files that lack it. Changing it only means every visitor solves the challenge once more |
+| `ANUBIS_COOKIE_EXPIRATION` | `168h` | How long a solved challenge lasts, e.g. `24h` or `720h`. Not in the generated file; add the line to change it |
 | `BACKUP_UPLOAD_URL` | empty | Write-only Oracle bucket URL, set in [section 7](#7-backups) |
 | `BACKUP_AT` | `02:00` | Daily backup time, UTC. Not in the generated file; add the line to change it |
-| `ACCOUNT_PURGE_DAYS` | `21` | Days before a deleted account is permanently removed. Not in the generated file. Tied to the backup retention, read [7.7](#77-backup-retention-and-account-deletion) before changing it |
+| `ACCOUNT_PURGE_DAYS` | `21` (compose file), should be `30` | Days a deleted account stays suspended before it is permanently removed. The app's default is 30, but `docker-compose.prod.yml` still falls back to 21, so **set `ACCOUNT_PURGE_DAYS=30` explicitly** ([4.1](#41-create-envproduction)). Tied to the backup retention, read [7.7](#77-backup-retention-and-account-deletion) before changing it |
 
 **After changing a setting** on a running site, recreate the containers so they pick it up:
 
@@ -315,13 +364,15 @@ dc ps                                                  # all containers "Up", db
 
 Then in a browser:
 
-- [ ] The site opens over HTTPS without a certificate warning.
+- [ ] The site opens over HTTPS without a certificate warning. On the first visit, Anubis's "Making sure you're not a bot!" page shows for a few seconds.
+- [ ] The browser console (F12) shows no Content-Security-Policy errors, on the challenge page or after it.
 - [ ] You can register a new account and sign in.
 - [ ] You can create a post with a photo. It shows on My Posts as pending.
-- [ ] After you approve it (below), the post and its photo appear on the Items page and the Map page.
+- [ ] Signed in as the admin, open **Moderation** in the header (`/admin`) and approve the post on the **Pending posts** tab.
+- [ ] The post and its photo appear on the Items page and the Map page.
 - [ ] Signed in as a second account, you can send a message with an image attachment about that post.
 
-The website has no moderation screen yet, so approve the test post through the API. On the server or your own machine:
+If the moderation page doesn't load, you can also approve the post through the API to tell a frontend problem from a backend one. On the server or your own machine:
 
 ```bash
 SITE=https://findit.example.com
@@ -487,11 +538,13 @@ rm app-storage.tar.gz
 
 ### 7.7 Backup retention and account deletion
 
-How long Oracle keeps backups is part of a legal limit. AC-17 says a deleted account must be gone within 30 days, **backups included**. Worst case, deleted data still exists for:
+How long Oracle keeps backups is part of what the site promises users about account deletion. A deleted account is suspended at once and permanently removed from the database after 30 days. It must be gone from backups too within `deleted_account_limit_days` (39) in `config/retention.php`. Worst case, deleted data still exists for:
 
-21 days (until the account purge) + 1 day (until the daily purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **30 days**
+30 days (the suspension) + 1 day (until the daily purge runs) + 7 days (in the last backup that has it) + 1 day (until Oracle's daily delete rule runs) = **39 days**
 
-So don't change the 7 days on Oracle's side on its own, whether in the console or in `RETENTION_DAYS` in `deploy/backup-storage.sh`. `account_purge_days + backup_retention_days + 2` must stay at or below 30: keeping backups longer means purging accounts sooner. To change it:
+This only holds if production really purges after 30 days. Check that `.env.production` has `ACCOUNT_PURGE_DAYS=30` ([4.1](#41-create-envproduction)).
+
+So don't change the 7 days on Oracle's side on its own, whether in the console or in `RETENTION_DAYS` in `deploy/backup-storage.sh`. `account_purge_days + backup_retention_days + 2` must stay at or below `deleted_account_limit_days`: keeping backups longer means purging accounts sooner, or promising users a longer limit. To change it:
 
 1. Set `RETENTION_DAYS` in `deploy/backup-storage.sh` and `backup_retention_days` in `project/backend/config/retention.php` to the same value, and lower `account_purge_days` to match. `tests/Feature/UserPruningTest.php` fails if the sum breaks the limit.
 2. Merge and deploy the change.
@@ -552,7 +605,7 @@ This is the same as the automatic deploy. Use it when automatic deploys are off 
 
 The old containers keep running while the new images build and migrations run. They are then replaced, which causes a few seconds of downtime. Uploaded files, the database and certificates are in volumes and are kept.
 
-If the new backend doesn't become healthy within about a minute, `deploy.sh` exits with an error. At that point the **new** containers are already running, so the site may be down. Check `dc logs backend` and roll back ([8.4](#84-rolling-back-a-bad-release)) if you can't fix it quickly.
+If `/up` doesn't answer within about a minute, `deploy.sh` exits with an error. It checks through Anubis and the proxy, so a fault in any of them fails the deploy. At that point the **new** containers are already running, so the site may be down. Check `dc logs backend anubis proxy` and roll back ([8.4](#84-rolling-back-a-bad-release)) if you can't fix it quickly.
 
 ### 8.4 Rolling back a bad release
 
@@ -625,11 +678,14 @@ Start with `dc ps` and `dc logs <container>`.
 | Build stops with exit code 137 or `Killed` | Out of memory during the Angular build. Add swap ([3.5](#35-add-swap-on-small-vms)) |
 | Browser shows a certificate error, `dc logs proxy` shows ACME errors | DNS doesn't point at the server yet, or ports 80/443 are closed in the NSG. Fix that; Caddy retries on its own |
 | Deploy stops at "Running migrations" | A migration failed; the old version is still running. Read the error above it and fix the migration in a new commit |
-| "Backend did not become healthy" | Run `dc logs backend`. Common causes: a wrong `DB_PASSWORD` ([4.3](#43-settings-you-cant-simply-change)) or a missing setting. Roll back if needed ([8.4](#84-rolling-back-a-bad-release)) |
+| "Site did not become healthy" | Run `dc logs backend anubis proxy`. `anubis` saying `X-Real-IP header is not set`: the proxy's Caddyfile lost its `header_up X-Real-IP` line. Common causes: a wrong `DB_PASSWORD` ([4.3](#43-settings-you-cant-simply-change)) or a missing setting. Roll back if needed ([8.4](#84-rolling-back-a-bad-release)) |
 | Backend log: `password authentication failed for user "app"` | `DB_PASSWORD` in `.env.production` doesn't match the database. See [4.3](#43-settings-you-cant-simply-change) |
 | Messages show errors or garbled text | `APP_KEY` differs from the one the messages were written with. Put the original key back |
 | `backup` is `unhealthy` | Run `dc logs backup`. `BACKUP_UPLOAD_URL is not set`: finish [7.1](#71-set-up-the-bucket-once). Upload fails with HTTP 4xx: the URL expired or was replaced, run `setup` again ([section 10](#10-routine-maintenance)) |
 | Large uploads fail | PHP accepts at most 50 MB per request (`docker/prod/backend/php.ini`). The app has its own, lower limits per file type |
+| Every visitor gets Anubis's "Access Denied" page | Look the error code up with `dc logs anubis \| grep <code>`, the log names the rule. `domain-fronting`: see the last point in [1.1](#11-bot-protection-anubis). Any other rule: check the latest change to `docker/prod/anubis/botPolicies.yaml` or the Anubis version |
+| The challenge page never finishes, or the site keeps showing it | Open the browser console. CSP errors: the CSP was moved back to the public site in the Caddyfile, see [1.1](#11-bot-protection-anubis). Otherwise check that cookies aren't blocked for the site |
+| All visitors share one rate limit (e.g. "too many attempts" for everyone) | The backend sees Anubis's IP instead of the visitor's. The internal `:3000` site in the Caddyfile must keep `header_up X-Forwarded-For {header.X-Real-IP}` |
 | `create-admin.sh` refuses to run | It needs an interactive shell on the server itself (`ssh -t`, no pipes) and no active admin. For more admins, see [5.2](#52-create-the-first-admin) |
 
 ---
@@ -649,7 +705,7 @@ Start with `dc ps` and `dc logs <container>`.
 | `deploy/restore-db.sh --live <url>` | Replace the live database with a backup |
 | `bash backup-storage.sh setup\|list\|url` | Oracle bucket, in Cloud Shell |
 | `dc ps` | Container status |
-| `dc logs -f backend` | Follow backend logs (also `proxy`, `backup`, `scheduler`, `db`) |
+| `dc logs -f backend` | Follow backend logs (also `proxy`, `anubis`, `backup`, `scheduler`, `db`) |
 | `dc exec backend php artisan migrate:status` | Migration state |
 | `dc exec backup backup now` | Database backup right away |
 | `dc exec db psql -U app app` | SQL shell on the live database |
@@ -663,6 +719,7 @@ Start with `dc ps` and `dc logs <container>`.
 | `.env.production` | Production settings and secrets, server only, never in git |
 | `docker/prod/backend/` | Backend image: FrankenPHP config, PHP limits, start-up script |
 | `docker/prod/proxy/` | Proxy image: builds the Angular app, Caddy config with security headers |
+| `docker/prod/anubis/` | Bot filter rules |
 | `docker/prod/backup/` | Backup image and schedule |
 | `docker/db/initdb/` | Creates the `app` database user on a new database volume |
 | `deploy/` | The scripts above |
@@ -675,7 +732,10 @@ All times UTC. Defined in `project/backend/routes/console.php` and `docker/prod/
 
 | Time | Job |
 |------|-----|
-| 00:00 | Permanently delete accounts soft-deleted more than 21 days ago |
+| 00:00 | Permanently delete accounts deleted more than `ACCOUNT_PURGE_DAYS` (30) days ago |
 | 00:30 | Remove expired cache entries, including unanswered CAPTCHAs |
 | 00:45 | Remove expired API tokens |
+| 01:00 | Delete posts resolved more than six months ago and notifications read more than 90 days ago. Each run appends its counts to `storage/logs/platform-data-pruning.log` |
 | 02:00 | Database backup to Oracle |
+
+Check the scheduler's recent runs with `dc logs --tail 50 scheduler`, and the cleanup counts with `dc exec scheduler tail storage/logs/platform-data-pruning.log`.

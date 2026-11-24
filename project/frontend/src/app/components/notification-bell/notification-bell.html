@@ -19,7 +19,8 @@
     <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
       <span class="fw-semibold">Notifications</span>
       @if (unreadCount() > 0) {
-        <button class="btn btn-link btn-sm p-0" type="button" (click)="markAllRead()">
+        <button class="bell-mark-all" type="button" (click)="markAllRead()">
+          <i class="bi bi-check2-all" aria-hidden="true"></i>
           Mark all as read
         </button>
       }
@@ -29,35 +30,55 @@
       <p class="small text-danger px-3 py-3 mb-0">Could not load notifications.</p>
     } @else if (notifications().length === 0) {
       <p class="small text-muted px-3 py-3 mb-0">
-        No notifications yet. Save a search to hear about new matching posts.
+        Nothing yet. You will hear about your posts, your reports, and new items matching a saved
+        search.
       </p>
     } @else {
       <ul class="list-unstyled mb-0 bell-list">
         @for (notification of notifications(); track notification.id) {
-          <li>
-            <button
-              class="bell-item"
-              type="button"
-              [class.unread]="notification.read_at === null"
-              (click)="open(notification)"
-            >
-              <i class="bi" [class]="icon(notification)"></i>
-              <span class="d-block">
-                <span class="d-block small">{{ notification.details.message }}</span>
-                <span class="d-block small fw-semibold">{{ notification.details.post_title }}</span>
-                <span class="d-block bell-time">
-                  {{ notification.created_at | date: 'd MMM, HH:mm' }}
-                </span>
-              </span>
-            </button>
+          <li class="bell-item" [class.unread]="notification.read_at === null">
+            <i class="bi bell-icon" [class]="icon(notification)" aria-hidden="true"></i>
+
+            <div class="bell-body">
+              <p class="bell-label">
+                {{ label(notification) }}
+                @if (postType(notification); as type) {
+                  <span class="bell-type" [class]="type">{{ type }}</span>
+                }
+                @if (notification.read_at === null) {
+                  <span class="bell-dot" aria-label="Unread"></span>
+                }
+              </p>
+
+              <p class="bell-title">{{ title(notification) }}</p>
+              <p class="bell-message">{{ notification.details.message }}</p>
+
+              @if (reason(notification); as reason) {
+                <p class="bell-reason"><strong>Reason:</strong> {{ reason }}</p>
+              }
+
+              <div class="bell-foot">
+                <time
+                  class="bell-time"
+                  [attr.datetime]="notification.created_at"
+                  [title]="notification.created_at | date: 'd MMM yyyy, HH:mm'"
+                >
+                  {{ relativeTime(notification.created_at) }}
+                </time>
+
+                <a
+                  class="bell-action"
+                  [routerLink]="['/post', notification.details.post_id]"
+                  (click)="open(notification)"
+                >
+                  View details
+                  <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </a>
+              </div>
+            </div>
           </li>
         }
       </ul>
     }
-
-    <div class="d-flex gap-3 px-3 py-2 border-top small">
-      <a routerLink="/saved-searches" (click)="isOpen.set(false)">Saved searches</a>
-      <a routerLink="/my-posts" (click)="isOpen.set(false)">My posts</a>
-    </div>
   </div>
 }

@@ -1,0 +1,139 @@
+<form class="create-row mb-3" (submit)="$event.preventDefault(); create()">
+  <input
+    class="form-control"
+    type="text"
+    maxlength="50"
+    placeholder="New category name"
+    aria-label="New category name"
+    [value]="newName()"
+    (input)="newName.set($any($event.target).value)"
+  />
+  <button class="btn btn-primary btn-sm" type="submit" [disabled]="isCreating()">
+    @if (isCreating()) {
+      <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+    }
+    Add category
+  </button>
+</form>
+
+@if (actionError()) {
+  <div class="alert alert-danger py-2 small" role="alert">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ actionError() }}
+  </div>
+}
+
+@if (isLoading()) {
+  <div class="text-center py-5">
+    <span class="spinner-border text-secondary" aria-label="Loading"></span>
+  </div>
+} @else if (loadError()) {
+  <div class="alert alert-danger py-2 small" role="alert">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ loadError() }}
+    <button class="btn btn-sm btn-outline-danger ms-2" type="button" (click)="load()">Retry</button>
+  </div>
+} @else if (isEmpty()) {
+  <p class="text-muted">No categories yet.</p>
+} @else {
+  <div class="table-responsive">
+    <table class="table align-middle categories-table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Posts</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="text-end">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (category of categories(); track category.id) {
+          <tr [class.retired-row]="isRetired(category)">
+            <td>
+              @if (editingId() === category.id) {
+                <input
+                  class="form-control form-control-sm"
+                  type="text"
+                  maxlength="50"
+                  aria-label="Category name"
+                  [value]="editingName()"
+                  (input)="editingName.set($any($event.target).value)"
+                />
+              } @else {
+                <span class="fw-semibold">{{ category.name }}</span>
+              }
+            </td>
+
+            <td class="text-muted small">{{ category.posts_count }}</td>
+
+            <td>
+              @if (isRetired(category)) {
+                <span class="badge badge-retired">retired</span>
+              } @else {
+                <span class="badge badge-live">in use</span>
+              }
+            </td>
+
+            <td class="text-end">
+              <div class="row-actions">
+                @if (editingId() === category.id) {
+                  <button
+                    class="btn btn-sm btn-primary"
+                    type="button"
+                    (click)="confirmRename(category)"
+                  >
+                    Save
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    (click)="cancelRename()"
+                  >
+                    Cancel
+                  </button>
+                } @else {
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    (click)="startRename(category)"
+                    [disabled]="busyId() !== null"
+                  >
+                    Rename
+                  </button>
+
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    (click)="toggleRetired(category)"
+                    [disabled]="busyId() !== null"
+                  >
+                    {{ isRetired(category) ? 'Restore' : 'Retire' }}
+                  </button>
+
+                  @if (canDelete(category)) {
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      type="button"
+                      (click)="remove(category)"
+                      [disabled]="busyId() !== null"
+                    >
+                      Delete
+                    </button>
+                  } @else {
+                    <span
+                      class="text-muted small delete-blocked"
+                      title="Posts use this category, so it can only be retired"
+                    >
+                      in use
+                    </span>
+                  }
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

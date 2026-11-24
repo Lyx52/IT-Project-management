@@ -1,22 +1,16 @@
-import { Component, Output, EventEmitter } from '@angular/core';
-import en from '../../../assets/en.json';
-import lv from '../../../assets/lv.json';
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Header } from '../../components/header/header';
-import { Router } from '@angular/router';
+import en from '../../../assets/en.json';
 
 @Component({
   selector: 'app-terms',
-  imports: [Header],
+  imports: [Header, RouterLink],
   templateUrl: './terms.html',
   styleUrl: './terms.scss',
 })
 export class Terms {
   termdata = en;
-  version = '1.0.0';
-
-  constructor(private router: Router) {}
-
-  acceptTerms(): void {
-    this.router.navigate(['/']);
-  }
+  /** Matches the privacy policy version, which is what accounts record. */
+  version = '1.0';
 }

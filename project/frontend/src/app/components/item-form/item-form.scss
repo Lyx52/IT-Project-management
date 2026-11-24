@@ -20,6 +20,14 @@
     border-color: #0d6efd;
     background: #f8faff;
   }
+
+  // Bootstrap's .is-invalid only styles .form-control / .form-select / check
+  // inputs, and this is a label, so the invalid border is set here to match the
+  // red border the real fields get.
+  &.is-invalid {
+    border-color: #dc3545;
+    color: #dc3545;
+  }
 }
 
 .btn-lost {

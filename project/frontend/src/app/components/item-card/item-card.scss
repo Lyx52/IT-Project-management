@@ -16,7 +16,10 @@
     flex: 1;
   }
 
-  .card-body > .btn {
+  // The actions row is the last child now, so it carries the bottom
+  // alignment that used to sit on the button itself.
+  .card-body > .btn,
+  .card-body > .item-actions {
     margin-top: auto !important;
   }
 }

@@ -1,19 +1,37 @@
 @use '../../../styles/variables' as *;
 
-footer {
+.site-footer {
   width: 100%;
+  padding: 16px;
   border-top: 1px solid $border-color;
-  display: flex;
-  align-items: center;
 }
-.term {
-  color: $text-primary;
-  text-decoration: none;
-  font-size: $font-size-base;
-  margin-left: 95%;
 
-  &:hover,
-  &.active {
-    color: $primary;
+// Right-aligned by the layout rather than by a 95% margin, which pushed the
+// link off the side of a narrow screen.
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 20px;
+  max-width: 1161px;
+  margin: 0 auto;
+
+  a {
+    color: $text-secondary;
+    font-size: $font-size-base;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible,
+    &.active {
+      color: $primary;
+      text-decoration: underline;
+    }
+  }
+}
+
+@media (max-width: 36rem) {
+  .site-footer__links {
+    justify-content: center;
   }
 }

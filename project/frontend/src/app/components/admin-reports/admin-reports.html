@@ -1,0 +1,85 @@
+@if (actionError()) {
+  <div class="alert alert-danger py-2 small" role="alert">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ actionError() }}
+  </div>
+}
+
+@if (isEmpty()) {
+  <div class="empty-state text-center py-5">
+    <i class="bi bi-shield-check fs-2 text-muted"></i>
+    <p class="text-muted mt-2 mb-0">No open reports.</p>
+  </div>
+} @else {
+  <div class="report-list">
+    @for (report of reports(); track report.id) {
+      <article class="report-item">
+        <div class="report-reason">
+          <i class="bi bi-flag-fill"></i>
+          <div>
+            <p class="mb-1 fw-semibold reason-text">{{ report.reason }}</p>
+            <p class="text-muted small mb-0">
+              reported by
+              <span class="fw-semibold">{{
+                report.reporter?.username ?? 'a deleted account'
+              }}</span>
+              · {{ report.created_at | date: 'short' }}
+            </p>
+          </div>
+        </div>
+
+        @if (report.post) {
+          <div class="reported-post">
+            <h6 class="fw-bold mb-1">{{ report.post.title }}</h6>
+            <p class="text-muted small mb-1 description">{{ report.post.description }}</p>
+            <p class="text-muted small mb-2">
+              posted by <span class="fw-semibold">{{ report.post.user.username }}</span> · status
+              {{ report.post.status }}
+            </p>
+
+            <app-post-image-strip [images]="report.post.images" />
+          </div>
+        } @else {
+          <p class="text-muted small fst-italic mb-0">The reported post has been deleted.</p>
+        }
+
+        <div class="report-actions">
+          @if (report.post) {
+            <button
+              class="btn btn-sm btn-outline-danger"
+              type="button"
+              (click)="hidePost(report)"
+              [disabled]="busyId() !== null"
+            >
+              <i class="bi bi-eye-slash me-1"></i>
+              Hide post
+            </button>
+
+            <button
+              class="btn btn-sm btn-ban"
+              type="button"
+              (click)="banAuthor(report)"
+              [disabled]="busyId() !== null"
+            >
+              <i class="bi bi-slash-circle me-1"></i>
+              Ban author
+            </button>
+          }
+
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            type="button"
+            (click)="dismiss(report)"
+            [disabled]="busyId() !== null"
+          >
+            Dismiss
+          </button>
+
+          @if (busyId() === report.id) {
+            <span class="spinner-border spinner-border-sm text-muted" aria-label="Working"></span>
+          }
+        </div>
+      </article>
+    }
+  </div>
+}

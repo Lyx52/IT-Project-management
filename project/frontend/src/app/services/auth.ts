@@ -30,6 +30,8 @@ export class AuthService {
 
   readonly user = this.currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this.accessToken() !== null);
+
+  /** Gates the admin panel, in the route guard and the header link. */
   readonly isAdmin = computed(() => this.currentUser()?.role === 'admin');
 
   /** Shown in the header. */
