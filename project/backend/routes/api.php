@@ -18,7 +18,9 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\ReportPostController;
+use App\Http\Controllers\Api\V1\RequestPasswordResetController;
 use App\Http\Controllers\Api\V1\ResendVerificationController;
+use App\Http\Controllers\Api\V1\ResetPasswordController;
 use App\Http\Controllers\Api\V1\SavedSearchController;
 use App\Http\Controllers\Api\V1\UserDataExportController;
 use App\Http\Controllers\Api\V1\VerifyEmailController;
@@ -33,6 +35,10 @@ Route::prefix('v1')->group(function () {
         ->middleware(['throttle:5,1', 'captcha']);
     Route::post('/login', LoginController::class)
         ->middleware('throttle:login');
+    Route::post('/forgot-password', RequestPasswordResetController::class)
+        ->middleware('throttle:5,1');
+    Route::post('/reset-password', ResetPasswordController::class)
+        ->middleware('throttle:10,1');
     // Protected Auth Routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', LogoutController::class);

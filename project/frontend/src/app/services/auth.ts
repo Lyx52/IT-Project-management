@@ -9,6 +9,7 @@ import {
   LoginPayload,
   LoginResponse,
   LogoutResponse,
+  PasswordResetResponse,
   RegisterPayload,
   RegisterResponse,
   ResendVerificationResponse,
@@ -97,6 +98,24 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${environment.apiBaseUrl}/login`, credentials).pipe(
       tap((response) => this.store(response.access_token, response.user)),
       map((response) => response.user),
+    );
+  }
+
+  requestPasswordReset(email: string): Observable<PasswordResetResponse> {
+    return this.http.post<PasswordResetResponse>(`${environment.apiBaseUrl}/forgot-password`, {
+      email,
+    });
+  }
+
+  resetPassword(payload: {
+    email: string;
+    token: string;
+    password: string;
+    password_confirmation: string;
+  }): Observable<PasswordResetResponse> {
+    return this.http.post<PasswordResetResponse>(
+      `${environment.apiBaseUrl}/reset-password`,
+      payload,
     );
   }
 
