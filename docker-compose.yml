@@ -37,6 +37,7 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       APP_URL: http://localhost:${BACKEND_PORT:-8001}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
       DB_DATABASE: ${DB_DATABASE:-app}
       DB_USERNAME: ${DB_USERNAME:-app}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
