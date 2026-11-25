@@ -56,6 +56,7 @@ export class PostPage {
   readonly isEditing = signal(false);
 
   readonly isResolving = signal(false);
+  readonly isDeleting = signal(false);
   readonly resolveError = signal<string | null>(null);
 
   readonly isMine = computed(() => {
@@ -63,6 +64,8 @@ export class PostPage {
     const user = this.auth.user();
     return post !== null && user !== null && post.user.id === user.id;
   });
+
+  readonly canDelete = computed(() => this.isMine() || this.auth.isAdmin());
 
   private postId = 0;
   private subscriptions = new Subscription();
@@ -225,6 +228,38 @@ export class PostPage {
               ? 'Only the author can resolve this post.'
               : 'Could not resolve the post. Please try again.',
           );
+        },
+      }),
+    );
+  }
+
+  deletePost(): void {
+    const post = this.post();
+
+    if (!post || !this.canDelete() || this.isDeleting()) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Delete this post? This cannot be undone, and its images will also be removed.',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeleting.set(true);
+
+    this.subscriptions.add(
+      this.postService.deletePost(post.id).subscribe({
+        next: () => {
+          this.isDeleting.set(false);
+          this.router.navigate([this.isMine() ? '/my-posts' : '/items']);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.isDeleting.set(false);
+          console.error('Failed to delete post:', error);
+          alert('Failed to delete post. Please try again.');
         },
       }),
     );
