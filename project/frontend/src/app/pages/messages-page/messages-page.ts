@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,7 @@ import { MessagesService } from '../../services/messages.service';
 import { PostService } from '../../services/posts.service';
 import { Message, MessageAttachment } from '../../models/models';
 import { AuthService } from '../../services/auth';
+import { ReportUser } from '../../components/report-user/report-user';
 
 interface DisplayMessage {
   id: number;
@@ -25,7 +26,7 @@ interface DisplayMessage {
 @Component({
   selector: 'app-messages-page',
   standalone: true,
-  imports: [Header, Footer, RouterLink, DatePipe, FormsModule, safetyTips],
+  imports: [Header, Footer, RouterLink, DatePipe, FormsModule, safetyTips, ReportUser],
   templateUrl: './messages-page.html',
   styleUrl: './messages-page.scss',
 })
@@ -38,6 +39,12 @@ export class MessagesPage {
 
   readonly postId = signal(0);
   readonly userId = signal<number | null>(null);
+  readonly reportTargetId = signal<number | null>(null);
+  readonly canReportParticipant = computed(() => {
+    const targetId = this.reportTargetId();
+    const reporterId = this.auth.user()?.id;
+    return targetId !== null && reporterId !== undefined && targetId !== reporterId;
+  });
 
   readonly postTitle = signal('Loading post...');
   readonly otherUsername = signal('Conversation');
@@ -78,6 +85,7 @@ export class MessagesPage {
         tap(({ postId, userId }) => {
           this.postId.set(postId);
           this.userId.set(userId);
+          this.reportTargetId.set(null);
 
           this.messages.set([]);
           this.loadError.set('');
@@ -137,6 +145,9 @@ export class MessagesPage {
 
           if (post.user.id !== currentUserId) {
             this.setOtherUsername(post.user.username);
+            this.reportTargetId.set(post.user.id);
+          } else {
+            this.reportTargetId.set(this.userId());
           }
         }
 
@@ -176,6 +187,7 @@ export class MessagesPage {
     const otherUser = message.sender.id === currentUserId ? message.receiver : message.sender;
 
     this.setOtherUsername(otherUser.username);
+    this.reportTargetId.set(otherUser.id);
   }
 
   private setOtherUsername(username: string): void {

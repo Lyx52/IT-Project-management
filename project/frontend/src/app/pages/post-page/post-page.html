@@ -141,6 +141,9 @@
                   <i class="bi bi-chat-dots me-2"></i>
                   Contact
                 </button>
+                @if (canReportAuthor()) {
+                  <app-report-user [targetUserId]="post.user.id" [postId]="post.id" />
+                }
               </div>
             }
           </div>

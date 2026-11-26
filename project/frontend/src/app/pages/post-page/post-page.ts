@@ -11,6 +11,7 @@ import { Item } from '../../models/models';
 import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
 import { Messenger } from '../../components/messenger/messenger';
+import { ReportUser } from '../../components/report-user/report-user';
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
 
@@ -21,7 +22,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
  */
 @Component({
   selector: 'app-post-page',
-  imports: [Header, Footer, ItemCard, RouterLink, DatePipe, Messenger],
+  imports: [Header, Footer, ItemCard, RouterLink, DatePipe, Messenger, ReportUser],
   templateUrl: './post-page.html',
   styleUrl: './post-page.scss',
 })
@@ -42,6 +43,12 @@ export class PostPage {
     const post = this.post();
     const user = this.auth.user();
     return post !== null && user !== null && post.user.id === user.id;
+  });
+
+  readonly canReportAuthor = computed(() => {
+    const post = this.post();
+    const user = this.auth.user();
+    return post !== null && user !== null && post.user.id !== user.id;
   });
 
   private postId = 0;

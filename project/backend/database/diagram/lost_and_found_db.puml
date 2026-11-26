@@ -150,6 +150,22 @@ entity reports {
   CHECK status IN ('open','closed')
 }
 
+entity user_reports {
+  * id : bigint <<PK>>
+  --
+  * reported_user_id : bigint <<FK>>  -- cascadeOnDelete
+  reporter_id : bigint <<FK>>  -- nullOnDelete
+  post_id : bigint <<FK>>  -- nullOnDelete; reporting context
+  * reason : varchar(500)
+  * status : varchar(10) = 'open'
+  reviewed_by : bigint <<FK>>  -- nullOnDelete
+  created_at : timestamp
+  updated_at : timestamp
+  ..
+  UNIQUE (reporter_id, reported_user_id)
+  CHECK status IN ('open','closed')
+}
+
 entity saved_searches {
   * id : bigint <<PK>>
   --
@@ -189,6 +205,10 @@ messages ||--o{ message_attachments
 posts ||--o{ reports
 users |o--o{ reports : reports
 users |o--o{ reports : reviews
+users ||--o{ user_reports : receives
+users |o--o{ user_reports : reports
+users |o--o{ user_reports : reviews
+posts |o--o{ user_reports : context
 
 note as gdpr
   **GDPR**

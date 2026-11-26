@@ -72,6 +72,18 @@ export class PostService {
     });
   }
 
+  reportUser(
+    userId: number,
+    postId: number,
+    reason: string,
+  ): Observable<{ message: string; data: { id: number; reported_user_id: number } }> {
+    return this.http.post<{ message: string; data: { id: number; reported_user_id: number } }>(
+      `${environment.apiBaseUrl}/user/${userId}/report`,
+      { post_id: postId, reason },
+      { headers: this.headers },
+    );
+  }
+
   getPostById(id: number): Observable<ApiResponse<Item>> {
     return this.http.get<ApiResponse<Item>>(`${environment.apiBaseUrl}/post/${id}`, {
       headers: this.headers,
