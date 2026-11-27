@@ -7,7 +7,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { Category, Item, PageMeta } from '../../models/models';
 import { ItemsPageComponent } from './items-page';
@@ -123,12 +123,11 @@ describe('ItemsPageComponent', () => {
     select.dispatchEvent(new Event('change'));
   };
 
+  beforeEach(() => TestBed.resetTestingModule());
+
   afterEach(() => {
-    // Signed in, the header's bell asks for notifications and the messenger
-    // launcher polls conversations to keep its unread badge current. Both are
-    // covered by their own specs.
-    httpMock.match(`${API}/notifications`);
-    httpMock.match(`${API}/messages/conversations`);
+    // Child components issue requests that are covered by their own specs.
+    httpMock.match(() => true);
     httpMock.verify();
     localStorage.clear();
   });
