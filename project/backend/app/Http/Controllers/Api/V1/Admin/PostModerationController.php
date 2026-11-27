@@ -98,6 +98,9 @@ class PostModerationController extends Controller
         $post->rejection_reason = null;
         $post->reviewed_by = $request->user()->id;
         $post->reviewed_at = now();
+        // A previously refused post that is now published must not keep a
+        // stale reason hanging off it.
+        $post->rejection_reason = null;
         $post->save();
 
         $post->user->notify(new PostModeratedNotification($post));
@@ -132,6 +135,9 @@ class PostModerationController extends Controller
         $post->rejection_reason = $validated['reason'] ?? null;
         $post->reviewed_by = $request->user()->id;
         $post->reviewed_at = now();
+        // Kept on the post, not only in the notification, so the author can
+        // still see why it was refused (PB-38).
+        $post->rejection_reason = $validated['reason'] ?? null;
         $post->save();
 
         $post->user->notify(new PostModeratedNotification($post, $validated['reason'] ?? null));
@@ -140,6 +146,47 @@ class PostModerationController extends Controller
 
         return response()->json([
             'message' => 'Post rejected.',
+            'data' => new PostResource($post),
+            'moderation' => [
+                'reviewed_by' => $post->reviewed_by,
+                'reviewed_at' => $post->reviewed_at,
+            ],
+        ]);
+    }
+
+    /**
+     * Take a published post down
+     *
+     * Separate from reject, which only acts on posts that were never
+     * published. A reported post is already approved, so this is what removes
+     * it from the feed. It reuses the `rejected` status rather than adding a
+     * new one, because posts.status is constrained by a CHECK and the public
+     * feed already filters on approved.
+     */
+    public function takedown(Request $request, Post $post): JsonResponse
+    {
+        if (! in_array($post->status, [PostStatus::Approved, PostStatus::Resolved], true)) {
+            return response()->json([
+                'message' => 'Only published posts can be taken down.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $post->status = PostStatus::Rejected;
+        $post->reviewed_by = $request->user()->id;
+        $post->reviewed_at = now();
+        $post->rejection_reason = $validated['reason'] ?? null;
+        $post->save();
+
+        $post->user->notify(new PostModeratedNotification($post, $validated['reason'] ?? null));
+
+        $post->load(['category', 'user', 'images']);
+
+        return response()->json([
+            'message' => 'Post taken down.',
             'data' => new PostResource($post),
             'moderation' => [
                 'reviewed_by' => $post->reviewed_by,

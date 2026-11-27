@@ -1,14 +1,18 @@
-<div class="safety-tips-container">
-  <h2 class="safety-tips-title">Safety Tips</h2>
-  <p class="safety-tips-description">
-    Your safety is our priority. Here are some tips to help you stay safe while using our platform:
-  </p>
+<aside class="safety-tips" role="note" aria-labelledby="safety-tips-title">
+  <div class="safety-tips-head">
+    <h2 id="safety-tips-title" class="safety-tips-title">
+      <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+      Staying safe
+    </h2>
+
+    <button class="safety-tips-hide" type="button" (click)="collapse()">Hide</button>
+  </div>
+
   <ul class="safety-tips-list">
-    <li>Meet in public places when exchanging items.</li>
-    <li>Bring a friend or let someone know where you are going.</li>
-    <li>Trust your instincts and avoid situations that feel unsafe.</li>
-    <li>Verify the identity of the person you are meeting with.</li>
-    <li>Keep personal information private until you feel comfortable sharing it.</li>
+    <li>Meet in a public place.</li>
+    <li>Tell someone where you are going.</li>
+    <li>Trust your instincts; leave if it feels wrong.</li>
+    <li>Check the person is who they said they are.</li>
+    <li>Keep personal details private until you are comfortable.</li>
   </ul>
-  <button class="btn btn-primary" (click)="collapse()">Collapse</button>
-</div>
+</aside>

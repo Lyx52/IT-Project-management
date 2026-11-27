@@ -1,7 +1,7 @@
 import { Component, inject, output, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { of, timer } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError, filter, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { MessagesService } from '../../services/messages.service';
@@ -35,6 +35,22 @@ export class Messenger {
   constructor() {
     timer(0, 4000)
       .pipe(
+        // Conversations are a signed-in endpoint. Polling it while signed out
+        // answers 401, and the auth interceptor turns any unexpected 401 into a
+        // redirect to the sign-in page - so without this guard, logging out (or
+        // simply sitting on a page that mounts the messenger) bounced the
+        // visitor to /login within four seconds.
+        filter(() => {
+          const signedIn = this.auth.isAuthenticated();
+
+          if (!signedIn) {
+            this.isLoading.set(false);
+            this.conversations.set([]);
+            this.unreadCountChange.emit(0);
+          }
+
+          return signedIn;
+        }),
         switchMap(() =>
           this.messagesService.getConversations().pipe(
             catchError((error) => {

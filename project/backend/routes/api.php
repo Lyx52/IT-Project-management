@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Admin\PostModerationController;
+use App\Http\Controllers\Api\V1\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Api\V1\Admin\StatisticsController;
 use App\Http\Controllers\Api\V1\Admin\UserBanController;
+use App\Http\Controllers\Api\V1\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\V1\CaptchaController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
@@ -17,7 +19,9 @@ use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\ReportPostController;
 use App\Http\Controllers\Api\V1\ReportUserController;
+use App\Http\Controllers\Api\V1\RequestPasswordResetController;
 use App\Http\Controllers\Api\V1\ResendVerificationController;
+use App\Http\Controllers\Api\V1\ResetPasswordController;
 use App\Http\Controllers\Api\V1\SavedSearchController;
 use App\Http\Controllers\Api\V1\UserDataExportController;
 use App\Http\Controllers\Api\V1\VerifyEmailController;
@@ -32,6 +36,10 @@ Route::prefix('v1')->group(function () {
         ->middleware(['throttle:5,1', 'captcha']);
     Route::post('/login', LoginController::class)
         ->middleware('throttle:login');
+    Route::post('/forgot-password', RequestPasswordResetController::class)
+        ->middleware('throttle:5,1');
+    Route::post('/reset-password', ResetPasswordController::class)
+        ->middleware('throttle:10,1');
     // Protected Auth Routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', LogoutController::class);
@@ -98,9 +106,12 @@ Route::prefix('v1')->group(function () {
             Route::get('/statistics', StatisticsController::class);
             Route::post('/users/{user}/ban', [UserBanController::class, 'ban'])->whereNumber('user');
             Route::post('/users/{user}/unban', [UserBanController::class, 'unban'])->whereNumber('user');
+            Route::get('/users', [AdminUserController::class, 'index']);
             Route::get('/moderation/queue', [PostModerationController::class, 'queue']);
             Route::post('/posts/{post}/approve', [PostModerationController::class, 'approve'])->whereNumber('post');
             Route::post('/posts/{post}/reject', [PostModerationController::class, 'reject'])->whereNumber('post');
+            Route::post('/posts/{post}/takedown', [PostModerationController::class, 'takedown'])->whereNumber('post');
+            Route::post('/reports/{report}/close', [AdminReportController::class, 'close'])->whereNumber('report');
             Route::get('/categories', [CategoryController::class, 'adminIndex']);
             Route::post('/categories', [CategoryController::class, 'store']);
             Route::patch('/categories/{category}', [CategoryController::class, 'update'])->whereNumber('category');

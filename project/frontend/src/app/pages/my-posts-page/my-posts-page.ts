@@ -1,22 +1,21 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { CreatePost } from '../../components/create-post/create-post';
 import { Footer } from '../../components/footer/footer';
 import { Header } from '../../components/header/header';
+import { MessengerLauncher } from '../../components/messenger-launcher/messenger-launcher';
 import { ItemCard } from '../../components/item-card/item-card';
 import { Item, PageMeta } from '../../models/models';
 import { PostService } from '../../services/posts.service';
-import { Messenger } from '../../components/messenger/messenger';
 
 /** The signed-in user's posts in every status, each linking to its possible matches. */
 @Component({
   selector: 'app-my-posts-page',
-  imports: [Header, Footer, ItemCard, RouterLink, Messenger],
+  imports: [Header, Footer, ItemCard, CreatePost, MessengerLauncher, RouterLink],
   templateUrl: './my-posts-page.html',
-  styleUrl: './my-posts-page.scss',
 })
 export class MyPostsPage {
   private readonly postService = inject(PostService);
-  private readonly router = inject(Router);
 
   readonly posts = signal<Item[]>([]);
   readonly meta = signal<PageMeta | null>(null);
@@ -33,12 +32,9 @@ export class MyPostsPage {
     this.load();
   }
 
-  readonly unreadMessagesCount = signal(0);
-
-  isMessengerOpen = false;
-
-  toggleMessenger(): void {
-    this.isMessengerOpen = !this.isMessengerOpen;
+  /** A new post lands here in 'pending', so the list is reloaded to show it. */
+  onPostCreated(): void {
+    this.load();
   }
 
   load(): void {
@@ -79,9 +75,5 @@ export class MyPostsPage {
       },
       error: () => this.isLoadingMore.set(false),
     });
-  }
-
-  openTerms(): void {
-    this.router.navigate(['/terms']);
   }
 }

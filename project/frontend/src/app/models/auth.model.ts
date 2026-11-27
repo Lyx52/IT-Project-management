@@ -78,8 +78,9 @@ export interface AuthUser {
   id: number;
   username: string;
   email: string;
-  role?: 'user' | 'admin';
   email_verified_at: string | null;
+  /** Gates the admin panel. */
+  role: 'user' | 'admin';
   /**
    * True only while the backend has e-mail verification turned on and this
    * address is unconfirmed. Posting is refused until then. Drive the "verify
@@ -121,6 +122,10 @@ export interface ResendVerificationResponse {
 
 /** 200 body of /logout. The message is not shown to the user. */
 export interface LogoutResponse {
+  message: string;
+}
+
+export interface PasswordResetResponse {
   message: string;
 }
 

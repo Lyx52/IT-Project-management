@@ -9,6 +9,7 @@ import {
   LoginPayload,
   LoginResponse,
   LogoutResponse,
+  PasswordResetResponse,
   RegisterPayload,
   RegisterResponse,
   ResendVerificationResponse,
@@ -29,6 +30,8 @@ export class AuthService {
 
   readonly user = this.currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this.accessToken() !== null);
+
+  /** Gates the admin panel, in the route guard and the header link. */
   readonly isAdmin = computed(() => this.currentUser()?.role === 'admin');
 
   /** Shown in the header. */
@@ -95,6 +98,24 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${environment.apiBaseUrl}/login`, credentials).pipe(
       tap((response) => this.store(response.access_token, response.user)),
       map((response) => response.user),
+    );
+  }
+
+  requestPasswordReset(email: string): Observable<PasswordResetResponse> {
+    return this.http.post<PasswordResetResponse>(`${environment.apiBaseUrl}/forgot-password`, {
+      email,
+    });
+  }
+
+  resetPassword(payload: {
+    email: string;
+    token: string;
+    password: string;
+    password_confirmation: string;
+  }): Observable<PasswordResetResponse> {
+    return this.http.post<PasswordResetResponse>(
+      `${environment.apiBaseUrl}/reset-password`,
+      payload,
     );
   }
 

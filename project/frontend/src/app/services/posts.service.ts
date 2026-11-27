@@ -37,6 +37,12 @@ export class PostService {
     if (filters.category_id !== null) {
       params = params.set('category_id', filters.category_id);
     }
+    if (filters.date_from) {
+      params = params.set('date_from', filters.date_from);
+    }
+    if (filters.date_to) {
+      params = params.set('date_to', filters.date_to);
+    }
 
     return this.http.get<Paginated<Item>>(`${environment.apiBaseUrl}/posts/query`, {
       headers: this.headers,
@@ -82,6 +88,10 @@ export class PostService {
       { post_id: postId, reason },
       { headers: this.headers },
     );
+  deletePost(id: number): Observable<void> {
+    return this.http.delete<void>(`${environment.apiBaseUrl}/post/${id}`, {
+      headers: this.headers,
+    });
   }
 
   getPostById(id: number): Observable<ApiResponse<Item>> {
