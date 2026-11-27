@@ -37,7 +37,7 @@ interface DisplayMessage {
     safetyTips,
     CreatePost,
     MessengerLauncher,
-    ReportUser
+    ReportUser,
   ],
   templateUrl: './messages-page.html',
   styleUrl: './messages-page.scss',
