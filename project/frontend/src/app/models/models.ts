@@ -82,6 +82,20 @@ export interface Category {
   name: string;
 }
 
+export interface SponsoredAdvertisement {
+  id: number;
+  advertiser: string;
+  title: string;
+  description: string;
+  target_url: string;
+  category: Category | null;
+}
+
+export interface AdminAdvertisement extends SponsoredAdvertisement {
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_at: string | null;
+}
+
 /** Laravel's pagination block, the part the pages use. */
 export interface PageMeta {
   current_page: number;

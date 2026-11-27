@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AdvertisementController as AdminAdvertisementController;
 use App\Http\Controllers\Api\V1\Admin\PostModerationController;
 use App\Http\Controllers\Api\V1\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Api\V1\Admin\StatisticsController;
 use App\Http\Controllers\Api\V1\Admin\UserBanController;
 use App\Http\Controllers\Api\V1\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Api\V1\AdvertisementController;
 use App\Http\Controllers\Api\V1\CaptchaController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
@@ -63,6 +65,7 @@ Route::prefix('v1')->group(function () {
         ->name('message-attachments.show');
 
     Route::get('/category/query', [CategoryController::class, 'query']);
+    Route::get('/advertisements', [AdvertisementController::class, 'index']);
 
     Route::get('/posts', [PostController::class, 'index']);
     Route::get('/posts/query', [PostController::class, 'search'])->middleware('throttle:60,1');
@@ -113,6 +116,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/posts/{post}/takedown', [PostModerationController::class, 'takedown'])->whereNumber('post');
             Route::post('/reports/{report}/close', [AdminReportController::class, 'close'])->whereNumber('report');
             Route::get('/categories', [CategoryController::class, 'adminIndex']);
+            Route::get('/advertisements', [AdminAdvertisementController::class, 'index']);
+            Route::post('/advertisements', [AdminAdvertisementController::class, 'store']);
+            Route::post('/advertisements/{advertisement}/approve', [AdminAdvertisementController::class, 'approve'])->whereNumber('advertisement');
+            Route::post('/advertisements/{advertisement}/reject', [AdminAdvertisementController::class, 'reject'])->whereNumber('advertisement');
             Route::post('/categories', [CategoryController::class, 'store']);
             Route::patch('/categories/{category}', [CategoryController::class, 'update'])->whereNumber('category');
             Route::post('/categories/{category}/retire', [CategoryController::class, 'retire'])->whereNumber('category');

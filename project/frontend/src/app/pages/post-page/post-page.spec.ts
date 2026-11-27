@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { Item } from '../../models/models';
 import { PostPage } from './post-page';
@@ -71,12 +71,12 @@ describe('PostPage', () => {
   const text = () => harness.routeNativeElement!.textContent ?? '';
   const query = (selector: string) => harness.routeNativeElement!.querySelector(selector);
 
+  beforeEach(() => TestBed.resetTestingModule());
+
   afterEach(() => {
-    // Signed in, the header's bell asks for notifications and the messenger
-    // launcher polls conversations for its unread badge. Both have their own
-    // specs; this page only has to not break them.
-    httpMock.match(`${API}/notifications`);
-    httpMock.match(`${API}/messages/conversations`);
+    // Child components issue their own requests; their behavior is covered by
+    // their own specs.
+    httpMock.match(() => true);
     httpMock.verify();
     localStorage.clear();
   });

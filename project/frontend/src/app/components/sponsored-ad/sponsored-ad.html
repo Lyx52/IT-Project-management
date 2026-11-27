@@ -1,0 +1,20 @@
+@if (ad(); as advertisement) {
+  <aside class="sponsored-ad" aria-label="Advertisement">
+    <div class="sponsored-ad-label">
+      <span>Advertisement</span>
+      @if (advertisement.category) {
+        <span class="sponsored-ad-category">{{ advertisement.category.name }}</span>
+      }
+    </div>
+    <div class="sponsored-ad-content">
+      <div>
+        <p class="sponsored-ad-advertiser">{{ advertisement.advertiser }}</p>
+        <h2>{{ advertisement.title }}</h2>
+        <p class="sponsored-ad-description">{{ advertisement.description }}</p>
+      </div>
+      <a [href]="advertisement.target_url" target="_blank" rel="noopener noreferrer">
+        Learn more <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+      </a>
+    </div>
+  </aside>
+}

@@ -5,10 +5,11 @@ import { AdminReports } from '../../components/admin-reports/admin-reports';
 import { AdminUsers } from '../../components/admin-users/admin-users';
 import { AdminCategories } from '../../components/admin-categories/admin-categories';
 import { AdminStatisticsPanel } from '../../components/admin-statistics/admin-statistics';
+import { AdminAdvertisements } from '../../components/admin-advertisements/admin-advertisements';
 import { AdminService } from '../../services/admin.service';
 import { ModerationQueue } from '../../models/admin.model';
 
-type AdminTab = 'pending' | 'reports' | 'users' | 'categories' | 'statistics';
+type AdminTab = 'pending' | 'reports' | 'users' | 'categories' | 'advertisements' | 'statistics';
 
 @Component({
   selector: 'app-admin-page',
@@ -18,6 +19,7 @@ type AdminTab = 'pending' | 'reports' | 'users' | 'categories' | 'statistics';
     AdminReports,
     AdminUsers,
     AdminCategories,
+    AdminAdvertisements,
     AdminStatisticsPanel,
   ],
   templateUrl: './admin-page.html',
@@ -29,7 +31,12 @@ export class AdminPageComponent implements OnInit {
   readonly tab = signal<AdminTab>('pending');
 
   /** Tabs that fetch their own data, so the queue spinner does not hide them. */
-  private readonly selfLoading: AdminTab[] = ['users', 'categories', 'statistics'];
+  private readonly selfLoading: AdminTab[] = [
+    'users',
+    'categories',
+    'advertisements',
+    'statistics',
+  ];
 
   readonly usesQueue = computed(() => !this.selfLoading.includes(this.tab()));
 

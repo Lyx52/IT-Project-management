@@ -48,6 +48,7 @@ describe('ItemForm', () => {
   const html = () => (fixture.nativeElement as HTMLElement).innerHTML;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     localStorage.clear();
   });
 

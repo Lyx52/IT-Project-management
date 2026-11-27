@@ -63,6 +63,21 @@ entity categories {
   * name : varchar(50) <<unique>>
 }
 
+entity advertisements {
+  * id : bigint <<PK>>
+  --
+  * advertiser : varchar(120)
+  * title : varchar(120)
+  * description : text
+  * target_url : varchar(2048)  -- HTTPS only
+  category_id : bigint <<FK>>  -- nullable, nullOnDelete
+  * status : varchar(10) = 'pending'
+  reviewed_by : bigint <<FK>>  -- users.id, nullable
+  reviewed_at : timestamp
+  created_at : timestamp
+  updated_at : timestamp
+}
+
 entity posts {
   * id : bigint <<PK>>
   --
@@ -197,6 +212,8 @@ users ||--o{ notifications : "notifiable (morph)"
 users ||..o| password_reset_tokens : "by email"
 users ||--o{ posts : creates
 categories ||--o{ posts
+categories |o--o{ advertisements : targets
+users |o--o{ advertisements : reviews
 posts ||--o{ post_images
 users ||--o{ messages : sends
 users ||--o{ messages : receives
