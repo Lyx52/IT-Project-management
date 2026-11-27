@@ -16,6 +16,7 @@ import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
 import { Messenger } from '../../components/messenger/messenger';
 import { ReportUser } from '../../components/report-user/report-user';
+import { SponsoredAd } from '../../components/sponsored-ad/sponsored-ad';
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
 
@@ -35,6 +36,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
     MessengerLauncher,
     ReportPost,
     ReportUser,
+    SponsoredAd,
     RouterLink,
     DatePipe,
   ],

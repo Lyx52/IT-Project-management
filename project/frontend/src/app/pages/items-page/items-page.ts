@@ -14,6 +14,7 @@ import en from '../../../assets/en.json';
 import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
 import { SavedSearchService } from '../../services/saved-searches.service';
+import { SponsoredAd } from '../../components/sponsored-ad/sponsored-ad';
 
 type ItemTypeFilter = 'all' | 'lost' | 'found';
 
@@ -61,7 +62,7 @@ export function paramsFromFilters(filters: PostFilters): Record<string, string |
 @Component({
   selector: 'app-items-page',
   standalone: true,
-  imports: [Header, ItemCard, CreatePost, MessengerLauncher, Footer, RouterLink],
+  imports: [Header, ItemCard, CreatePost, MessengerLauncher, Footer, RouterLink, SponsoredAd],
   templateUrl: './items-page.html',
   styleUrl: './items-page.scss',
 })

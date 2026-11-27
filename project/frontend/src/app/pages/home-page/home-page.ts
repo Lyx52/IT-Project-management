@@ -9,11 +9,12 @@ import en from '../../../assets/en.json';
 import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
 import { CreatePost } from '../../components/create-post/create-post';
+import { SponsoredAd } from '../../components/sponsored-ad/sponsored-ad';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [ItemCard, MessengerLauncher, Header, Footer, CreatePost],
+  imports: [ItemCard, MessengerLauncher, Header, Footer, CreatePost, SponsoredAd],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })

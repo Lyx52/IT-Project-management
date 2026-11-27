@@ -73,6 +73,18 @@
       class="admin-tab"
       type="button"
       role="tab"
+      [class.active]="tab() === 'advertisements'"
+      [attr.aria-selected]="tab() === 'advertisements'"
+      (click)="selectTab('advertisements')"
+    >
+      <i class="bi bi-megaphone me-1"></i>
+      Advertisements
+    </button>
+
+    <button
+      class="admin-tab"
+      type="button"
+      role="tab"
       [class.active]="tab() === 'statistics'"
       [attr.aria-selected]="tab() === 'statistics'"
       (click)="selectTab('statistics')"
@@ -109,6 +121,9 @@
       }
       @case ('categories') {
         <app-admin-categories />
+      }
+      @case ('advertisements') {
+        <app-admin-advertisements />
       }
       @case ('statistics') {
         <app-admin-statistics />

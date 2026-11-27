@@ -1,0 +1,73 @@
+@use '../../../styles/variables' as *;
+
+.sponsored-ad {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  background: #fffdf7;
+}
+
+.sponsored-ad-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: $text-secondary;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sponsored-ad-category {
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.sponsored-ad-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-top: 0.65rem;
+
+  h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.1rem;
+  }
+
+  a {
+    flex: 0 0 auto;
+    color: $primary;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
+.sponsored-ad-advertiser,
+.sponsored-ad-description {
+  margin: 0;
+}
+
+.sponsored-ad-advertiser {
+  color: $text-secondary;
+  font-size: 0.8rem;
+}
+
+.sponsored-ad-description {
+  color: $text-primary;
+}
+
+@media (max-width: 576px) {
+  .sponsored-ad-content {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+}

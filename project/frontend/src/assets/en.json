@@ -8,7 +8,7 @@
   "version": "0.0.1",
   "accept": "Accept terms",
   "cookieTitle": "Cookies",
-  "cookieText": "We use only the cookies needed to keep you signed in and to remember this choice. No analytics, no advertising, no third-party tracking.",
+  "cookieText": "We use only the cookies needed to keep you signed in and to remember this choice. No analytics or third-party tracking.",
   "closeButton": "Got it",
   "hometitle": "Find what you've lost.",
   "searchp": "One place for lost and found items.",
@@ -70,6 +70,6 @@
   "ptext6": "If you are located within the European Union, including Latvia, you have the right to:\n\n- Access your personal data\n- Correct inaccurate information\n- Request deletion of your data\n- Restrict or object to certain processing activities\n- Receive a copy of your personal data\n- Lodge a complaint with the relevant data protection authority",
   "cookieLink": "How we use your data",
   "subptitle7": "Cookies and Local Storage",
-  "ptext7": "We use only storage that is necessary for the platform to work. We do not use analytics, advertising, or third-party tracking cookies, and we do not share this data with anyone.\n\nWhat we store\n\n- A session cookie, which keeps your browser connected to the server while you use the site\n- A sign-in token, stored in your browser, which keeps you logged in between visits\n- A small record that you have seen the cookie notice, so it is not shown again\n\nBecause all of this is strictly necessary to provide the service you asked for, we do not ask for consent to use it. You can clear this storage at any time through your browser settings, though doing so will sign you out.",
+  "ptext7": "We use only storage that is necessary for the platform to work. We do not use analytics or third-party tracking cookies. Clearly labelled sponsored insurance advertisements may appear in designated page slots; they are not selected using tracking cookies. We do not share this data with anyone.\n\nWhat we store\n\n- A session cookie, which keeps your browser connected to the server while you use the site\n- A sign-in token, stored in your browser, which keeps you logged in between visits\n- A small record that you have seen the cookie notice, so it is not shown again\n\nBecause all of this is strictly necessary to provide the service you asked for, we do not ask for consent to use it. You can clear this storage at any time through your browser settings, though doing so will sign you out.",
   "seeAlso": "See also our"
 }

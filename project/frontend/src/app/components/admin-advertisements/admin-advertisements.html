@@ -1,0 +1,137 @@
+<section class="advertisements-admin">
+  <div class="advertisements-heading">
+    <div>
+      <h2 class="h5 fw-bold mb-1">Insurance advertisements</h2>
+      <p class="text-muted small mb-0">
+        Add sponsor content, then approve it before it appears in public advertisement slots.
+      </p>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="load()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
+  }
+  @if (notice()) {
+    <div class="alert alert-success py-2" role="status">{{ notice() }}</div>
+  }
+
+  <form class="ad-form" (submit)="$event.preventDefault(); submit()">
+    <h3 class="h6 fw-bold">Submit an advertisement for review</h3>
+    <div class="ad-form-grid">
+      <label>
+        Insurance company
+        <input
+          class="form-control"
+          required
+          maxlength="120"
+          [value]="draft().advertiser"
+          (input)="updateDraft('advertiser', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        Category (optional)
+        <select
+          class="form-select"
+          [value]="draft().category_id"
+          (change)="updateDraft('category_id', $any($event.target).value)"
+        >
+          <option value="">All categories</option>
+          @for (category of categories(); track category.id) {
+            <option [value]="category.id">{{ category.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="ad-form-wide">
+        Headline
+        <input
+          class="form-control"
+          required
+          maxlength="120"
+          [value]="draft().title"
+          (input)="updateDraft('title', $any($event.target).value)"
+        />
+      </label>
+      <label class="ad-form-wide">
+        Advertisement text
+        <textarea
+          class="form-control"
+          required
+          maxlength="1000"
+          rows="3"
+          [value]="draft().description"
+          (input)="updateDraft('description', $any($event.target).value)"
+        ></textarea>
+      </label>
+      <label class="ad-form-wide">
+        Destination URL (HTTPS)
+        <input
+          class="form-control"
+          type="url"
+          required
+          placeholder="https://example.com"
+          [value]="draft().target_url"
+          (input)="updateDraft('target_url', $any($event.target).value)"
+        />
+      </label>
+    </div>
+    <button class="btn btn-primary btn-sm" type="submit" [disabled]="isSaving()">
+      {{ isSaving() ? 'Submitting…' : 'Submit for approval' }}
+    </button>
+  </form>
+
+  <div class="ad-list-heading">
+    <h3 class="h6 fw-bold mb-0">Submitted advertisements</h3>
+    <span class="text-muted small">{{ advertisements().length }} total</span>
+  </div>
+
+  @if (isLoading()) {
+    <div class="text-center py-4">
+      <span class="spinner-border spinner-border-sm" aria-label="Loading"></span>
+    </div>
+  } @else if (advertisements().length === 0) {
+    <p class="text-muted py-3">No advertisements have been submitted.</p>
+  } @else {
+    <div class="ad-list">
+      @for (ad of advertisements(); track ad.id) {
+        <article class="ad-row">
+          <div class="ad-row-content">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              <strong>{{ ad.title }}</strong>
+              <span class="ad-status" [class]="'ad-status ' + ad.status">{{ ad.status }}</span>
+            </div>
+            <p class="small text-muted mb-1">
+              {{ ad.advertiser }} · {{ ad.category?.name ?? 'All categories' }}
+            </p>
+            <p class="mb-1">{{ ad.description }}</p>
+            <a [href]="ad.target_url" target="_blank" rel="noopener noreferrer">{{
+              ad.target_url
+            }}</a>
+          </div>
+          @if (ad.status === 'pending') {
+            <div class="ad-row-actions">
+              <button
+                class="btn btn-success btn-sm"
+                type="button"
+                [disabled]="busyId() !== null"
+                (click)="moderate(ad.id, 'approve')"
+              >
+                Approve
+              </button>
+              <button
+                class="btn btn-outline-danger btn-sm"
+                type="button"
+                [disabled]="busyId() !== null"
+                (click)="moderate(ad.id, 'reject')"
+              >
+                Reject
+              </button>
+            </div>
+          }
+        </article>
+      }
+    </div>
+  }
+</section>

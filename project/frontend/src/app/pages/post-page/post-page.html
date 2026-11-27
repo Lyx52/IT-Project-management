@@ -35,6 +35,8 @@
 
     @case ('ready') {
       @if (post(); as post) {
+        <app-sponsored-ad [categoryId]="post.category.id" />
+
         <article class="post card">
           <!-- Images -->
           @if (post.images.length > 0) {
