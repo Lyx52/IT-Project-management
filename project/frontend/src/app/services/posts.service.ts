@@ -88,10 +88,6 @@ export class PostService {
       { post_id: postId, reason },
       { headers: this.headers },
     );
-  deletePost(id: number): Observable<void> {
-    return this.http.delete<void>(`${environment.apiBaseUrl}/post/${id}`, {
-      headers: this.headers,
-    });
   }
 
   deletePost(id: number): Observable<void> {

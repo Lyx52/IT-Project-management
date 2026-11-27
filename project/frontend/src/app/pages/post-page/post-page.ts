@@ -34,6 +34,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
     CreatePost,
     MessengerLauncher,
     ReportPost,
+    ReportUser,
     RouterLink,
     DatePipe,
   ],
