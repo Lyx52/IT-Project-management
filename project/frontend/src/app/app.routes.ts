@@ -93,6 +93,15 @@ export const routes: Routes = [
     canActivate: [adminGuard],
   },
   {
+    path: 'admin/moderation',
+    title: 'Moderation queue – FindIT',
+    loadComponent: () =>
+      import('./pages/admin-moderation-page/admin-moderation-page').then(
+        (m) => m.AdminModerationPage,
+      ),
+    canActivate: [adminGuard],
+  },
+  {
     path: 'messages/:postId',
     title: 'Messages – FindIT',
     loadComponent: () => import('./pages/messages-page/messages-page').then((m) => m.MessagesPage),

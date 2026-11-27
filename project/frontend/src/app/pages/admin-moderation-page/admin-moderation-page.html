@@ -1,0 +1,127 @@
+<app-header />
+
+<main class="page-container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h1 class="h3 fw-bold mb-1">Moderation queue</h1>
+      <p class="text-muted mb-0">Review reports about posts and users.</p>
+    </div>
+    <button
+      class="btn btn-outline-secondary"
+      type="button"
+      (click)="load()"
+      [disabled]="isLoading()"
+    >
+      {{ isLoading() ? 'Loading…' : 'Refresh' }}
+    </button>
+  </div>
+
+  @if (loadError()) {
+    <div class="alert alert-danger" role="alert">
+      {{ loadError() }}
+      <button class="btn btn-sm btn-outline-danger ms-2" type="button" (click)="load()">
+        Retry
+      </button>
+    </div>
+  }
+  @if (actionMessage()) {
+    <div class="alert alert-success" role="status">{{ actionMessage() }}</div>
+  }
+  @if (actionError()) {
+    <div class="alert alert-danger" role="alert">{{ actionError() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted mt-2 mb-0">Loading moderation queue…</p>
+    </div>
+  } @else {
+    <div class="row g-4">
+      <section class="col-lg-6" aria-labelledby="post-reports-title">
+        <h2 id="post-reports-title" class="h5 fw-bold">
+          Post reports
+          <span class="badge text-bg-secondary">{{ queue().open_reports.length }}</span>
+        </h2>
+        @for (report of queue().open_reports; track report.id) {
+          <article class="card mb-3">
+            <div class="card-body">
+              <div class="d-flex justify-content-between gap-3 mb-2">
+                <strong>Report #{{ report.id }}</strong>
+                <time class="small text-muted">{{
+                  report.created_at | date: 'd MMM yyyy, HH:mm'
+                }}</time>
+              </div>
+              <p class="mb-2">{{ report.reason }}</p>
+              <p class="small text-muted mb-1">
+                Reported by {{ report.reporter?.username ?? 'Deleted user' }}
+              </p>
+              @if (report.post) {
+                <a [routerLink]="['/post', report.post.id]">{{ report.post.title }}</a>
+              } @else {
+                <span class="small text-muted">The reported post was removed.</span>
+              }
+            </div>
+          </article>
+        } @empty {
+          <p class="text-muted">No open post reports.</p>
+        }
+      </section>
+
+      <section class="col-lg-6" aria-labelledby="user-reports-title">
+        <h2 id="user-reports-title" class="h5 fw-bold">
+          User reports
+          <span class="badge text-bg-secondary">{{ queue().open_user_reports.length }}</span>
+        </h2>
+        @for (report of queue().open_user_reports; track report.id) {
+          <article class="card mb-3">
+            <div class="card-body">
+              <div class="d-flex justify-content-between gap-3 mb-2">
+                <strong>Report #{{ report.id }}</strong>
+                <time class="small text-muted">{{
+                  report.created_at | date: 'd MMM yyyy, HH:mm'
+                }}</time>
+              </div>
+              <p class="mb-2">{{ report.reason }}</p>
+              <p class="small text-muted mb-1">
+                Reported by {{ report.reporter?.username ?? 'Deleted user' }}
+              </p>
+              @if (report.reported_user; as user) {
+                <p class="mb-2">
+                  Reported user: <strong>{{ user.username }}</strong>
+                  @if (user.banned_at) {
+                    <span class="badge text-bg-danger ms-1">Banned</span>
+                  }
+                </p>
+                @if (report.post) {
+                  <p class="small mb-2">
+                    Conversation/post:
+                    <a [routerLink]="['/post', report.post.id]">{{ report.post.title }}</a>
+                  </p>
+                }
+                <button
+                  class="btn btn-sm btn-danger"
+                  type="button"
+                  [disabled]="user.banned_at !== null || actioningUserId() !== null"
+                  (click)="banUser(report)"
+                >
+                  {{
+                    actioningUserId() === user.id
+                      ? 'Banning…'
+                      : user.banned_at
+                        ? 'Already banned'
+                        : 'Ban user'
+                  }}
+                </button>
+              } @else {
+                <p class="text-muted small mb-0">The reported account was permanently deleted.</p>
+              }
+            </div>
+          </article>
+        } @empty {
+          <p class="text-muted">No open user reports.</p>
+        }
+      </section>
+    </div>
+  }
+</main>

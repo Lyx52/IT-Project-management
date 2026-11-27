@@ -1,0 +1,46 @@
+<div class="report-user">
+  @if (submitted()) {
+    <p class="alert alert-success py-2 mb-0" role="status">Report sent to the moderators.</p>
+  } @else if (!isOpen()) {
+    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="isOpen.set(true)">
+      <i class="bi bi-flag me-1" aria-hidden="true"></i>
+      Report user
+    </button>
+  } @else {
+    <form class="mt-2" (ngSubmit)="submit()">
+      <label class="form-label small fw-semibold" for="user-report-reason">Reason</label>
+      <textarea
+        id="user-report-reason"
+        class="form-control"
+        name="reason"
+        rows="3"
+        minlength="5"
+        maxlength="500"
+        required
+        [ngModel]="reason()"
+        (ngModelChange)="reason.set($event)"
+        [disabled]="isSending()"
+      ></textarea>
+      <div class="d-flex gap-2 mt-2">
+        <button
+          class="btn btn-danger btn-sm"
+          type="submit"
+          [disabled]="reason().trim().length < 5 || isSending()"
+        >
+          {{ isSending() ? 'Sending…' : 'Send report' }}
+        </button>
+        <button
+          class="btn btn-outline-secondary btn-sm"
+          type="button"
+          (click)="isOpen.set(false); error.set('')"
+          [disabled]="isSending()"
+        >
+          Cancel
+        </button>
+      </div>
+      @if (error()) {
+        <p class="text-danger small mt-2 mb-0" role="alert">{{ error() }}</p>
+      }
+    </form>
+  }
+</div>

@@ -262,6 +262,9 @@
                   </button>
 
                   <app-report-post [postId]="post.id" />
+                  @if (canReportAuthor()) {
+                    <app-report-user [targetUserId]="post.user.id" [postId]="post.id" />
+                  }
                 </div>
               </div>
             }

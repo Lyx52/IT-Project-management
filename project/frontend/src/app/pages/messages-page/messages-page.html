@@ -33,6 +33,12 @@
         <a [routerLink]="['/post', postId()]">View post</a>
       </div>
 
+      @if (canReportParticipant()) {
+        <div class="px-3 pt-3">
+          <app-report-user [targetUserId]="reportTargetId()!" [postId]="postId()" />
+        </div>
+      }
+
       <!-- Messages -->
       <div class="messages-body">
         @if (isLoading()) {

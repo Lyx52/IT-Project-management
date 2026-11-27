@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
 use App\Models\Report;
+use App\Models\UserReport;
 use App\Notifications\PostModeratedNotification;
 use App\Services\PossibleMatchNotifier;
 use App\Services\SavedSearchNotifier;
@@ -32,6 +33,16 @@ class PostModerationController extends Controller
             ->oldest('id')
             ->get();
 
+        $openUserReports = UserReport::where('status', 'open')
+            ->with([
+                'reportedUser:id,username,banned_at',
+                'reporter:id,username',
+                'post:id,title',
+            ])
+            ->oldest()
+            ->oldest('id')
+            ->get();
+
         return response()->json([
             'data' => [
                 'pending_posts' => PostResource::collection($pendingPosts),
@@ -45,6 +56,25 @@ class PostModerationController extends Controller
                         'username' => $report->reporter->username,
                     ] : null,
                     'post' => $report->post ? new PostResource($report->post) : null,
+                ])->values(),
+                'open_user_reports' => $openUserReports->map(fn (UserReport $report) => [
+                    'id' => $report->id,
+                    'reason' => $report->reason,
+                    'status' => $report->status,
+                    'created_at' => $report->created_at,
+                    'reporter' => $report->reporter ? [
+                        'id' => $report->reporter->id,
+                        'username' => $report->reporter->username,
+                    ] : null,
+                    'reported_user' => $report->reportedUser ? [
+                        'id' => $report->reportedUser->id,
+                        'username' => $report->reportedUser->username,
+                        'banned_at' => $report->reportedUser->banned_at,
+                    ] : null,
+                    'post' => $report->post ? [
+                        'id' => $report->post->id,
+                        'title' => $report->post->title,
+                    ] : null,
                 ])->values(),
             ],
         ]);

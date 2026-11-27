@@ -78,6 +78,18 @@ export class PostService {
     });
   }
 
+  reportUser(
+    userId: number,
+    postId: number,
+    reason: string,
+  ): Observable<{ message: string; data: { id: number; reported_user_id: number } }> {
+    return this.http.post<{ message: string; data: { id: number; reported_user_id: number } }>(
+      `${environment.apiBaseUrl}/user/${userId}/report`,
+      { post_id: postId, reason },
+      { headers: this.headers },
+    );
+  }
+
   deletePost(id: number): Observable<void> {
     return this.http.delete<void>(`${environment.apiBaseUrl}/post/${id}`, {
       headers: this.headers,

@@ -14,6 +14,8 @@ import { ReportPost } from '../../components/report-post/report-post';
 import { Item } from '../../models/models';
 import { AuthService } from '../../services/auth';
 import { PostService } from '../../services/posts.service';
+import { Messenger } from '../../components/messenger/messenger';
+import { ReportUser } from '../../components/report-user/report-user';
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
 
@@ -32,6 +34,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
     CreatePost,
     MessengerLauncher,
     ReportPost,
+    ReportUser,
     RouterLink,
     DatePipe,
   ],
@@ -65,6 +68,11 @@ export class PostPage {
     return post !== null && user !== null && post.user.id === user.id;
   });
 
+  readonly canReportAuthor = computed(() => {
+    const post = this.post();
+    const user = this.auth.user();
+    return post !== null && user !== null && post.user.id !== user.id;
+  });
   readonly canDelete = computed(() => this.isMine() || this.auth.isAdmin());
 
   private postId = 0;

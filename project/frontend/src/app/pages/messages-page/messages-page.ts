@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,8 +13,9 @@ import { CreatePost } from '../../components/create-post/create-post';
 import { Footer } from '../../components/footer/footer';
 import { MessagesService } from '../../services/messages.service';
 import { PostService } from '../../services/posts.service';
-import { Message, MessageAttachment } from '../../models/models';
+import { Message, MessageAttachment, Paginated } from '../../models/models';
 import { AuthService } from '../../services/auth';
+import { ReportUser } from '../../components/report-user/report-user';
 
 interface DisplayMessage {
   id: number;
@@ -36,6 +37,7 @@ interface DisplayMessage {
     safetyTips,
     CreatePost,
     MessengerLauncher,
+    ReportUser,
   ],
   templateUrl: './messages-page.html',
   styleUrl: './messages-page.scss',
@@ -49,6 +51,12 @@ export class MessagesPage {
 
   readonly postId = signal(0);
   readonly userId = signal<number | null>(null);
+  readonly reportTargetId = signal<number | null>(null);
+  readonly canReportParticipant = computed(() => {
+    const targetId = this.reportTargetId();
+    const reporterId = this.auth.user()?.id;
+    return targetId !== null && reporterId !== undefined && targetId !== reporterId;
+  });
 
   readonly postTitle = signal('Loading post...');
   readonly otherUsername = signal('Conversation');
@@ -90,6 +98,7 @@ export class MessagesPage {
           this.postId.set(postId);
           this.showSafetyTips.set(!MessagesPage.hiddenTipsFor().includes(postId));
           this.userId.set(userId);
+          this.reportTargetId.set(null);
 
           this.messages.set([]);
           this.loadError.set('');
@@ -122,7 +131,7 @@ export class MessagesPage {
           const messages$ = timer(0, 5000).pipe(
             switchMap(() =>
               this.messagesService.getMessages(postId, userId ?? undefined).pipe(
-                map((response) => response.data),
+                map((response: Paginated<Message>) => response.data),
                 catchError((error) => {
                   console.error('Failed to load messages:', error);
                   this.loadError.set('Failed to load messages. Please try again.');
@@ -149,6 +158,9 @@ export class MessagesPage {
 
           if (post.user.id !== currentUserId) {
             this.setOtherUsername(post.user.username);
+            this.reportTargetId.set(post.user.id);
+          } else {
+            this.reportTargetId.set(this.userId());
           }
         }
 
@@ -188,6 +200,7 @@ export class MessagesPage {
     const otherUser = message.sender.id === currentUserId ? message.receiver : message.sender;
 
     this.setOtherUsername(otherUser.username);
+    this.reportTargetId.set(otherUser.id);
   }
 
   private setOtherUsername(username: string): void {
