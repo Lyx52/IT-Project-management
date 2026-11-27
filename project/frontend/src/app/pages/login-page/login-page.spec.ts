@@ -59,6 +59,7 @@ describe('LoginPageComponent', () => {
   };
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     localStorage.clear();
   });
 
