@@ -13,7 +13,7 @@ import { CreatePost } from '../../components/create-post/create-post';
 import { Footer } from '../../components/footer/footer';
 import { MessagesService } from '../../services/messages.service';
 import { PostService } from '../../services/posts.service';
-import { Message, MessageAttachment } from '../../models/models';
+import { Message, MessageAttachment, Paginated } from '../../models/models';
 import { AuthService } from '../../services/auth';
 import { ReportUser } from '../../components/report-user/report-user';
 
@@ -131,7 +131,7 @@ export class MessagesPage {
           const messages$ = timer(0, 5000).pipe(
             switchMap(() =>
               this.messagesService.getMessages(postId, userId ?? undefined).pipe(
-                map((response) => response.data),
+                map((response: Paginated<Message>) => response.data),
                 catchError((error) => {
                   console.error('Failed to load messages:', error);
                   this.loadError.set('Failed to load messages. Please try again.');
